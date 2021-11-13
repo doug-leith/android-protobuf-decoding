@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+//import "google/protobuf/any.proto";
+
+message DeviceInfo { //cbye
+ int64 androidID = 1;
+ string loggingID =2;
+ int32 SDKVersion =3;
+ string model =4;
+ string product =5;
+ string buildID =6;
+ string googlePlayServicesVersionString =7;
+ string hardware =8;
+ string device =9;
+ string simOperator  =10;
+ string language =11;
+ string country =12;
+ string manufacturer =13;
+ string brand =14;
+ string board =15;
+ string radioVersion =16;
+ string buildFingerprint =17;
+ int32 googlePlayServicesVersionCode =19;
+ bool bool23 =20;
+ bytes dynamiteModules=21; // protobuf with details of dynamite modules
+ int32 value23 = 23;
+ AccessibilitySettings accessibilitySettings=25;
+ string buildType =26;
+ GooglePlayServicesVersionName googlePlayServicesVersionName=32;
+ int32 simCarrierId =33;
+ SdkExtensions sdkExtensions=34;
+}
+
+message AccessibilitySettings {//bgob
+	AccessibilitySetting fontScale_gt_1=5;
+	AccessibilitySetting accessibilityDisplayMagnificationSnabled=6;
+	AccessibilitySetting highTextContrastEnabled=7;
+}
+
+enum AccessibilitySetting {
+	UNKNOWN_Setting=0;
+	TRUE_Setting=1;
+	FALSE_Setting=2;
+}
+
+message GooglePlayServicesVersionName { //askg
+   //e.g. for com.google.android.gms@213916046@21.39.16 (150400-402663742)
+   // versioName = 150400 and entries below are 15,6,1
+	int32 verMajor=1; //(long(versionName) / 10000)+1
+	int32 verMinor=2; //long(versionName)%100+1
+	int32 verMinor2=3; //(long(versioName)/ 100) % 100 +1
+}
+
+message SdkExtensions {//bror
+	int32 sdkExtension=1;
+   int32 extensionVersion=2;
+}
+
+message LogBatchHeader { //cbyi
+ int32 always4 =1; // seems to have fixed value 4
+ DeviceInfo deviceInfo =2;
+ int64 timestamp =12;
+}
+
+message DeviceStatus {
+	 bool networkConnected =1;
+	 bool batteryCharged =2;
+	// int32 unknown =3;
+	 bool accountIsGoogleCom =4;
+}
+
+message LogBatchInner { //cbyu
+   LogBatchHeader header =1;
+	 int64 currentTimeMillis =4;
+	 bytes logEntry =5;
+	 string logSourceName =6;
+	 string pseudonymousIdToken = 7;
+	 int64 elapsedTime =8;
+	 enum QosTier {
+		DUMMY=0;
+		DEFAULT=1;
+		UNMETERED_ONLY=2;
+		UNMETERED_OR_DAILY=3;
+		FAST_IF_RADIO_AWAKE=4;
+		NEVER=5;
+		UNRECOGNIZED=6;
+	}
+	 QosTier qosTier = 9;
+	 QosServiceType QqsServiceType= 10;
+	 DeviceStatus deviceStatus =11;
+}
+
+enum QosServiceType{
+	QOS_UNKNOWN_SERVICE=0;
+	QOS_OTHER_SERVICE=1;
+	QOS_ONEOFF_SERVICE=4;
+	QOS_DEFAULT_PERIODIC_SERVICE=5;
+	QOS_UNMETERED_PERIODIC_SERVICE=6;
+}
+
+message LogBatchContainer {
+  repeated LogBatchInner inner=1;
+  // int32 unknown =3;
+}
+

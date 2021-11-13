@@ -1,0 +1,853 @@
+// ANDROID_MESSAGING log source in https://play.googleapis.com/log/batch data
+
+syntax = "proto3";
+
+//import "google/protobuf/any.proto";
+
+message AndroidMessaging_LogEntry { //bhzx
+	int64 timestamp = 1;
+	AndroidMessaging_Event event=6; // bark.toByteArray
+	int32 subEvent=11; // bhzx.d.  an enum, but enum used changes depending on the event
+	sint64 tz_offset=15; //time zone offset in seconds
+	int64 elapsedRealtime=17; 
+	bytes visualElementsUserInteraction=18; // bytes.  setup on aqvs. ad impression related?
+	bool handsetLocked =25; // bhzx.i Build.VERSION.SDK_INT >= 24) and handset is locked (i.e. needs pin to unlock screen)
+	string always_empty=26; // bhzx.e, always ""?
+	string accountNameOrCookie=28; // bhzx.j
+
+  // the following three entries are added to the logentry within google play services, not within
+  // the app.  the experiment tokens seem associated with A/B testing
+    ExperimentTokens experimentTokens=16; //bnar
+    int32 bootCount=22;
+    ConnectionDetails connectionDetails=23;  //bmyx
+  
+  // not sure what this is.  float?
+    bytes u5=30;
+}
+
+message ExperimentTokens { //bnar
+  Tokens tokens=1;
+  repeated bytes tokenBytes=2; 
+  bool hasContent=3; // true when content is set
+}
+
+message Tokens { //bfyb
+  //repeated int32 b=1;
+  //repeated int32 c=2;
+  repeated int32 token=3; // only this is ever set.  
+  //repeated int32 d=4;
+}
+
+message ConnectionDetails {//bmyx
+  ActiveNetworkType activeNetworkType=1;
+  MobileSubtype mobileSubtype=2;
+}
+
+enum ActiveNetworkType {
+    MOBILE=0;
+    NONE=-1;
+    WIFI=1;
+    MOBILE_MMS=2;
+    MOBILE_SUPL=3;
+    MOBILE_DUN=4;
+    MOBILE_HIPRI=5;
+    WIMAX=6;
+    BLUETOOTH=7;
+    DUMMY=8;
+    ETHERNET=9;
+    MOBILE_FOTA=10;
+    MOBILE_IMS=11;
+    MOBILE_CBS=12;
+    WIFI_P2P=13;
+    MOBILE_IA=14;
+    MOBILE_EMERGENCY=15;
+    PROXY=16;
+    VPN=17;
+}
+
+enum MobileSubtype{
+    UNKNOWN_MOBILE_SUBTYPE=0;
+    GPRS=1;
+    EDGE=2;
+    UMTS=3;
+    CDMA=4;
+    EVDO_0=5;
+    EVDO_A=6;
+    RTT=7;
+    HSDPA=8;
+    HSUPA=9;
+    HSPA=10;
+    IDEN=11;
+    EVDO_B=12;
+    LTE=13;
+    EHRPD=14;
+    HSPAP=15;
+    GSM=16;
+    TD_SCDMA=17;
+    IWLAN=18;
+    LTE_CA=19;
+    COMBINED=100;
+}
+
+message AndroidMessaging_Event{ // bark
+	AndroidMessaging_EventType eventType=1;
+	BugleApp bugleApp=2; // baof
+	BugleMessage bugleMessage=3; 
+	BugleConversation bugleConversation=4; // baqq 
+	BugleSearch bugleSearch=6; 
+	//google.protobuf.Any bugleUserDeviceInfo=9; // bbbh
+    Provisioning  provisioning=13;
+	BugleTelephonyEvent bugleTelephonyEvent=22; //bgrv
+    BugleSearchQuery bugleSearchQuery=73; 
+	// BUGLE_COMPOSE - writing message
+}
+
+message Provisioning {
+ message Bbcr {int32 Mcc=1; int32 Mnc=2;}  //bbcr
+ Bbcr bbcr=7;
+ string provisioning_session_id=8;   
+ message Bbkk {  ProvisioningUIType provisioningUIType=3; }  //bbkk
+ Bbkk bbkk=9;
+}
+
+enum ProvisioningUIType {
+    PROVISIONING_UI_TYPE_UNKNOWN=0;
+    PROVISIONING_UI_TYPE_RCS_PROMO=1;
+    PROVISIONING_UI_TYPE_GOOGLE_TOS_PROMO=2;
+    PROVISIONING_UI_TYPE_GOOGLE_TOS_PROMO_M2=3;
+    PROVISIONING_UI_TYPE_GOOGLE_TOS_FROM_SETTINGS=4;
+    PROVISIONING_UI_TYPE_MANUAL_MSISDN_ENTRY=5;
+    PROVISIONING_UI_TYPE_GOOGLE_TOS_PROMO_WITH_COST=6;
+    PROVISIONING_UI_TYPE_WELCOME_CHAT_FEATURES=7;
+    PROVISIONING_UI_TYPE_MANUAL_MSISDN_ENTRY_V2=8;
+    PROVISIONING_UI_TYPE_STREAMLINED_PHONE_NUMBER_INPUT=9;    
+}
+
+message BugleConversation{ // baqq "conversation stats"
+    ConversationOrigin conversationOrigin=2;
+    ConversationType conversationType=9;
+    int64 conversationIdSHA1=17; // SHA1 hash of messageCoreData.w(), conversation_id ?? use frida to print
+    FolderType folderType=32;
+    PhoneNumberFormat phoneNumberFormat=34;
+}
+
+enum FolderType {
+    UNARCHIVED=0;
+    ARCHIVED=1;
+    KEEP_ARCHIVED=2;
+    SPAM_FOLDER=3;
+    BLOCKED_FOLDER=4;
+}
+
+enum ConversationOrigin {
+    option allow_alias = true;
+    UNKNOWN_BUGLE_CONVERSATION_ORIGIN=0;
+    CONVERSATION_FROM_LIST=1;
+    CONVERSATION_FROM_COMPOSE=2;
+    CONVERSATION_FROM_LIST_SWIPE=3;
+    CONVERSATION_FROM_MORE_BUTTON=4;
+    CONVERSATION_FROM_UNBLOCK_ACTION=5;
+    CONVERSATION_FROM_WEARABLE_ACTION=6;
+    CONVERSATION_FROM_WEB_ACTION=7;
+    CONVERSATION_FROM_UNSPAM_ACTION=8;
+    CONVERSATION_FROM_SPAM_DETECTION=9;
+    CONVERSATION_FROM_CMS_ACTION=0;
+    CONVERSATION_FROM_BUBBLE=1; 
+}
+
+message BugleSearchQuery { //blw
+    //enum b=1;
+  SearchType searchType=2; //bbly
+}
+
+message SearchType {
+    bool conversationSearch=1; 
+    bool participantSearch=2; 
+    bool freetextSearch=3;
+}
+
+message BugleSearch {// baym
+	SearchConstants searchConstants=1;
+	SearchResults searchResults=4;
+	SearchAction UI=5;
+	LastSearchTime lastSearchTime=6;
+	int64 timestamp =7;
+}
+
+message SearchConstants { //bbah
+	int32 always_1=1; //always 1?
+	int32 always_5=2;  //always 5?
+}
+
+message SearchAction { //bblo
+  UserInteraction UserInteraction=1;   
+  SearchFilter searchFilter=2;   
+}
+
+enum UserInteraction { // a bit of guesswork here
+    UNKNOWN=0;
+	CONTACT_LIST_VIEW=2;
+	SEARCH_FILTER_CLICKED=3;
+	TAPPED_TEXT=4;
+	SEE_ALL_CLICKED=5;
+	CONTACT_LIST_CLICKED=6;
+	FILTER_CLICKED=7;
+	ZERO_STATE_SEARCHBOX=8;
+	SEARCH_FILTER=9;
+	VIEW=16;
+}
+
+enum SearchFilter { // a bit of guesswork here
+    UNKNOWN_FILTER=0;
+	STARRED=1;
+	IMAGES=3;
+	VIDEOS=4;
+	LINK=5;
+	PLACES=6;
+	CONTACTS=7;
+}
+
+message LastSearchTime { //bblq
+	int64 lastSearchTime2=1;
+}
+
+message SearchResults { //bblt
+	 int32 b=1; // unknown
+	 SearchResults2 searchResults2=2;
+}
+
+message SearchResults2 { //bayo
+	int32 count=1;
+	int32 num_messages=2;
+	int32 num_images=3;
+	int32 num_videos=4;
+	int32 num_locations=5;
+	int32 num_links=6;
+	int32 num_contacts=7;
+}
+
+message BugleMessage {// baur
+  ConversationType messageProtocol=1;
+  BugleMessageStatus bugleMessageStatus=2; 
+  SubscriptionUtils subscriptionUtils=3;
+  MimeData mimeData =4;
+  MessageTiming messageTiming=5;
+  BugleMessageSource bugleMessageSource=8;
+  uint64 usageStatsLoggingId=9; // bP()
+  ConversationType conversationType=12;
+  SendAttempt sendAttempt=14;
+  MessagingStatus messagingStatus=15;
+  WasRCS wasRCS=16;
+  RcsStatus rcsStatus=17;
+  ConfigStatus configStatus=18;
+  PhoneNumberFormat2 phoneNumberFormat2=19;
+  CarrierServicesData carrierServicesData=20; 
+  int64 messageSendClickToSentLatency=21;
+  int32 elapsedTimeEnum=23; //1 means <1s, 2 means <2s, 3m means <5s, <10s, <3s,  <1min etc
+  int64 conversationIdSHA1=27; // SHA1 hash of messageCoreData.w(), conversation_id ?? use frida to print
+  string RrcMessageId=29;
+  string RcsConfig=31;
+  string sha256HashMsg=33;  // sha256 hash of SMS message text concatenated with send/receive ms timestamp/(3600*1000) i.e. converted to hours and the floor taken
+  string sha256HashPrevMsg=34;  // hash of last message sent/received in conversation
+  MessageOptionsAction messageOptionsAction=38;
+  int32 propertyN=40; // "N"
+  SMSFailed SmsFailed =41; 
+  int32 messageStatus=42;
+  MessageSettings messageSettings=44;
+  Priority priority=46;
+  int32 etouffee_status=47; // 1=true, 2=false
+  NetworkDetails networkDetails=49;
+  bytes moreMessageSettings=50; // config bits and pieces
+  PhoneNumbers phoneNumbers=51;
+  repeated PhoneNumbers phoneNumbers2=52;
+  int32 always_zero=53; // always zero?
+  repeated PhoneNumberFormat phoneNumberFormat=55;
+  RcsType rcsType=56;
+  //int64 ab=58; // duration?
+}
+
+message MessageTiming{
+    int64 currentTime_ms=1;
+    int64 elapsedTimeSinceMsgSendRecv_ms=2; // currentTime - time when message was sent/received
+}
+
+enum BugleMessageStatus {
+    UNKNOWN_BUGLE_MESSAGE_STATUS=0;
+    SENT=1;
+    RECEIVED=2;
+    DOWNLOADED=3;
+    DELETED=4;
+    SENT_FAILURE=5;
+    DOWNLOADED_FAILURE=6;
+    NEW_SENDING=7;
+    READ=8;
+    DELIVERED=9;
+    CREATED=10;
+    FALL_BACK_INITIATED=11;
+    MESSAGE_ID_CREATED=12;
+    RECEIVED_FROM_BLOCKED_PARTICIPANT=13;
+    DOWNLOAD_START=14;
+    RECEIVE_FAILURE=15;
+    UPLOAD_SUCCEEDED=19;
+ }
+
+message MessageSettings {// bbdr
+    //baxn b=1; // settings
+    int32 hasParticpants=2; // 1=false or 2=true
+    int32 hasConversationId=3; // 1=false or 2=true
+    ConversationType conversationType=4;
+    int32 sendModeIsAuto=5; // 1=false or 2=true
+    int32 sendModeIsXms=6; // 1=false or 2=true
+    OnlineStatus onlineStatus=9; 
+    bool hasRbmRecipient=10;
+    SendMode sendmode=11;
+    //bbkm k=12;
+    //bbfl l=13;
+    //bool m=14;
+    //bool n=15;
+}
+
+message OnlineStatus { OnlineStatusType status=1;}
+
+enum OnlineStatusType {
+    UNKNOWN_ONLINE_STATUS=0;
+    OFFLINE=2;
+    ONLINE=1;
+    NOT_RCS=3;
+}
+
+enum SendMode {
+    SEND_MODE_XMS_LATCH=0;
+    SEND_MODE_AUTO=1;
+    SEND_MODE_XMS=2;
+}
+
+message NetworkDetails {// bavt
+	NetworkType networkType=1;
+	NetworkState networkState=2;
+	bool isRoaming=3;
+	SignalStrength signalStrength=4;
+	bool airplaneModeOn=5;
+	bool mobileDataEnabled=6;
+}
+
+enum SignalStrength{
+	UNKNOWN_SIGNAL_STRENGTH=0;
+	POOR=1;
+	MODERATE=2;
+	GOOD=3;
+	GREAT=4;
+	NONE_OR_UNKNOWN=5;	
+}
+
+enum NetworkState{
+	UNKNOWN_NETWORK_STATE=0;
+	AUTHENTICATING=1;
+	BLOCKED=2;
+	CAPTIVE_PORTAL_CHECK=3;
+	CONNECTED=4;
+	CONNECTING=5;
+	DISCONNECTED=6;
+	DISCONNECTING=7;
+	FAILED=8;
+	IDLE=9;
+	OBTAINING_IPADDR=10;
+	SCANNING=11;
+	SUSPENDED=12;
+	VERIFYING_POOR_LINK=13;
+}
+
+enum NetworkType {
+	OTHER=0;
+	MOBILE_DATA=1;
+	WIFI_=2;
+	WIMAX_=3;
+}
+
+message SMSFailed {
+	int32 errorCode=1;
+    XMSFailedDetails XmsFailedDetails=2; 
+	PhoneType phoneType=3; // bazn.c()
+}
+
+message XMSFailedDetails { //baoy
+	int32 resultCode=2;
+	int32 countryCode=3;
+}
+
+enum PhoneType {
+	PHONE_TYPE_NONE=0;
+    PHONE_TYPE_GSM=1;
+    PHONE_TYPE_CDMA=2;
+    PHONE_TYPE_SIP=3;
+}
+
+message CarrierServicesData { //bbcu
+  int32 versionCode=1;
+  CarrieServicesStatus carrieServicesStatus=2;  //com.google.android.ims Carrier Services Apk
+}
+
+enum CarrieServicesStatus {
+	UNKNOWN_IMS_STATUS=0;
+	SYSTEM_APP=2;
+	DISABLED=3;
+	NOT_IGNORING_BATTERY_OPTIMISATIONSB=4;
+	OK=1;
+
+}
+
+message MimeData {
+	MimeData2 mimeData2=1;
+}
+
+message MimeData2 {
+	MimeType mimeType=1;
+	int32 valid=2; // initally -1, set to 1 when message data is setup
+	MessagePart messagePart=3;
+	MimeExtras mimeExtras=4; 
+	int32 e=5;  // some sort of enum type based on thresholding a value
+}
+
+message MimeExtras { //baro
+	int32 emptyFilename=1; //1=false, 2=true
+	int32 messageStatus=2;	//1=false, 2=true
+}
+
+enum MimeType {
+    UNKNOWN_MIME=0;	
+    TEXT_PLAIN_HTML_XML=1;
+	IMAGE=2;
+	VIDEO=3;
+	AUDIO=4;
+	TEXT_vCARD=5;
+	PDF=6;
+	TXT=11;
+	MSWORD=8;
+	MS_POWERPOINT=9;
+	OFFICEDOC=10;
+	ZIP=13;
+	DEFAULT=12;
+}
+
+enum MessagePart {
+	NOT_AVAILABLE=0;
+    UNKNOWN_PART=1;
+    TEXT_PART=2;
+    CAMERA=3;
+    GALLERY_CHOOSER=4;
+    GALLERY_LIBRARY=5;
+    LOCATION_CURRENT=6;
+    LOCATION_BROWSE=7;
+    LOCATION_SEARCH=8;
+    LOCATION_CUSTOM=9;
+    AUDIO_CHOOSER=10;
+    STICKER_CHOOSER=11;
+    SHARE=12;
+    DRAFT=13;
+    FORWARD=14;
+    RICH_CARD=15;
+    RICH_CARD_MEDIA=18;
+    RICH_CARD_THUMBNAIL=19;
+    RICH_CARD_CAROUSEL=22;
+    MONEY_SEND=16;
+    MONEY_REQUEST=17;
+    SUGGESTED_REPLY_RESPONSE=20;
+    SUGGESTED_ACTION_RESPONSE=21;
+    BLOBSTORE=23;
+    RBM_PAYMENT_RECEIPT=24;
+    GIF_CHOOSER=25;
+    EXPRESSIVE_STICKER_CHOOSER=26;
+    EXPRESSIVE_STICKER_PACK_DETAILS=34;
+    EXPRESSIVE_STICKER_GALLERY_SEARCH=35;
+    CONTACT_CHOOSER=27;
+    TOMBSTONE_PART=28;
+    CONTACT_SUGGESTION=29;
+    RECENT_IMAGE_SUGGESTION=30;
+    GBOARD_EMOJI=31;
+    FILE_CHOOSER=32;
+    UNKNOWN_IME=33;
+    STICKER_SUGGESTION=36;
+    MEDIA_EDITOR_ATTACH=37;
+    VIDEO_TRIMMER=38;
+    DEVICE_CAMERA_APP=39;
+    CLIPBOARD=40;
+    DRAG_AND_DROP=41;
+}
+
+message SubscriptionUtils { //bavn  zdr
+	int32 Mcc=1;
+	int32 Mnc =2;
+	string simOperatorName=3;
+	string networkOperatorName=4;
+	bool f=5;
+	int32 simCarrierId=6;
+}
+
+message PhoneNumbers{ //bbgn
+	string senderPhoneNumber=1;
+	PhoneNumberStatus phoneNumberStatus=2;
+	string destinationPhoneNumber=3;
+}
+
+enum PhoneNumberStatus{
+	VALID=0;
+	INVALID_PATTERN=1;
+	INVALID_LENGTH=3;
+	INVALID_MSG_ID=2;
+}
+
+enum MessageOptionsAction {
+    UNKNOWN_MESSAGE_OPTIONS_ACTION=0;
+    OPTIONS_MENU_OPENED_ACTION=1;
+    COPY_ACTION=2;
+    DELETE_ACTION=3;
+    SHARE_ACTION=4;
+    FORWARD_ACTION=5;
+    VIEW_DETAILS_ACTION=6;
+    DOWNLOAD_ACTION=7;
+    SAVE_ATTACHMENT_ACTION=8;
+    RETRY_SEND_ACTION=9;	
+}
+
+enum RcsType {
+	UNKNOWN_RCS_TYPE=0;
+    RCS_LEGACY=1;
+    RCS_SMAPI=2;
+    RCS_TACHYGRAM=3;
+}
+
+enum Priority {
+	UNKNOWN_PRIORITY=0;
+    LOW_PRIORITY=1;
+    NORMAL_PRIORITY=2;
+    HIGH_PRIORITY=3;
+}
+
+enum BugleMessageSource {
+	UNKNOWN_BUGLE_MESSAGE_SOURCE=0;
+    INCOMING=1;
+    CONVERSATION_ACTIVITY=2;
+    OBSOLETE_WEARABLE_REPLY=3;
+    NOTIFICATION_REPLY=4;
+    WIDGET_REPLY=5;
+    PHONE_QUICK_REPLY=6;
+    BUGLE_MESSAGE_SOURCE_NA=7;
+    PHONE_SMART_REPLY=8;
+    ASSISTANT_REPLY=9;
+    MESSAGE_REACTION=10;
+    MESSAGE_SEND_RETRY=11;
+    SCHEDULED_SEND=12;
+    EXTERNAL_MESSAGING_API=13;
+    BUBBLE=14;
+}
+
+enum MessagingStatus {
+	UNKNOWN_INSTANT_MESSAGING_ALWAYS_ON=0;
+    INSTANT_MESSAGING_ALWAYS_ON=1;
+    INSTANT_MESSAGING_NOT_ALWAYS_ON=2;
+}
+
+enum ConfigStatus {
+	INVALID_PRE_KOTO=0;
+    BUGLE_LOADING_AVAILABILITY_IN_PROGRESS=1;
+    DISABLED_VIA_GSERVICES=2;
+    DOGFOOD_SETUP_PENDING=3;
+    DISABLED_FROM_PREFERENCES=4;
+    DISABLED_NOT_DEFAULT_SMS_APP=5;
+    DISABLED_REMOTELY=6;
+    AVAILABLE=7;
+    DISABLED_OLD_RCS_SERVICE_VERSION=8;
+    DISABLED_SIM_ABSENT=9;
+    CARRIER_SETUP_PENDING=10;
+    DISABLED_MULTI_SLOT_DEVICE=11;
+    DISABLED_FOR_FI=12;
+    BUGLE_LOADING_AVAILABILITY_EXCEPTION=13;
+    DISABLED_LEGACY_CLIENT_ENABLED=14;
+    DISABLED_NO_PERMISSIONS=15;
+    CARRIER_TERMS_AND_CONDITIONS_ACCEPTANCE_PENDING=16;
+    DOGFOOD_TERMS_AND_CONDITIONS_ACCEPTANCE_PENDING=17;
+    DISABLED_TERMS_AND_CONDITIONS_REJECTED=18;
+    SUBJECT_TO_BATTERY_OPTIMIZATIONS=19;
+    UNKNOWN_PEV2_DISABLED=20;
+    DISABLED_WAITING_FOR_PHENOTYPE=21;
+    DISABLED_STUB_PROVISIONING_ENGINE=22;
+    DISABLED_VIA_FLAGS=23;
+}
+
+enum WasRCS {
+    UNKNOWN_WAS_RCS_CONVERSATION=0;
+    WAS_RCS_CONVERSATION=1;
+    HAS_ALWAYS_BEEN_XMS_CONVERSATION=2;
+}
+
+enum RcsStatus {
+	UNKNOWN_RCS_STATUS_REASON=0;
+    OTHER_REASON=1;
+    CONVERSATION_DATA_NOT_LOADED=2;
+    GROUP_CONVERSATION=3;
+    SENDER_NOT_AVAILABLE_RCS_AVAILABILITIES_ISSUES=4;
+    SENDER_NOT_AVAILABLE_NOT_CONNECTED_TO_RCS_SERVICE=5;
+    SENDER_NOT_AVAILABLE_RCS_NOT_CONNECTED_TO_SERVER=6;
+    SENDER_OFFLINE=7;
+    RECEIVER_NOT_AVAILABLE=8;
+    RECEIVER_OFFLINE=9;
+    CONVERSATION_SET_TO_XMS_ONLY=10;
+    CONVERSATION_LATCHED_TO_XMS=11;
+    MANUAL_FALLBACK=12;
+    REVOCATION_TIMER_EXPIRED=13;
+}
+
+enum ConversationType {
+    UNKNOWN_BUGLE_CONVERSATION_TYPE=0;
+    CONVERSATION_TYPE_ONE_ON_ONE=1;
+    CONVERSATION_TYPE_GROUP_MMS=2;
+    CONVERSATION_TYPE_GROUP_RCS=3;
+    CONVERSATION_TYPE_GROUP_BROADCAST=4;
+}
+
+enum SendAttempt {
+	UNKNOWN_RESEND_ATTEMPT=0;
+    RESEND_ATTEMPT=1;
+    FIRST_ATTEMPT_TO_SEND=2;
+}
+
+enum PhoneNumberFormat2 {
+	UNKNOWNFORMAT=0;
+	EMPTYSTRING=1;
+	SHORTCODE=2;
+	EMAILADDRESS=3;
+	PHONENUMBER=4;
+	RBMBOT=5;
+	EMERGENCYNUMBER=6;
+}
+
+enum PhoneNumberFormat {
+	UNKNOWN_FORMAT=0;
+    NOT_ONE_ON_ONE=1;
+    POSSIBLE_SHORT_CODE_DEPRECATED=2;
+    EMAIL_ADDRESS=3;
+    PHONE_NUMBER_DEPRECATED=4;
+    RBM_BOT=5;
+    EMERGENCY_NUMBER=6;
+    ALPHANUMERIC_SHORT_CODE_WITH_COUNTRY=7;
+    ALPHANUMERIC_SHORT_CODE_WITHOUT_COUNTRY=8;
+    DIGIT_SHORT_CODE_WITH_COUNTRY=9;
+    DIGIT_SHORT_CODE_WITHOUT_COUNTRY=10;
+    E164_PHONE_NUMBER=11;
+    E164_FORMATTABLE_NATIONAL_PHONE_NUMBER=12;
+    NON_E164_FORMATTABLE_LOCAL_NUMBER=13;
+    WAP_PUSH_SI=14;
+    EMPTY_STRING=15;
+}
+
+message BugleApp { //baof
+	AppLaunchType appLaunch=2;
+	int32 version=7; 
+}
+
+message BugleTelephonyEvent{ //bgrv
+ CarrierInfo carrierInfo=1 ;
+ //google.protobuf.Any bgri=2; // bgri
+ SubscriptionInfo subscriptionInfo=3 ;
+ //google.protobuf.Any bgrt=4; // bgrt
+}
+
+message SubscriptionInfo {// bgrg
+ SubscriptionStatus subscriptionStatus=1;
+ int32 subscriptionIndex=2;
+ int32 defaultVoiceSubscriptionId=3; 
+ int32 simSlot=4;
+ int32 defaultDataSubscriptionId=5;
+ int32 activeSubscriptionInfoCountMax=6;
+ SIMStatus simStatus=7;
+ int32 simCarrierId=8;
+ int32 carrierId=9;
+ int32 simSpecificCarrierId=10;
+ int32 specificCarrierId=11;
+}
+
+enum SubscriptionStatus {
+	NOT_CHANGED=0;
+	SIM_STATE_CHANGED=1;
+	CARRIER_CONFIG_CHANGED=2;
+	DEFAULT_SUBSCRIPTION_CHANGED=3;
+	DEFAULT_DATA_SUBSCRIPTION_CHANGED=4;
+	DEFAULT_VOICE_SUBSCRIPTION_CHANGED=6;
+	SUBSCRIPTION_CARRIER_IDENTITY_CHANGED=7;;
+}
+
+enum SIMStatus {
+	NOT_KNOWN=0;
+	LOADED=1;
+	ABSENT=2;
+	LOCKED=3;
+	NOT_READY=5;
+	READY=4;
+}
+
+message CarrierInfo{// bgrp
+	SIMStatus simStatus=1;
+	bool simInfoNotUpdated=2;
+	int32 unknown=3; // enum d 
+	string simOperator=4;
+	repeated Subscriptions subscriptions =5; 
+	bool isFiDevice=10; 
+	string simSerialNumber=12; 
+	int32 simCarrierId=13;
+}
+
+message Subscriptions{ //bgrn
+	 bool usingDefaultDataSubscriptionId=1;  //i2 == i5
+	 NumSimSlots numSimSlots=2; //1 if str, 2 if str empty
+	 DefaultSubscriptions DefaultSubscriptions=3;	
+}
+
+message DefaultSubscriptions{
+	bool usingDefaultVoiceSubscriptionId=1; //i2 == i3
+	bool usingDefaultSmsSubscriptionId=2; //i2 == i4
+	bool usingDefaultDataSubscriptionId=3; //i2 == i5
+}
+
+enum NumSimSlots{
+    UNKNOWN_NUM_SIM=0;
+	MULTIPLE=1;
+	ONE=2;
+}
+
+enum AppLaunchType { //baof
+	UNKNOWN_BUGLE_OPEN_CAUSE=0;
+    VIA_LAUNCH_ICON=1;
+    VIA_NOTIFICATION=2;
+    VIA_SHARING_INTENT=3;
+    VIA_LOCKSCREEN=4;
+    VIA_WIDGET=5;
+    VIA_OTHER_APPS_WITHOUT_SHARING_DATA=6;
+    VIA_DEFAULT=7;
+    VIA_SHORTCUT=8;
+    VIA_TRAMPOLINE=9;
+}
+
+enum  AndroidMessaging_EventType{ //bari
+    UNKNOWN_BUGLE_EVENT_TYPE=0; 
+    BUGLE_APP=1;
+    BUGLE_MESSAGE=2;
+    BUGLE_CONVERSATION=3;
+    BUGLE_PERFORMANCE=4;
+    BUGLE_SEARCH=5;
+    BUGLE_SETTING=6;
+    BUGLE_RECIPIENT_CHIPPIFIED=7;
+    BUGLE_USER_AND_DEVICE_INFO=8;
+    BUGLE_TRANSCODING=9;
+    BUGLE_STICKER_SET=10;
+    BUGLE_RCS_PROVISIONING=11;
+    BUGLE_P2P_SUGGESTION=12;
+    BUGLE_APP_CONFIGURATION=13;
+    BUGLE_CONVERSATIONS=14;
+    BUGLE_RBM_BUSINESS_INFO=15;
+    BUGLE_ANNOTATION=16;
+    DITTO_GRPC_MESSAGE=17;
+    BUGLE_TELEPHONY_EVENT=18;
+    BUGLE_GIF_CHOOSER=19;
+    BUGLE_GROUP=20;
+    BUGLE_ADD_CONTACT=21;
+    DITTO_IMAGE=22;
+    BUGLE_CONTACT_BANNER=23;
+    BUGLE_REPORT_SPAM=24;
+    BUGLE_COMPOSE=25;
+    BUGLE_FILE_PREVIEW_CLICK=26;
+    BUGLE_CARRIER_METADATA_EMBEDDING=27;
+    BUGLE_INDEXING=28;
+    BUGLE_PARTICIPANTS_TABLE=29;
+    BUGLE_DATABASE=30;
+    BUGLE_AUTO_ARCHIVE=31;
+    BUGLE_SPAM_DETECTION=32;
+    BUGLE_EDIT_CONTACT=33;
+    BUGLE_BLOCK_FILE_ATTACH=34;
+    BUGLE_ASSISTANT=35;
+    BUGLE_CONSENT=36;
+    BUGLE_ICING_SEARCH=37;
+    BUGLE_CONVERSATION_LATCH_STATUS_CHANGE=38;
+    BUGLE_FEDERATED_LEARNING=39;
+    BUGLE_MDD_LIB=40;
+    BUGLE_VERIFIED_SMS=41;
+    BUGLE_HAPPINESS_TRACKING_SURVEY_DOWNLOAD=42;
+    BUGLE_SHAKE_TO_REPORT=43;
+    BUGLE_SCYTALE_EVENT=44;
+    BUGLE_SELECTED_MESSAGES_ACTION=45;
+    BUGLE_REMINDER=46;
+    DITTO_SESSION_INFO=47;
+    DITTO_QR_CODE_PAIRING_EVENT=48;
+    BUGLE_TACHYON_TRANSPORT_EVENT=49;
+    BUGLE_E2EE_STATE_TRANSITION=50;
+    BUGLE_E2EE_LOOKUP_REGISTERED=51;
+    BUGLE_E2EE_MESSAGE_RETRY_LIMIT_EXCEEDED=52;
+    BUGLE_E2EE_EMPTY_GENERATED_PREKEYS_BUT_PROVISIONED=63;
+    BUGLE_CONTACT_PICKER=53;
+    BUGLE_MEDIA_VIEWER=54;
+    BUGLE_VIDEO_CALL_EVENT=55;
+    BUGLE_NOTIFICATION=56;
+    BUGLE_E2EE_IDENTITY_VERIFICATION_MESSAGE_DROPPED=57;
+    BUGLE_E2EE_ATTACHMENT_FAILED_TO_DECRYPT_USING_OTMK=58;
+    BUGLE_WELCOME_EVENT=59;
+    DITTO_BINDING_STATUS=60;
+    ICING_INDEX_UPDATE_EVENT=61;
+    TELEPHONY_DATABASE_EVENT=62;
+    TELEPHONY_DATABASE_ACTION_EVENT=116;
+    BUGLE_BUSINESS_MESSAGING_EVENT=64;
+    BUGLE_ADVANCED_FEEDBACK_EVENT=65;
+    BUGLE_REPORT_ISSUE_EVENT=66;
+    SPAM_FOLDER_EVENT=68;
+    AVAILABILITY_LOG=69;
+    SEARCH_QUERY=70;
+    HOME_SCREEN=71;
+    CONVERSATION_RESOLUTION_EVENT=72;
+    BUGLE_MULTI_DEVICE_EVENT=73;
+    ICING_INDEX_REBUILD=74;
+    RCS_EVENT=75;
+    TELEPHONY_WIPEOUT_DETECTOR_EXECUTION_EVENT=76;
+    MMS_METADATA_EXPERIMENT=77;
+    HADES_SDK_EVENT=78;
+    CUSTODIAN_REPORT=79;
+    TELEPHONY_REVERSE_SYNC_STARTED_EVENT=80;
+    TELEPHONY_REVERSE_SYNC_RESUMED_EVENT=81;
+    TELEPHONY_REVERSE_SYNC_COMPLETED_EVENT=82;
+    TELEPHONY_REVERSE_SYNC_FAILED_EVENT=83;
+    TELEPHONY_REVERSE_SYNC_NOT_ATTEMPTED_EVENT=114;
+    DATA_DONATION_EVENT=84;
+    PERMISSION_LOCATION_ALLOWED_BY_USER=101;
+    PERMISSION_LOCATION_DENIED_BY_USER=102;
+    BUGLE_CONTACTS_EVENT=103;
+    BUGLE_SUPER_SORT_EVENT=104;
+    BUGLE_FOREGROUND_SERVICE_EVENT=105;
+    REACTIONS_PROMO_EVENT=106;
+    BUGLE_SMART_COMPOSE=107;
+    BUGLE_SMART_COMPOSE_MODEL_EVAL=115;
+    EXTERNAL_API_SERVICE_CALL_START=108;
+    EXTERNAL_API_SERVICE_CALL_END=109;
+    EXTERNAL_API_SERVICE_CALL_PENDING=110;
+    BUGLE_E2EE_FETCH_PREKEYS_EVENT=112;
+    SWITCH_TO_SAMSUNG_MESSAGES_EVENT=113;
+    SCHEDULED_SEND_EVENT=117;
+    JIBE_SERVICE_CONNECTION=118;
+    DATABASE_UPGRADE=119;
+    FORWARD_TELEPHONY_SYNC=120;
+    RBM_EVENT=121;
+    TOGGLE_CHAT_FEATURES_EVENT=122;
+    SYNC_TELEPHONY_THREADS=123;
+    FUZZY_MATCH_LENGTH=124;
+    BUGLE_TABLET_MODE_SWITCH=125;
+    RCS_PROVISIONING=126;
+    BUGLE_CONVERSATION_MATCHING=127;
+    BUGLE_HATS_NEXT_CLIENT_EVENT=128;
+    BUGLE_WEAR_GMS_RPC_RELIABILITY=129;
+    BUGLE_EXTERNAL_SEARCH_MESSAGE_EVENT=130;
+    WEAR_FAILURE_EVENT=131;
+    BUGLE_STAR_EVENT=132;
+    BUBBLE_SETTING_EVENT=133;
+}
+
+
+
+
+
+

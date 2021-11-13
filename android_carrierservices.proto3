@@ -1,0 +1,126 @@
+// work in progress: decoding of CARRIER_SERVICES log source
+
+syntax = "proto3";
+
+message CarrierServices_LogEntry { //bhzx
+	int64 timestamp = 1;
+	CarrierServices_Event event=6; // bark.toByteArray
+	int32 subEvent=11; // bhzx.d.  an enum, but enum used changes depending on the event
+	sint64 tz_offset=15; //time zone offset in seconds
+	int64 elapsedRealtime=17; 
+  // the following three entries are added to the logentry within google play services, not within
+  // the app.  the experiment tokens seem associated with A/B testing
+    ExperimentTokens experimentTokens=16; //bnar
+    int32 bootCount=22;
+    ConnectionDetails connectionDetails=23;  //bmyx
+  
+  // not sure what this is.  float?
+    bytes u5=30;
+}
+
+message ExperimentTokens { //bnar
+  Tokens tokens=1;
+  repeated bytes tokenBytes=2; 
+  bool hasContent=3; // true when content is set
+}
+
+message Tokens { //bfyb
+  //repeated int32 b=1;
+  //repeated int32 c=2;
+  repeated int32 token=3; // only this is ever set.  
+  //repeated int32 d=4;
+}
+
+message ConnectionDetails {//bmyx
+  ActiveNetworkType activeNetworkType=1;
+  MobileSubtype mobileSubtype=2;
+}
+
+enum ActiveNetworkType {
+    MOBILE=0;
+    NONE=-1;
+    WIFI=1;
+    MOBILE_MMS=2;
+    MOBILE_SUPL=3;
+    MOBILE_DUN=4;
+    MOBILE_HIPRI=5;
+    WIMAX=6;
+    BLUETOOTH=7;
+    DUMMY=8;
+    ETHERNET=9;
+    MOBILE_FOTA=10;
+    MOBILE_IMS=11;
+    MOBILE_CBS=12;
+    WIFI_P2P=13;
+    MOBILE_IA=14;
+    MOBILE_EMERGENCY=15;
+    PROXY=16;
+    VPN=17;
+}
+
+enum MobileSubtype{
+    UNKNOWN_MOBILE_SUBTYPE=0;
+    GPRS=1;
+    EDGE=2;
+    UMTS=3;
+    CDMA=4;
+    EVDO_0=5;
+    EVDO_A=6;
+    RTT=7;
+    HSDPA=8;
+    HSUPA=9;
+    HSPA=10;
+    IDEN=11;
+    EVDO_B=12;
+    LTE=13;
+    EHRPD=14;
+    HSPAP=15;
+    GSM=16;
+    TD_SCDMA=17;
+    IWLAN=18;
+    LTE_CA=19;
+    COMBINED=100;
+}
+
+message CarrierServices_Event {
+	
+}
+
+enum CarrierServices_EventSource {
+	CARRIER_SERVICES_EVENT_SOURCE_UNKNOWN=0;
+    CARRIER_SERVICES_EVENT_SOURCE_VOICE=1;
+    CARRIER_SERVICES_EVENT_SOURCE_RCS=2;
+    CARRIER_SERVICES_EVENT_SOURCE_COMMON=3;
+}
+
+enum EventType {
+	EVENT_TYPE_UNKNOWN(0),
+    REGISTRATION_EVENT(1),
+    CALL_EVENT(2),
+    PROVISIONING_EVENT(3),
+    SIP_EVENT(4),
+    MEDIA_EVENT(5),
+    ADS_EVENT(6),
+    NETWORK_STATUS_CHANGE_EVENT(7),
+    SESSION_EVENT(8),
+    IMSSTATE_EVENT(9),
+    SOCKET_EVENT(10),
+    ANOMALY_EVENT(11),
+    UNEXPECTED_SIP_MESSAGE_EVENT(12),
+    ENRICHED_CALLING_EVENT(13),
+    TELEPHONY_EVENT(14),
+    REGISTRATION_SWITCH_EVENT(15),
+    RCS_UPTIME_EVENT(16),
+    DIAGNOSTIC_EVENT(17),
+    SELF_SERVICE_MESSAGE_EVENT(18),
+    UNKNOWN_REGISTRATION_FAILURE_REASON_EVENT(19),
+    RCS_PROVISIONING_DETAILS(20),
+    INCOMING_RPC_EVENT(21),
+    MSRP_EVENT(22),
+    EVENT_HUB_EVENT(23),
+    IMS_SERVICE_SESSION_EVENT(24),
+    FILE_TRANSFER_EVENT(25),
+    JIBE_SERVICE_EVENT(26),
+    SINGLE_REGISTRATION_API_CALL_EVENT(27),
+    UNEXPECTED_EVENT(28);
+}

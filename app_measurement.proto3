@@ -1,0 +1,90 @@
+// https://app-measurement.com/a
+
+syntax = "proto3";
+
+import "google/protobuf/any.proto";
+
+message POST_body {
+   repeated FirebaseAnalyticsEvents body=1;
+}
+
+message FirebaseAnalyticsEvents { //ahcq
+
+  int32 always_one=1; // field achq.c, always 1?
+
+  repeated EventParcel event=2;
+  message EventParcel {  //ahci
+    repeated EventInfo event_info=1;
+    message EventInfo { //ahcm
+       string setting_code=1;
+       string data_str=2;
+       int64 data_int=3; 
+       float data_float=5;
+    }
+     string event_code=2;
+     int64 event_timestamp=3;
+     int64 previous_event_timestamp=4;   // field e.  ??
+     int32 f=5;  // unused?
+  }
+
+  repeated UserAttributeParcel user=3;
+  message UserAttributeParcel { //ahcy
+     int64 timestamp=1;
+     string setting=2;
+     string data_str=3;
+     int64 data_int=4;
+     float data_float=6;
+  }
+
+  // timestamps
+   int64 message_timestamp=4;
+   int64 event_timestamp=5;
+   int64 bundle_end_timestamp=6;
+   int64 last_bundle_end_timestamp=7;
+
+  // Platform
+   string operating_system=8;
+   string operating_system_version=9;
+   string Build_MODEL=10;
+   string language_country=11;
+   int32 timezone_offset_mins=12;
+
+  //AppMetadata
+   string app_store =13;
+   string package_name=14;
+   string app_version=16;
+   int64 gmp_version=17;
+   int64 gms_version=18;  // firebase_analytics_collection_disabled ? 19629 : 19003
+   string google_ad_id=19;
+   bool no_ad_id=20;  //?
+   string random_hex=21;
+   uint64 dev_cert_hash=22; // originally signed, make unsigned so prints more nicely
+   int32 daily_conversions_count=23;
+   string health_monitor_sample=24;
+   string gmp_app_id=25;
+   int64 last_bundle_start_timestamp2=26;
+   bool always_true=28;  // field achq.B, always true?
+
+   repeated FilterList filter_list=29; //ahce
+   message FilterList {
+      int32 filter_id=1;
+      google.protobuf.Any c=2; //MESSAGE ahcu event filter?
+      google.protobuf.Any d=3; //MESSAGE ahcu property filter?
+      bool e=4;
+   }
+
+   string firebase_instance_id=30;
+   int32 app_version_int=31;
+   string android_id_str=34;
+   int64 config_version=35; //?
+   int64 android_id_int=36;
+   string  always_null=37; // field achq.I, always null?
+   int32 retry_count=39;
+   string admob_app_id=41;
+   google.protobuf.Any L=44;  //ahca
+   repeated uint32 M=45;  //bxvj
+   int64 dynamite_version=46;
+   int64 O=47; // unused?
+   string unknown=52; //?
+
+}
