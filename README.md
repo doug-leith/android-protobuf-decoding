@@ -2,7 +2,7 @@
 
 ## Google/Firebase Analytics
 
-- app_measurement.proto3 is decoded protobuf definition for messages sent to https:/www.app-measurement.com/a endpoint.
+- app_measurement.proto3 is decoded protobuf definition for messages sent to https://www.app-measurement.com/a endpoint.
 - app_measurement_decode.py is a python script to decode and print out a binary protobuf stored in file /tmp/bytes.
 
 ## Google Play Services Clearcut Logger
@@ -31,8 +31,8 @@ Each message contains a sequence of log events, which may be from different log 
 
 - addon.py is a python addon script for mitmproxy.  Example usage:
 
-mitmdump --flow-detail 0 -s addon.py -nr <mitmdump file>
+mitmdump --flow-detail 0 -s addon.py -nr mitmdump-file
 
-where <mitmdump file> is a packet trace file recorded using e.g. mitmdump -w <mitmdump file>
+where mitmdump-file is a packet trace file recorded using e.g. mitmdump -w mitmdump-file
 
 - decoding_helpers.py are helper functions for decoding
