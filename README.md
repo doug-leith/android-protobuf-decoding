@@ -1,5 +1,7 @@
 # Partial Decoding of Google Play Services Binary Protobufs
 
+For details of how to collect decrypted packet traces from an Android handset see https://github.com/doug-leith/cydia
+
 ## Google/Firebase Analytics
 
 - app_measurement.proto3 is decoded protobuf definition for messages sent to https://www.app-measurement.com/a endpoint.
