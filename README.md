@@ -2,6 +2,14 @@
 
 For details of how to collect decrypted packet traces from an Android handset see https://github.com/doug-leith/cydia
 
+## Quick start
+We include an example mitmproxy trace file containing a connection to https://play.googleapis.com/log/batch made by the Google Play Services Clearbut logger in file example_messaging.mitm.   To decode this file use:
+
+mitmdump --flow-detail 0 -s addon.py -nr example_messaging.mitm | more
+
+The output should match that in file example_messaging.txt.  This contains telemetry sent by the Google Messages app via the Clearcut logger log source ANDROID_MESSAGING.
+
+
 ## Google/Firebase Analytics
 
 - app_measurement.proto3 is decoded protobuf definition for messages sent to https://www.app-measurement.com/a endpoint.
