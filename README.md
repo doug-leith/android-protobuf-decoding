@@ -7,7 +7,7 @@ We include an example mitmproxy trace file containing a connection to https://pl
 
 mitmdump --flow-detail 0 -s addon.py -nr example_messaging.mitm | more
 
-The output should match that in file example_messaging.txt.  This contains telemetry sent by the Google Messages app via the Clearcut logger log sourcea ANDROID_MESSAGING and CARRIER_SERVICES.
+The output should match that in file example_messaging.txt.  This contains telemetry sent by the Google Messages app via the ANDROID_MESSAGING and CARRIER_SERVICES Clearcut logger log sources.
 
 
 ## Google/Firebase Analytics
