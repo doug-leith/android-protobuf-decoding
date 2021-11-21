@@ -44,11 +44,11 @@ class PrintTrace:
     request_dict_sum = {}
     start_timestamp = -1
 
-    #def __init__(self):
+    # def __init__(self):
     #    self.f = open("tmp.mitm", "wb")
     #    self.w = io.FlowWriter(self.f)
 
-    #def done(self):
+    # def done(self):
     #    self.f.close()
 
     def response(self, flow:http.HTTPFlow):
@@ -128,6 +128,8 @@ class PrintTrace:
                     print(decode_wbxml(flow.request.content))
                 elif flow.request.pretty_url == "https://app-measurement.com/a":
                     print(decode_firebase_analytics(flow.request.content))
+                    #self.w.add(flow)
+                    #exit()
                 elif (flow.request.pretty_url == "https://play.googleapis.com/log/batch") or (flow.request.pretty_url=="https://play.googleapis.com/vn/log/batch"):
                     print(decode_log_batch(flow.request.content))
                     # save flow to file

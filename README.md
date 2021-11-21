@@ -9,6 +9,11 @@ mitmdump --flow-detail 0 -s addon.py -nr example_messaging.mitm | more
 
 The output should match that in file example_messaging.txt.  This contains telemetry sent by the Google Messages app via the ANDROID_MESSAGING and CARRIER_SERVICES Clearcut logger log sources.
 
+We also include a second example of a connection to https://app-measurement.com/a made by Google/Firebase Analytics in file example_firebase.mitm.  To decode this file use:
+
+mitmdump --flow-detail 0 -s addon.py -nr example_firebase.mitm | more
+
+The output should match that in file example_firebase.txt.  This contains event logging by the Google Dialer app recording the fact that outgoing calls have been placed.
 
 ## Google/Firebase Analytics
 
