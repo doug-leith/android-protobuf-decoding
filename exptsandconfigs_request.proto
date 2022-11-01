@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+message HeterodyneRequest { //cfkh
+    HeterodyneRequestHeader heterodyneRequestHeader=1;
+    message AuthTokenIndex {//cfko
+        optional int32 index=1;
+    }
+    message PackageDetails {//cfla
+        optional string packageName=1;
+        optional int32 version=2;
+        optional AuthTokenIndex authTokenIndex=3;
+        optional int64 baselineCl=4;
+    }
+    message Tag {//cfkz
+        optional int32 partitionId=1;
+        optional bytes bytesTag=2; //coca message
+    };    
+    message HeterodyneRequestData {//cfkf
+        PackageDetails packageDetails=1;
+        //message coca params=2;
+        repeated Tag tag=3;
+        optional bytes experimentTokens=4;
+        optional bytes heterodyneInfo=6;
+        //bool g=7;
+    }
+         
+    repeated HeterodyneRequestData data=2;
+    //message coca=3;2
+    int32 query_param_r_fetchReason=4;
+    int32 query_param_c=5;
+    string packageName=7;
+}    
+
+message HeterodyneRequestHeader { //cfkh
+    //optional int64 b=2;
+    message DeviceInfo { //cbye
+     int64 androidID = 1;
+     string loggingID =2;
+     int32 SDKVersion =3;
+     string model =4;
+     string product =5;
+     string buildID =6;
+     string googlePlayServicesVersionString =7;
+     string hardware =8;
+     string device =9;
+     string simOperator  =10;
+     string language =11;
+     string country =12;
+     string manufacturer =13;
+     string brand =14;
+     string board =15;
+     string radioVersion =16;
+     string buildFingerprint =17;
+     int32 googlePlayServicesVersionCode =19;
+     bool bool23 =20;
+     bytes dynamiteModules=21; // protobuf with details of dynamite modules
+     int32 value23 = 23;
+     enum AccessibilitySetting {
+            UNKNOWN_Setting=0;
+            TRUE_Setting=1;
+            FALSE_Setting=2;
+        }
+     message AccessibilitySettings {//bgob
+            AccessibilitySetting fontScale_gt_1=5;
+            AccessibilitySetting accessibilityDisplayMagnificationSnabled=6;
+            AccessibilitySetting highTextContrastEnabled=7;
+        }
+     AccessibilitySettings accessibilitySettings=25;
+     string buildType =26;
+     message GooglePlayServicesVersionName { //askg
+           //e.g. for com.google.android.gms@213916046@21.39.16 (150400-402663742)
+           // versioName = 150400 and entries below are 15,6,1
+            int32 verMajor=1; //(long(versionName) / 10000)+1
+            int32 verMinor=2; //long(versionName)%100+1
+            int32 verMinor2=3; //(long(versioName)/ 100) % 100 +1
+        }
+     GooglePlayServicesVersionName googlePlayServicesVersionName=32;
+     int32 simCarrierId =33;
+     message SdkExtensionVersions {//bror
+            int32 sdkExtension=1;
+           int32 extensionVersion=2;
+        }
+     SdkExtensionVersions sdkExtensionVersions=34;
+    }
+    message ClearcutLoggerHeader {
+     int32 always4 =1; // seems to have fixed value 4
+     DeviceInfo deviceInfo =2;
+     int64 timestamp =12;
+    }
+    optional ClearcutLoggerHeader clearcutLoggerHeader=4;
+    optional string pseudonymousIdToken=5;
+    //optional bytes e=6;
+    //optional bool f=7;
+    //optional bytes cflb=8;
+    
+}
+
+    

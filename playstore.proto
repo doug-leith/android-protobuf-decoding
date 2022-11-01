@@ -1,0 +1,3189 @@
+// based on https://android.googlesource.com/platform/packages/experimental/+/13c69c6/PixelPerfect/imported_protos/src/wireless/android/play/playlog/proto/clientanalytics.proto, but that's v old
+// and https://jar-download.com/artifacts/com.android.tools.analytics-library/protos/25.2.0/source-code/com/google/wireless/android/play/playlog/proto/ClientAnalytics.java
+
+syntax = "proto2";
+import "google/protobuf/any.proto";
+
+
+// Atributes specific to Android clients.
+//
+// Next tag: 17
+message AndroidClientInfo {
+  // "Gservices" android ID.  Considered PII.  Never logged in archival logs.
+  optional int64 android_id = 1;
+  // Pseudonymous, random id (sticky) per device.  Never logged in temp logs.
+  optional string logging_id = 2;
+  // This comes from android.os.Build.VERSION.SDK_INT.
+  optional int32 sdk_version = 3;
+  // Textual description of the client platform.  e.g., "Nexus 4".
+  // This comes from android.os.Build.MODEL.
+  optional string model = 4;
+  // The name of the overall product. e.g., "occam".
+  // This comes from android.os.Build.Product.
+  optional string product = 5;
+  // The name of the hardware (from the kernel command line or /proc).
+  // This comes from android.os.Build.Hardware.  e.g., "mako".
+  optional string hardware = 8;
+  // The name of the industrial design.  e.g., "mako".
+  // This comes from android.os.Build.Device.
+  optional string device = 9;
+  // This comes from android.os.Build.ID.  e.g., something like "JRN54F".
+  optional string os_build = 6;
+  // The client application version. The java int version in the android package
+  // converted to string.
+  optional string application_build = 7;
+  // The mobile country code / mobile network code (MCC/MNC).
+  // e.g., 310004 for Verizon USA.
+  optional string mcc_mnc = 10;
+  // The chosen locale from the client. e.g., "en_US", "ko_KR", "en_GB".
+  optional string locale = 11;
+  // The chosen country from the client. e.g., "US", "KR", "JP".
+  optional string country = 12;
+  // The manufacturer of the hardware.
+  // This comes from android.os.Build.MANUFACTURER
+  optional string manufacturer = 13;
+  // The brand the software is customized for, if any.  Often a carrier name.
+  // e.g. "google"
+  // from http://developer.android.com/reference/android/os/Build.html#BRAND
+  optional string brand = 14;
+  // The name of the underlying board
+  // e.g. "tuna"
+  // from http://developer.android.com/reference/android/os/Build.html#BOARD
+  optional string board = 15;
+  // Radio version as reported by device, if available at reporting time
+  // e.g. "I9250XXLJ1"
+  // from http://developer.android.com/reference/android/os/Build.html#getRadioVersion()
+  optional string radio_version = 16;
+  optional string fingerprint=17;
+  optional int64 secure_settings_android_id=18;
+  optional int32 gms_core_version_code = 19;
+  optional bool is_sidewinder_device = 20;
+  optional bytes chimera_config_info = 21;
+  optional bool using_log_source_int = 22;
+}
+// Atributes specific to desktop clients.
+//
+// Next tag: 7
+message DesktopClientInfo {
+  // Sticky ID that should be considered PII.
+  optional string client_id = 1;
+  // Pseudonymous, random id (sticky) per device.  Never logged in temp logs.
+  optional string logging_id = 2;
+  // e.g., "mac", "windows", "linux"
+  optional string os = 3;
+  // e.g., "10.7", "Vista", "Win7"
+  optional string os_major_version = 4;
+  // e.g., "10.7.3", "Win7 SP1"
+  optional string os_full_version = 5;
+  // The client application version.
+  optional string application_build = 6;
+}
+// Attributes specific to iOS clients.
+//
+// Next tag: 6
+message IosClientInfo {
+  // Sticky ID that should be considered PII.
+  optional string client_id = 1;
+  // Pseudonymous, random id (sticky) per device.  Never logged in temp logs.
+  optional string logging_id = 2;
+  optional string os_major_version = 3;
+  optional string os_full_version = 4;
+  // The client application version.
+  optional string application_build = 5;
+}
+// Next tag: 5
+message ClientInfo {
+  // The type of client that made this request.
+  // Next enum tag: 5
+  enum ClientType {
+    UNKNOWN = 0;
+    JS = 1;
+    DESKTOP = 2;
+    IOS = 3;
+    ANDROID = 4;
+  }
+  optional ClientType client_type = 1 [default = UNKNOWN];
+  // Only one of the following *_client_info fields will exist in any request.
+  optional AndroidClientInfo android_client_info = 2;
+  optional DesktopClientInfo desktop_client_info = 3;
+  optional IosClientInfo ios_client_info = 4;
+}
+// The list of IDs of experiments that are currently on for this client. All
+// other experiments are off.
+//
+// Next tag: 2
+message ExperimentIdList {
+  // IDs are sorted and do not contain duplicates.
+  repeated string id = 1;
+}
+// First party app usage log event extension.
+// Used only when log_source = APP_USAGE_1P.
+//
+// Next tag: 18
+message AppUsage1pLogEvent {
+  enum AppType {
+    UNKNOWN = 0;
+    GOOGLE_SEARCH = 1;
+    GOOGLE_CALENDAR = 2;
+    GOOGLE_PLUS = 3;
+    GMAIL = 4;
+    GOOGLE_PLAY_STORE = 5;
+    GOOGLE_PLAY_MUSIC = 6;
+    GOOGLE_PLAY_BOOKS = 7;
+    GOOGLE_PLAY_VIDEO = 8;
+    GOOGLE_PLAY_MAGAZINES = 9;
+    GOOGLE_PLAY_GAMES = 10;
+    GMS_CORE = 11;
+    ANDROID_IDE = 12;
+    ANDROID_TV = 13;
+    LE = 14; // Location Engine within GMSCore, potentially with PII data
+    GOOGLE_MAPS = 15;
+    GOOGLE_CAMERA = 16;
+    YOUTUBE = 17;
+  }
+  optional AppType app_type = 1;
+  // Package name of the app (on Android).
+  optional string android_package_name = 2;
+  // Version of the app.
+  optional string version = 3;
+}
+// A LogRequest represents a batched collection of loggable events, each
+// event to be persited in a GWS log entry by the Playlog server.
+//
+// Next tag: 6
+message LogRequest {
+  // Next enum tag: 27
+  enum LogSource {
+    UNKNOWN = -1;
+    MARKET = 0;
+    MUSIC = 1;
+    BOOKS = 2;
+    VIDEO = 3;
+    MAGAZINES = 4;
+    GAMES = 5;
+    LB_A = 6;   // for collecting app usage stats (Lockbox project)
+    ANDROID_IDE = 7;  // Android IDE (go/android-diamond)
+    LB_P = 8;  // for collecting phone call events and stats (Lockbox project)
+    LB_S = 9;  // for collecting SMS events and stats (Lockbox project)
+    GMS_CORE = 10;  // Usage of GMS Core itself and its internal stats
+    CW=27;
+    UDR=30;
+    NEWSSTAND=63;
+    WORK_STORE_APP=261;
+    WESTINGHOUSE=471;
+    DAYDREAM_HOME=534;
+    ATV_LAUNCHER=903;
+    ULEX_GAMES=1000;
+    ULEX_GAMES_WEB=1629;
+    ULEX_IN_GAME_UI=1156;
+    ULEX_BOOKS=1001;
+    ULEX_MOVIES=1002;
+    ULEX_REPLAY_CATALOG=1038;
+    ULEX_BATTLESTAR=1330;
+    ULEX_OHANA=1397;
+    INCREMENTAL=1456;
+  }
+  optional ClientInfo client_info = 1;
+  optional LogSource log_source = 2 [default = UNKNOWN];
+  // Can be used instead of 'log_event' in order to save battery in cases where
+  // LogEvent protos are already serialized, and deserializing is undesirable.
+  // If used, this is a collection of byte streams each produced using a
+  // CodedOutputStream.
+  repeated LogEvent log_event = 3;
+  // "Now", in milliseconds, according to the same clock that was used to set
+  // 'event_time_ms' values in the LogEvent protos below.
+  optional int64 request_time_ms = 4;
+  optional bytes serialized_log_events = 5;
+  optional string log_source_name = 6;
+  // cookie from pseudonymous id service at the time the event was posted
+  optional string zwieback_cookie = 7;
+  optional int64 request_uptime_ms = 8;
+  optional int32 qos_tier = 9;
+  optional google.protobuf.Any play_logger_metrics=12;
+  optional int64 serverTimestamp=13;
+  optional string google_ad_id=14;
+  optional bool limit_ad_tracking=15;
+}
+// Next tag: 3
+message LogResponse {
+  // Client should wait for next_request_wait_millis before sending the next log
+  // request.
+  optional int64 next_request_wait_millis = 1 [default = -1];
+  // If present, this is the new set of enabled experiments for this client.
+  // Otherwise, the client should assume that there has been no change in the
+  // set of enabled experiments.
+  optional ExperimentIdList experiments = 2;
+}
+
+// Client-generated information that accompanies a PlayStoreUiElement.
+message PlayStoreUiElementInfo {
+  // For payment instrument related UI elements.
+  optional InstrumentInfo instrument_info = 1;
+  message InstrumentInfo {
+    // The instrument family as defined in InstrumentEnums.Family:
+    // wireless/android/finsky/proto/billing/device/common.proto
+    optional int32 instrument_family = 1;
+    // True if the payment instrument is marked as the default.
+    optional bool is_default = 2;
+  }
+  // Serialized finsky.Docid(e.g. "["MUSIC",2,2]"), for web front end only,
+  // that is associated with the node such as Page, DocList, or Document.
+  // This field is deprecated. Instead set the docid in server_logs_cookie.
+  optional string serial_docid = 2 [ deprecated = true ];
+  // Host name of server used for a WebViewChallenge.  Never the full URL.
+  optional string host = 3;
+  // The encoded docid for document specific UI elements that don't contain a
+  // server logs cookie. Only use this if it's impossible to use a server logs
+  // cookie.
+  //
+  // E.g. "inapp:potion:com.android.vending" or "book-012345678901".
+  //
+  // See java/com/google/wireless/android/finsky/util/DocidUtils.java for the
+  // encoding / decoding functions.
+  optional string document = 4;
+  // The Offer.Type for purchase related UI elements that don't contain a
+  // server logs cookie. Only use this if it's impossible to use a server logs
+  // cookie.
+  //
+  // Offer.Type defined here: wireless/android/finsky/proto/common.proto
+  optional int32 offer_type = 5;
+}
+// Something that can be displayed on a page and possibly clicked.
+// A DOM node, essentially, for interesting nodes.
+message PlayStoreUiElement {
+  // If you add a Type value, and you want elements of that type to be tracked
+  // as "clusters" in the playstats anaylitics pipeline, you *must* add
+  // [(is_cluster) = true] to the enum value definition.
+  // Next range available beyond: 1250
+  enum Type {
+    OTHER = 0;
+    // Top-level pages.
+    BROWSE_PAGE  = 1;
+    DETAILS_PAGE = 2;
+    SEARCH_PAGE  = 3;
+    // For someone else's people page
+    PEOPLE_PAGE= 4;
+    WISHLIST_PAGE = 5;
+    ANTENNA_PAGE = 6;
+    CREATOR_DETAILS_PAGE = 7;
+    FREE_SONG_OF_THE_DAY_PAGE = 8;
+    MY_APPS_PAGE = 9;
+    // For your own people page
+    MY_PEOPLE_PAGE = 10;
+    // Tag 11 available
+    SETTINGS_PAGE = 12;
+    AVAILABLE_PROMO_OFFER_ACTIVITY = 13;
+    // Links
+    CATEGORY_LINK = 100;  // Category links.
+    QUICK_LINK = 101;     // Links to other pages.
+    SEARCH_LINK = 102;
+    MY_APPS_LINK = 103;
+    MY_MUSIC_LINK = 104;
+    MY_MOVIES_AND_TV_LINK = 105;
+    MY_BOOKS_LINK = 106;
+    MY_MAGAZINES_LINK = 107;
+    MY_WISHLIST_LINK = 108;
+    REDEEM_LINK = 109;
+    ACCOUNTS_LINK = 110;
+    SETTINGS_LINK = 111;
+    HELP_LINK = 112;
+    BADGE_LINK = 113;
+    VISIT_DEV_SITE_LINK = 114;
+    SEND_DEV_EMAIL_LINK = 115;
+    DEVELOPER_PRIVACY_LINK = 116;
+    ARTIST_LINK = 117;
+    ARTIST_YOUTUBE_LINK = 118;
+    ARTIST_GOOGLEPLUS_LINK = 119;
+    PLAY_YOUTUBE_LINK = 120;
+    MY_NEWSSTAND_LINK = 121;
+    MY_MOVIES_LINK = 122;
+    MY_PEOPLE_PAGE_LINK = 123;
+    // Common UI elements.
+    PRICE_BUTTON = 200;
+    ACCEPT_AND_BUY_BUTTON = 201;
+    SHARE_BUTTON = 202;
+    // Button that takes you to the wishlist
+    WISHLIST_BUTTON = 203;
+    // Add an item to the wishlist
+    WISHLIST_ADD_ITEM_BUTTON = 204;
+    // Remove an item from the wishlist
+    WISHLIST_REMOVE_ITEM_BUTTON = 205;
+    // No longer sent from device starting from MintJulep.
+    // See tags 1200+ instead.
+    RATE_AND_REVIEW_BUTTON = 206;
+    FLAG_INAPPROPRIATE_BUTTON = 207;
+    PLUS_ONE_BUTTON = 208;
+    DETAILS_DOCUMENT = 209;
+    AUTO_UPDATE_STATE_BUTTON = 210;
+    SEASON_SELECTOR = 211;
+    // Dismiss a document (e.g. bad recommendation)
+    DISMISS_ITEM_BUTTON = 212;
+    LOADING_SPINNER = 213;
+    REFUND_BUTTON = 214;
+    UNINSTALL_BUTTON = 215;
+    DEACTIVATE_BUTTON = 216;
+    UPDATE_BUTTON = 217;
+    // This is any "open document" button, text is corpus-specific
+    // and may be "Open", "Play", "Listen", "Read", etc.
+    LAUNCH_BUTTON = 218;
+    CONTINUE_LAUNCH_BUTTON = 219;
+    ENABLE_BUTTON = 220;
+    INSTALL_BUTTON = 221;
+    TRY_BUTTON = 222;
+    FREE_BUTTON = 223;
+    DOWNLOAD_BUTTON = 224;
+    OPEN_FREE_BOOK_BUTTON = 225;
+    SUBSCRIBE_PRICE_BUTTON = 226;
+    UNSUBSCRIBE_BUTTON = 227;
+    RENT_SD_BUTTON = 228;
+    RENT_HD_BUTTON = 229;
+    RENT_FROM_BUTTON = 230;
+    BUY_SD_BUTTON = 231;
+    BUY_HD_BUTTON = 232;
+    BUY_FROM_BUTTON = 233;
+    PREORDER_BUTTON = 234;
+    PREORDER_CANCEL_BUTTON = 235;
+    // Used on the auto-update cleanup dialog when the user does not want
+    // to have their settings changed.
+    AUTO_UPDATE_CLEANUP_NOT_YET_BUTTON = 236;
+    // Used on the auto-update cleanup dialog when the user agrees to have
+    // all of their apps auto-updated.
+    AUTO_UPDATE_CLEANUP_OK_BUTTON = 237;
+    // A button that brings up an overflow menu (on a card)
+    OVERFLOW_MENU_BUTTON = 238;
+    // Buttons on details page.
+    INFO_BUTTON = 239;
+    SCREENSHOTS_BUTTON = 240;
+    TRAILER_BUTTON = 241;
+    // A specific active subscription, shown on a details page
+    ACTIVE_SUBSCRIPTION = 242;
+    // Confirm canceling a subscription
+    CANCEL_SUBSCRIPTION_YES = 243;
+    // Don't confirm canceling a subscription
+    CANCEL_SUBSCRIPTION_NO = 244;
+    // Confirm canceling a preorder
+    CANCEL_PREORDER_YES = 245;
+    // Don't confirm canceling a preorder
+    CANCEL_PREORDER_NO = 246;
+    // Clicked "continue" in GAIA recovery offer dialog
+    GAIA_RECOVERY_YES = 247;
+    // Exited GAIA recovery offer dialog
+    GAIA_RECOVERY_NO = 248;
+    // Container Filter selector (e.g. "For Tablets" / "All Apps")
+    CONTAINER_FILTER_SELECTOR = 249;
+    // OTA install dialog cancel / "No thanks" button
+    OTA_INSTALL_DIALOG_CANCEL_BUTTON = 250;
+    // OTA install dialog "Install" button
+    OTA_INSTALL_DIALOG_INSTALL_BUTTON = 251;
+    // Available promo offer
+    AVAILABLE_PROMO_OFFER_CHOSE = 252;
+    AVAILABLE_PROMO_OFFER_SKIP = 253;
+    // OK/Cancel buttons on Content Filter
+    CONTENT_FILTER_YES = 254;
+    CONTENT_FILTER_NO = 255;
+    // Details translation toggle
+    DETAILS_TRANSLATE_YES = 256;
+    DETAILS_TRANSLATE_NO = 257;
+    // PIN entry dialog
+    PIN_ENTRY_YES = 258;
+    PIN_ENTRY_NO = 259;
+    // 260-264 no longer sent from device starting with MintJulep. See tags
+    // 1200+ instead
+    RATE_REVIEW_YES = 260;
+    RATE_REVIEW_NO = 261;
+    RATE_REVIEW_CONFIRM_GPLUS_SIGNUP = 262;
+    RATE_REVIEW_CONFIRM_GPLUS_ACCEPTED = 263;
+    RATE_REVIEW_CONFIRM_GPLUS_NO = 264;
+    // Gaia authentication - succeed, fail, cancel
+    GAIA_AUTHENTICATION_YES = 265;
+    GAIA_AUTHENTICATION_NO = 266;
+    // WebView Challenge - succeed or fail. If a URL was clicked
+    // (typically containing the target pattern or the cancel pattern)
+    // then the host name part of the URL will be logged in the
+    // client cookie.
+    WEBVIEW_CHALLENGE_YES = 267;
+    WEBVIEW_CHALLENGE_NO = 268;
+    // Confirm Archive Docs dialog - OK or cancel
+    ARCHIVE_DOCS_YES = 269;
+    ARCHIVE_DOCS_NO = 270;
+    // Episode expansion toggle
+    EPISODE_EXPANSION_YES = 271;
+    EPISODE_EXPANSION_NO = 272;
+    SHARE_GPLUS = 273;
+    // Used when the user accepts the suggestion to install Play Games.
+    PLAY_GAMES_SUGGESTION_INSTALL_BUTTON = 274;
+    // Used when the user declines the suggestion to install Play Games.
+    PLAY_GAMES_SUGGESTION_NOT_NOW_BUTTON = 275;
+    UPDATE_ALL_BUTTON = 276;
+    // The user has switched the side drawer to display destinations
+    DRAWER_SWITCH_TO_DESTINATIONS = 277;
+    // The user has switched the side drawer to display accounts
+    DRAWER_SWITCH_TO_ACCOUNTS = 278;
+    // A clickable person avatar that leads that to that person's people page.
+    PERSON_AVATAR = 279;
+    // A circles button that invokes the circle picker.
+    CIRCLES_BUTTON = 280;
+    // A button that leads to a person's G+ profile in the G+ app
+    VIEW_GPLUS_PROFILE_BUTTON = 281;
+    // Dialogs and overlays.
+    PASSWORD_PROMPT_DIALOG = 300;
+    FLAG_ITEM_DIALOG = 301;
+    // Refers to the dialog that shows more reviews of a doc
+    REVIEWS_DIALOG = 302;
+    WARM_WELCOME_DIALOG = 303;
+    CANCEL_SUBSCRIPTION_DIALOG = 304;
+    CANCEL_PREORDER_DIALOG = 305;
+    AUTO_UPDATE_CLEANUP_DIALOG = 306;
+    GAIA_RECOVERY_DIALOG = 307;
+    // This dialog is shown when a limited user is blocked from client
+    ACCESS_RESTRICTED_DIALOG = 308;
+    OTA_INSTALL_DIALOG = 309;
+    CHOOSE_ACCOUNT_DIALOG = 310;
+    PIN_ENTRY_DIALOG = 311;
+    // 312-313 no longer sent from client starting in Mintjulep. See tags 1200+
+    // instead.
+    RATE_REVIEW_DIALOG = 312;
+    RATE_REVIEW_CONFIRM_GPLUS_DIALOG = 313;
+    GAIA_AUTHENTICATION_DIALOG = 314;
+    CONTENT_FILTER_DIALOG = 315;
+    WEBVIEW_CHALLENGE = 316;
+    ARCHIVE_DOCS_DIALOG = 317;
+    // This dialog is shown to suggest that the user install Play Games.
+    PLAY_GAMES_SUGGESTION_DIALOG = 318;
+    // Dialog that shows the list of people that +1'ed a doc
+    PLUS_ONE_DIALOG = 319;
+    // Cluster types
+    // The generic cluster UI element that has child documents.  Cluster
+    // elements will be accompanied by a DOC_LIST server logs cookie.
+    // TODO: add enum values to classify all visual cluster types we are
+    // interested in.
+    UNCLASSIFIED_CLUSTER = 400;
+    // A tab containing categories.  Probably won't have a server cookie.
+    CATEGORIES_TAB = 401;
+    // A tab containing promo displays.
+    PROMO_TAB = 402;
+    // A tab containing regular contents.
+    CONTENTS_TAB = 403;
+    // A tab containg subscriptions (My Apps)
+    MY_APPS_SUBSCRIPTIONS_TAB = 404;
+    // A tab containing installed apps (My Apps)
+    MY_APPS_INSTALLED_TAB = 405;
+    // A tab containing library apps (My Apps)
+    MY_APPS_LIBRARY_TAB = 406;
+    // A merchandising cluster
+    MERCHANDISING_CLUSTER = 407;
+    // A generic type for the list response for a given tab. This will be
+    // the only child node under a PROMO_TAB or a CONTENTS_TAB.
+    DFE_LIST_TAB = 408;
+    // A cluster that is represented as a merchandized banner.
+    MERCH_BANNER_CLUSTER = 409;
+    // A cluster of people you may know to add to your circles
+    SUGGESTED_PEOPLE_CLUSTER = 410;
+    // A cluster for a trusted source that you can follow
+    TRUSTED_SOURCE_CLUSTER  = 411;
+    // A cluster that allows the user to rate multiple items
+    MULTI_RATE_CLUSTER = 412;
+    // A cluster that provides suggestions after rating a items
+    RATE_AND_QUICK_SUGGESTION_CLUSTER = 413;
+    // Card types
+    // The generic card UI element (applies to all cards shown on the screen).
+    // Card elements will be accompanied by a DOCUMENT server logs cookie.
+    // #500 is deprecated, please use a specific CARD_VIEW_ type (See below)
+    UNCLASSIFIED_CARD = 500;
+    // An app displayed in a list in MyApps
+    MY_APPS_LIST_CARD = 501;
+    // A song displayed in a list of songs
+    SONG_SNIPPET_CARD = 502;
+    // An episode displayed in a list of episodes
+    EPISODE_SNIPPET_CARD = 503;
+    // Variations on the "play card" size/shape
+    CARD_VIEW_ARTIST = 504;
+    CARD_VIEW_LARGE = 505;
+    CARD_VIEW_LISTING_SMALL = 506;
+    CARD_VIEW_MEDIUM = 507;
+    CARD_VIEW_MEDIUM_PLUS = 508;
+    CARD_VIEW_MINI = 509;
+    CARD_VIEW_SINGLE = 510;
+    CARD_VIEW_SMALL = 511;
+    CARD_VIEW_EDITORIAL_APP = 512;
+    CARD_VIEW_EDITORIAL_NON_APP = 513;
+    // Card that allows for the rating of an item
+    CARD_VIEW_RATE = 514;
+    // Card displaying a person and allows for the adding of that person
+    CARD_VIEW_PERSON = 515;
+    // System UI elements
+    SYSTEM_BACK_BUTTON = 600;
+    SYSTEM_TAP_OUTSIDE = 601;
+    SYSTEM_UP_BUTTON = 602;
+    // Indicates that the parent UI element (typically a dialog, screen, or
+    // activity) has been closed, caused by a user action or automatically.
+    SYSTEM_CLOSED = 603;
+    // Purchasing 700 - 899
+    // Purchase dialog
+    PURCHASE_DIALOG = 700;
+    PURCHASE_CART_SCREEN = 710;
+    PURCHASE_CART_BUY_BUTTON = 711;
+    PURCHASE_CART_CONTINUE_BUTTON = 712;
+    PURCHASE_CART_EXPANSION_TOGGLE = 713;
+    PURCHASE_CART_PAYMENT_OPTIONS_LINK = 714;
+    PURCHASE_CART_EXPANDED_DETAILS = 715;
+    PURCHASE_AUTH_SCREEN = 750;
+    PURCHASE_AUTH_CONFIRM_BUTTON = 751;
+    PURCHASE_AUTH_HELP_TOGGLE = 752;
+    PURCHASE_AUTH_OPT_OUT_CHECKBOX = 753;
+    PURCHASE_ERROR_SCREEN = 770;
+    PURCHASE_ERROR_OK_BUTTON = 771;
+    PURCHASE_SUCCESS_SCREEN = 775;
+    // Disambiguation
+    PURCHASE_DISAMBIGUATION_DIALOG = 780;
+    PURCHASE_DISAMBIGUATION_SCREEN = 781;
+    PURCHASE_DISAMBIGUATION_ENTRY = 782;
+    // Apps permissions
+    PURCHASE_APPS_PERMISSIONS_DIALOG = 790;
+    PURCHASE_APPS_PERMISSIONS_SCREEN = 791;
+    PURCHASE_APPS_PERMISSIONS_ACCEPT_BUTTON = 792;
+    // Billing profile / instrument switching
+    PURCHASE_PROFILE_DIALOG = 800;
+    PURCHASE_PROFILE_SCREEN = 801;
+    PURCHASE_PROFILE_EXISTING_INSTRUMENT = 802;
+    PURCHASE_PROFILE_ACTION_ADD_CREDIT_CARD = 810;
+    PURCHASE_PROFILE_ACTION_ADD_CARRIER_BILLING = 811;
+    PURCHASE_PROFILE_ACTION_REDEEM_CODE = 812;
+    PURCHASE_PROFILE_ACTION_TOP_UP = 813;
+    // DCB purchase flow
+    PURCHASE_DCB_PASSWORD_DIALOG = 820;
+    PURCHASE_DCB_PASSWORD_DIALOG_OK_BUTTON = 821;
+    PURCHASE_DCB_PASSWORD_DIALOG_CANCEL_BUTTON = 822;
+    PURCHASE_DCB_TOS_DIALOG = 823;
+    PURCHASE_DCB_TOS_DIALOG_ACCEPT_BUTTON = 824;
+    PURCHASE_DCB_TOS_DIALOG_DECLINE_BUTTON = 825;
+    // Setup DCB
+    PURCHASE_DCB2_SETUP_DIALOG = 840;
+    PURCHASE_DCB3_SETUP_DIALOG = 841;
+    //   Dialog shown while performing account association.
+    PURCHASE_DCB_ASSOCIATION_DIALOG = 842;
+    //   Screen showing the user's address and the carrier TOS footer.
+    PURCHASE_DCB_SETUP_TOS_SCREEN = 843;
+    //   Button allowing the user to edit the displayed address.
+    PURCHASE_DCB_SETUP_EDIT_ADDRESS_BUTTON = 844;
+    //   Address edit form.
+    PURCHASE_DCB_SETUP_EDIT_ADDRESS_SCREEN = 845;
+    //   Positive button on the address screen.
+    PURCHASE_DCB_SETUP_EDIT_ADDRESS_OK_BUTTON = 846;
+    //   Negative button on the address screen.
+    PURCHASE_DCB_SETUP_EDIT_ADDRESS_CANCEL_BUTTON = 847;
+    //   Positive button on the DCB setup screen.
+    PURCHASE_DCB_SETUP_ACCEPT_BUTTON = 848;
+    //   Negative button on the DCB setup screen.
+    PURCHASE_DCB_SETUP_DECLINE_BUTTON = 849;
+    // Add credit card
+    //   Hosts a PURCHASE_CC_SETUP_SCREEN.
+    PURCHASE_CC_SETUP_DIALOG = 860;
+    PURCHASE_CC_SETUP_SCREEN = 861;
+    PURCHASE_CC_SETUP_OK_BUTTON = 862;
+    PURCHASE_CC_SETUP_CANCEL_BUTTON = 863;
+    //   Impression logged when displaying an error message to the user.
+    PURCHASE_CC_SETUP_ERROR_DIALOG = 864;
+    //   Impression logged when displaying an error message to the user,
+    //   together with the choice of canceling the CC screen or editing the
+    //   entered info and retry.
+    PURCHASE_CC_SETUP_ERROR_DIALOG_WITH_CHOICE = 865;
+    // Impression logged when errors in the form are highlighted.
+    PURCHASE_CC_SETUP_INPUT_ERRORS = 866;
+    // Redeem code
+    //   Hosts the redeem code screen.
+    //   Reserved another range from 1100-1199
+    PURCHASE_REDEEM_CODE_DIALOG = 880;
+    //   The screen where the user enters the gift card / promo code.
+    PURCHASE_REDEEM_CODE_SCREEN = 881;
+    //   "Redeem" button on PURCHASE_REDEEM_CODE_SCREEN.
+    PURCHASE_REDEEM_CODE_BUTTON = 882;
+    //   Screen displaying what the user will get when they continue redemption.
+    PURCHASE_REDEEM_CONFIRMATION_SCREEN = 883;
+    //   "Add to library" button on PURCHASE_REDEEM_CONFIRMATION_SCREEN.
+    PURCHASE_REDEEM_CONFIRMATION_BUTTON = 884;
+    //   Screen showing a success message.
+    PURCHASE_REDEEM_SUCCESS_SCREEN = 885;
+    //   "Watch" / "Install", ..., button on PURCHASE_REDEEM_SUCCESS_SCREEN.
+    PURCHASE_REDEEM_SUCCESS_BUTTON = 886;
+    //   Dialog asking for the user's billing address when redeeming a monetary
+    //   promo code.
+    PURCHASE_REDEEM_ADDRESS_DIALOG = 887;
+    //   The Input text box on the redeem dialog where user enters the gift
+    //   card / promo code.
+    PURCHASE_REDEEM_CODE_INPUT = 888;
+    //   "Cancel" button on PURCHASE_REDEEM_CODE_SCREEN.
+    PURCHASE_REDEEM_CODE_CANCEL_BUTTON = 889;
+    //   Country selector menu on address dialog for new wallet account
+    //   creation.
+    PURCHASE_REDEEM_CODE_COUNTRY_MENU = 1101;
+    //   Name input box on address dialog for new wallet account creation.
+    PURCHASE_REDEEM_CODE_NAME_INPUT = 1102;
+    //   Zip code input box on address dialog for new wallet account creation.
+    PURCHASE_REDEEM_CODE_ZIP_INPUT = 1103;
+    //   1100 id is available
+    // Setup Wizard
+    //   Asks the user to add a credit card.
+    SETUP_AVAILABLE_PROMO_OFFER_ACTIVITY = 890;
+    //   Hosts a PURCHASE_CC_SETUP_SCREEN.
+    SETUP_WIZARD_CC_ACTIVITY = 891;
+    // Notifications
+    //   Notification shown when there are new updates available. Shown only for
+    //   users with auto-update disabled.
+    NOTIFICATION_NEW_UPDATES = 900;
+    //   Notification shown when an app has just been succesfully installed.
+    NOTIFICATION_SUCCESSFULLY_INSTALLED = 901;
+    //   Notification shown when an app(s) just been successfully updated.
+    NOTIFICATION_SUCCESSFULLY_UPDATED = 902;
+    //   Notifcation shown when the user has outstanding updates and has not
+    //   received any new update notifications for a given time interval
+    //   (e.g. 3 days)
+    NOTIFICATION_OUTSTANDING_UPDATES = 903;
+    //   Notification shown when the user receives new updates that require
+    //   approval. Shown only for users with auto-update enabled.
+    NOTIFICATION_NEW_UPDATES_NEED_APPROVAL = 904;
+    // Prompt for FOP / Burnsie
+    //   The dialog shown asking the user to review their account.
+    PROMPT_FOR_FOP_DIALOG = 1000;
+    //   The main activity taking the user through FOP setup.
+    PROMPT_FOR_FOP_ACTIVITY = 1001;
+    //   The main screen on the activity with choices to set up a FOP.
+    PROMPT_FOR_FOP_SCREEN = 1002;
+    //   Message screen shown when the user already has a FOP.
+    PROMPT_FOR_FOP_EXISTING_FOP_SCREEN = 1003;
+    //   Message screen shown when /billingProfile failed.
+    PROMPT_FOR_FOP_ERROR_SCREEN = 1004;
+    //   Success screen shown when the user added a FOP.
+    PROMPT_FOR_FOP_SUCCESS_SCREEN = 1005;
+    //   Continue button at the bottom of the screen.
+    PROMPT_FOR_FOP_CONTINUE_BUTTON = 1006;
+    //   On PROMPT_FOR_FOP_SCREEN, a toggle that expands/collapses the "More"
+    //   section.
+    PROMPT_FOR_FOP_MORE_TOGGLER = 1007;
+    //   The "None" choice on the PROMPT_FOR_FOP_SCREEN. Visual representation
+    //   varies by UI mode controlled by experiment.
+    PROMPT_FOR_FOP_NONE_ENTRY = 1008;
+    //   "More details" button at the bottom right, leading to
+    //    PROMPT_FOR_FOP_MORE_DETAILS_DIALOG
+    PROMPT_FOR_FOP_MORE_DETAILS_BUTTON = 1009;
+    //    A dialog shown when the user clicked
+    //    PROMPT_FOR_FOP_MORE_DETAILS_BUTTON.
+    PROMPT_FOR_FOP_MORE_DETAILS_DIALOG = 1010;
+    // Ratings and reviews
+    //   Rate/review section on details page
+    RATE_REVIEW_SECTION = 1200;
+    //   Rating bar on details page that launches the review dialog for a new
+    //   review
+    RATE_REVIEW_SECTION_RATING_BAR = 1201;
+    //   Review edit button on details page that launches the review dialog to
+    //   edit a previous review
+    RATE_REVIEW_SECTION_EDIT_BUTTON = 1202;
+    //   Review dialog launched from the details page (Redesigned in MJ)
+    RATE_REVIEW_DIALOG_V2 = 1203;
+    //   Submit button in review dialog to submit a new review
+    RATE_REVIEW_DIALOG_SUBMIT_BUTTON = 1204;
+    //   Save button in review dialog to save edits to an existing review
+    RATE_REVIEW_DIALOG_SAVE_BUTTON = 1205;
+    //   Delete button in review dialog to delete an existing review
+    RATE_REVIEW_DIALOG_DELETE_BUTTON = 1206;
+    //   Cancel action (e.g. back button or tap outside dialog) in review dialog
+    RATE_REVIEW_DIALOG_CANCEL = 1207;
+    //   Rating bar on a card (e.g. Quick Suggestions cluster)
+    RATE_REVIEW_CARD_RATING_BAR = 1208;
+  }
+  optional Type type = 1 [default = OTHER];
+  // A serialized play_store_server.proto:PlaylogStoreNodeDescriptor proto.
+  // Note: It is serialized because forcing the Android client to parse it would
+  // lose proto fields that that client version doesn't know about.
+  optional bytes server_logs_cookie = 2;
+  // Client can annotate UI elements with arbitrary info.
+  optional PlayStoreUiElementInfo client_logs_cookie = 3;
+  repeated PlayStoreUiElement child = 4;
+}
+message PlayStoreImpressionEvent {
+  // The DOM tree of the displayed content.
+  optional PlayStoreUiElement tree = 1;
+  // Descriptor path to the node on the previous screen that caused this
+  // impression. Each element on the path must have zero children.
+  // UI elements are in reversed order, i.e. from leaf to root.
+  repeated PlayStoreUiElement referrer_path = 2;
+  // Id identifies a full playstore impression within a user session. Any
+  // impressions sharing the same id will be deduped in the post session
+  // analysis. If the id is not set, the impression is considered unique.
+  optional int64 id = 3;
+}
+message PlayStoreClickEvent {
+  // The full path to the clicked UI element on the screen it was displayed on.
+  // Each element on the path must have zero children.
+  // UI elements are in reversed order, i.e. from leaf to root.
+  repeated PlayStoreUiElement element_path = 1;
+}
+message PlayStoreSearchEvent {
+  // Query text for the search event.
+  optional string query = 1;
+  // Query URL for the search event
+  optional string query_url = 2;
+  // Referrer URL (if known, e.g. from a deeplink)
+  optional string referrer_url = 3;
+}
+// Deep link event is logged when the external deep link is resolved
+// successfully by the client. The resolved link types are based on the DFE
+// response defined in wireless/android/finsky/proto/dfe/resolve_link.proto,
+// except for LAUNCH_DEEP_LINK which is generated locally when a deep link
+// intent is received.
+message PlayStoreDeepLinkEvent {
+  enum ResolvedType {
+    OTHER = 0;
+    // Deep link resolved to a document details link.
+    DETAILS = 1;
+    // Deep link resolved to a browse link.
+    BROWSE = 2;
+    // Deep link resolved to a search link.
+    SEARCH = 3;
+    // Deep link resolved to a direct purchase.
+    DIRECT_PURCHASE = 4;
+    // Deep link resolved to Home home.
+    HOME_HOME = 5;
+    // Deep link resolved to Gift card redemption.
+    REDEEM_GIFTCARD = 6;
+    // Generated immediately by the intent handler activity.
+    // Additional fields package, min_version, new_enough, and can_resolve
+    // will be set for this type.
+    LAUNCH_DEEP_LINK = 7;
+  }
+  // The external url receive in the android intent that is sent to the DFE to
+  // resolve.
+  optional string external_url = 1;
+  // The resolved link type from DFE for the external_url.
+  optional ResolvedType resolved_type = 2 [default = OTHER];
+  // The package name (set for LAUNCH_DEEP_LINK)
+  optional string package_name = 3;
+  // The requested minimum version (set for LAUNCH_DEEP_LINK)
+  optional int32 min_version = 4;
+  // True if the existing version meets the min version requirement
+  // (set for LAUNCH_DEEP_LINK)
+  optional bool new_enough = 5;
+  // True if the url could be resolved (set for LAUNCH_DEEP_LINK)
+  optional bool can_resolve = 6;
+  // A serialized play_store_server.proto:PlaylogStoreNodeDescriptor proto.
+  // See PlayStoreUiElement.server_logs_cookie for details.
+  optional bytes server_logs_cookie = 7;
+}
+
+message PostSetupAppUsageReport { // akkh
+  optional int64 timeWindowMs=1;
+  optional int64 foregroundUsageTimeMs=2;
+  optional int32 numberOfApps=3; 
+}
+
+message PlayStoreBackgroundActionEvent {
+  enum Type {  // PlayStoreBackgroundActionEventEnum akjd 
+OTHER = 0 ;
+SESSION_INFO = 1 ;
+NLP_REPAIR_STATUS = 2 ;
+SESSION_END = 3 ;
+LOG_DEVICE_FEATURES = 4 ;
+RPC_REPORT = 5 ;
+ADID_REPORT = 6 ;
+CRASH = 7 ;
+END_USER_LATENCY_REPORT = 8 ;
+SYSTEM_HEALTH_METRIC_REPORT = 9 ;
+FILEBYFILE_COMPATIBILITY_CHECK = 10 ;
+EXPERIMENT_CHECK = 11 ;
+EXPERIMENT_ACTIVE = 12 ;
+CRASH_CAUGHT_AND_IGNORED = 13 ;
+VOLLEY_MAIN_CACHE_CLEARED = 14 ;
+TUBESKY_CRASH_LEGACY_FEEDBACK_DROPPED = 15 ;
+RESOURCE_EXTRACTION_COMPLETE = 16 ;
+RESOURCE_EXTRACTION_BLOCKED = 17 ;
+JANK_REPORT = 18 ;
+ENTRY_POINT = 19 ;
+SUPPORTED_ABIS_MISMATCH_USE_SYSTEM_PROPERTIES = 20 ;
+FAILED_WARMUP_USER_MANAGER_AT_APP_STARTUP = 21 ;
+VOLLEY_MAIN_CACHE_RETAINED = 22 ;
+ENTRY_POINT_DEBUG = 23 ;
+PROCESS_STARTED = 24 ;
+DOWNLOAD_QUEUED = 100 ;
+DOWNLOAD_START = 101 ;
+DOWNLOAD_COMPLETE = 102 ;
+DOWNLOAD_CANCEL = 103 ;
+DOWNLOAD_ERROR = 104 ;
+INSTALL_REQUEST = 105 ;
+INSTALL_START = 106 ;
+INSTALL_START_ENCRYPTED = 107 ;
+INSTALL_APPLY_PATCH = 108 ;
+INSTALL_ACTIVATE = 109 ;
+INSTALL_FINISHED = 110 ;
+INSTALL_ERROR = 111 ;
+INSTALL_ABANDONED = 112 ;
+RESTORE_SKIP = 113 ;
+UNINSTALL = 114 ;
+WIFI_AUTO_UPDATE_ATTEMPT = 115 ;
+AUTO_ACQUIRE_PACKAGE_SOURCE = 116 ;
+AUTO_ACQUIRE_PACKAGE_DEST = 117 ;
+RESTORE_FETCH_APP_LIST = 118 ;
+SELF_UPDATE_CHECK = 119 ;
+DEVICE_CONFIGURATION_UPLOAD = 120 ;
+AUTO_UPDATE_FOREGROUND_PACKAGE = 121 ;
+INSTALL_APPLY_GZIP_PATCH = 122 ;
+INSTALL_APPLY_GZIP_APK = 123 ;
+INSTALL_COPY_FROM_EXTERNAL = 124 ;
+BACKUP_DEVICE_FETCH_RESPONSE = 125 ;
+SETUP_WIZARD_FINAL_HOLD_TIMEOUT = 126 ;
+INSTALL_COPY_DOWNLOAD = 127 ;
+INSTALLED_PACKAGE_FIRST_LAUNCH = 128 ;
+AUTO_UPDATE_DEFERRED = 129 ;
+VPA_REQUEST = 130 ;
+AUTO_UPDATE = 131 ;
+WEAR_DAILY_HYGIENE = 132 ;
+SYSTEM_ALERT_WINDOW_POLICY_2 = 133 ;
+SYSTEM_ALERT_WINDOW_POLICY_3 = 134 ;
+UNINSTALL_WIZARD_GET_PACKAGE_SIZE_INFO_OUTCOME = 135 ;
+DOWNLOAD_SIZE_PREDICTION = 136 ;
+ZAPP_MODULE_DELIVERY = 137 ;
+DOWNLOAD_CONNECTIVITY_CHANGE = 138 ;
+MODULE_DOWNLOAD_QUEUED = 139 ;
+MODULE_DOWNLOAD_START = 140 ;
+MODULE_DOWNLOAD_COMPLETE = 141 ;
+MODULE_DOWNLOAD_CANCEL = 142 ;
+MODULE_DOWNLOAD_ERROR = 143 ;
+MODULE_INSTALL_START = 144 ;
+MODULE_INSTALL_FINISHED = 145 ;
+MODULE_INSTALL_ERROR = 146 ;
+PARTNER_SETUP_APP_INSTALL_TRACK = 147 ;
+SYSTEM_ALERT_WINDOW_POLICY_4 = 148 ;
+INSTALL_SKIP_DOWNLOAD = 149 ;
+UNINSTALL_WIZARD_UNINSTALLATIONS_STARTED = 150 ;
+DAILY_HYGIENE_START = 151 ;
+DAILY_HYGIENE_FINISH = 152 ;
+SELF_UPDATE_CHECK_SKIPPED = 153 ;
+GET_USAGE_STATS_OUTCOME = 154 ;
+CLEAR_CACHE_FINISHED = 155 ;
+INSTALL_CANCELED = 156 ;
+INSTALL_POSTPONED = 157 ;
+INSTALL_ARTIFACT_DEPLOYED = 158 ;
+INSTALL_PACKAGE_ADDED = 159 ;
+AUTO_UPDATE_START = 160 ;
+INSTALL_POSTPONED_WAITING_FOR_NETWORK = 161 ;
+CONTENT_SYNC = 162 ;
+DOWNLOAD_PROGRESS = 163 ;
+UNINSTALL_WIZARD_GET_DOCS_RESPONSE = 164 ;
+VPA_SKIP_OPTIONAL_PACKAGE = 165 ;
+APP_FRESHNESS = 166 ;
+CHECKIN_CONSISTENCY_TOKEN_FETCH = 167 ;
+AUTO_UPDATE_SCHEDULED = 168 ;
+AUTO_UPDATE_JOB_SCHEDULER_CONDITIONS_MET = 169 ;
+AUTO_UPDATE_ALL_CONDITIONS_MET = 170 ;
+INSTALL_ON_LOW_STORAGE = 171 ;
+OS_LICENSE_UPDATE_FAILURE = 172 ;
+MODULE_EXPIRED_CLEANUP = 173 ;
+MODULE_DECOMPRESSION = 174 ;
+CLEANUP_WIZARD_UNINSTALLATIONS_STARTED = 175 ;
+ZAPP_DOWNLOADER_FETCHED_FROM_PHONESKY = 176 ;
+ZAPP_DOWNLOADER_FETCH_FROM_CLIENT_LIBRARY = 177 ;
+ZAPP_MODULE_PATCHING = 178 ;
+SKIPPING_REMOVED_SPLIT = 184 ;
+INSTALL_VERIFY_PARENT = 185 ;
+DAILY_HYGIENE_MAKE_IF_DIRTY = 186 ;
+DAILY_HYGIENE_SCHEDULING = 187 ;
+DAILY_HYGIENE_SERVICE_STARTED = 188 ;
+ACCOUNTS_CHANGED_RECEIVER = 189 ;
+SELF_UPDATE_NOT_NEEDED = 190 ;
+AUTO_UPDATE_SKIPPED = 191 ;
+UNINSTALL_DESTINATION_UNINSTALLATIONS_STARTED = 192 ;
+UNINSTALL_DESTINATION_AVAILABLE_SPACE = 193 ;
+BULK_DETAILS_REQUEST = 194 ;
+WEBAPK_INSTALL_ON_LOW_STORAGE = 195 ;
+SELECTED_NEW_LANGUAGE = 196 ;
+DOWNLOAD_ID_PARSING_FAILED = 197 ;
+BULK_DETAILS_RESPONSE = 198 ;
+DOWNLOAD_SERVICE_ERROR_FALLING_BACK = 199 ;
+TICKLE_PURCHASE_DECLINED = 200 ;
+TICKLE_PACKAGE_INSTALL = 201 ;
+TICKLE_PACKAGE_REMOVE = 202 ;
+TICKLE_APP_UPDATE_CHECK_NEEDED = 203 ;
+TICKLE_MANAGED_CONFIGURATIONS_UPDATE = 204 ;
+INSTALL_SCHEDULED = 250 ;
+INSTALL_RESCHEDULED = 251 ;
+INSTALL_OVERRIDDEN = 252 ;
+INSTALL_IGNORED = 253 ;
+INSTALL_CLEAR_UPDATE_CACHE = 254 ;
+INSTALLER_SESSION_ENDED = 255 ;
+INSTALL_APP_ALREADY_UP_TO_DATE = 256 ;
+INSTALL_REJECTED = 257 ;
+AUTO_UPDATE_POLICY_CONDITIONS_MET = 258 ;
+INSTALL_RECOVERY_FAILED = 259 ;
+INSTALL_CANCELED_FOR_REQUEUE = 260 ;
+ASSET_ONLY_INSTALL_STARTED = 261 ;
+ASSET_ONLY_INSTALL_COMPLETED = 262 ;
+INSTALL_REQUEST_V2_TEMPORARY = 263 ;
+GARAGEMODE_INSTALL_START = 264 ;
+GARAGEMODE_INSTALL_SUCCESS = 265 ;
+GARAGEMODE_INSTALL_ERROR = 266 ;
+GARAGEMODE_INSTALL_ABANDONED = 267 ;
+IQ_NO_INSTALLABLE_REQUESTS = 268 ;
+INSTALL_SCHEDULE_REJECTED = 269 ;
+PURCHASE_FREE_ACQUIRE = 300 ;
+PURCHASE_FREE_ACQUIRED = 301 ;
+PURCHASE_PREPARE = 302 ;
+PURCHASE_PREPARED = 303 ;
+PURCHASE_COMMIT = 304 ;
+PURCHASE_COMMITTED = 305 ;
+PURCHASE_CVC_ESCROWED = 306 ;
+PURCHASE_ACQUIRE_REQUEST = 307 ;
+PURCHASE_ACQUIRE_RESPONSE = 308 ;
+PURCHASE_BILLING_PROFILE_CREDIT_CARD_ADDED = 320 ;
+PURCHASE_BILLING_PROFILE_CARRIER_BILLING_ADDED = 321 ;
+PURCHASE_BILLING_PROFILE_CODE_REDEEMED = 322 ;
+PURCHASE_BILLING_PROFILE_PLAY_CREDIT_PURCHASED = 323 ;
+PURCHASE_BILLING_PROFILE_GENERIC_INSTRUMENT_ADDED = 324 ;
+PURCHASE_BILLING_PROFILE_INSTRUMENT_EDITED = 325 ;
+BILLING_PROFILE_CODE_REDEEMED = 326 ;
+BILLING_PROFILE_PLAY_CREDIT_ADDED = 327 ;
+BILLING_PROFILE_INSTRUMENT_CREATED = 328 ;
+BILLING_PROFILE_INSTRUMENT_UPDATED = 329 ;
+PURCHASE_CC_ADDING = 330 ;
+PURCHASE_CC_ADD_SUCCESS = 331 ;
+PURCHASE_CC_ADD_ERROR = 332 ;
+PURCHASE_DCB2_ADDING = 335 ;
+PURCHASE_DCB2_ADD_SUCCESS = 336 ;
+PURCHASE_DCB2_ADD_ERROR = 337 ;
+PURCHASE_DCB3_ADDING = 340 ;
+PURCHASE_DCB3_ADD_SUCCESS = 341 ;
+PURCHASE_DCB3_ADD_ERROR = 342 ;
+PURCHASE_BILLING_PROFILE_REQUEST = 343 ;
+PURCHASE_BILLING_PROFILE_RESPONSE = 344 ;
+PURCHASE_CHANGE_FAMILY_INSTRUMENT_REQUEST = 345 ;
+PURCHASE_CHANGE_FAMILY_INSTRUMENT_RESPONSE = 346 ;
+BILLING_PROFILE_INSTRUMENT_CREATION_UNFINISHED = 347 ;
+PREWARM_GMSCORE_WALLET = 348 ;
+PURCHASE_PROMPT_FOR_FOP_CREDIT_CARD_ADDED = 350 ;
+PURCHASE_PROMPT_FOR_FOP_CARRIER_BILLING_ADDED = 351 ;
+PURCHASE_PROMPT_FOR_FOP_CODE_REDEEMED = 352 ;
+PURCHASE_PROMPT_FOR_FOP_PLAY_CREDIT_PURCHASED = 353 ;
+PURCHASE_PROMPT_FOR_FOP_SNOOZED = 354 ;
+PURCHASE_PROMPT_FOR_FOP_ALREADY_SETUP = 355 ;
+PURCHASE_PROMPT_FOR_FOP_BILLING_PROFILE_ERROR = 356 ;
+PURCHASE_PROMPT_FOR_FOP_GENERIC_INSTRUMENT_ADDED = 357 ;
+PURCHASE_PROMPT_FOR_FOP_NOT_SHOWN = 358 ;
+PURCHASE_LINK_FINGERPRINT_NOT_SHOWN = 359 ;
+SETUP_WIZARD_PROMPT_FOR_FOP_CREDIT_CARD_ADDED = 360 ;
+SETUP_WIZARD_PROMPT_FOR_FOP_CARRIER_BILLING_ADDED = 361 ;
+SETUP_WIZARD_PROMPT_FOR_FOP_CODE_REDEEMED = 362 ;
+SETUP_WIZARD_PROMPT_FOR_FOP_PLAY_CREDIT_PURCHASED = 363 ;
+SETUP_WIZARD_PROMPT_FOR_FOP_SNOOZED = 364 ;
+SETUP_WIZARD_PROMPT_FOR_FOP_ALREADY_SETUP = 365 ;
+SETUP_WIZARD_PROMPT_FOR_FOP_BILLING_PROFILE_ERROR = 366 ;
+SETUP_WIZARD_PROMPT_FOR_FOP_GENERIC_INSTRUMENT_ADDED = 367 ;
+SETUP_WIZARD_PROMPT_FOR_FOP_OPTIONAL_STEP_ENABLED = 368 ;
+SETUP_WIZARD_PROMPT_FOR_FOP_CHECK_INSTRUMENT_REQUEST = 369 ;
+SETUP_WIZARD_PROMPT_FOR_FOP_CHECK_INSTRUMENT_RESPONSE = 370 ;
+SETUP_WIZARD_BILLING_ACCOUNT_SERVICE_HAS_CREDIT_CARD_RESPONSE = 371 ;
+SETUP_WIZARD_BILLING_ACCOUNT_SERVICE_GET_OFFERS_RESPONSE = 372 ;
+BILLING_SERVICE_RESPONSE = 375 ;
+MY_ACCOUNT_PAYMENT_METHODS_CARD_ADDED = 380 ;
+MY_ACCOUNT_PAYMENT_METHODS_CARRIER_BILLING_ADDED = 381 ;
+MY_ACCOUNT_PAYMENT_METHODS_CODE_REDEEMED = 382 ;
+MY_ACCOUNT_PAYMENT_METHODS_PLAY_CREDIT_PURCHASED = 383 ;
+MY_ACCOUNT_PAYMENT_METHODS_GENERIC_INSTRUMENT_ADDED = 384 ;
+MY_ACCOUNT_PAYMENT_METHODS_INSTRUMENT_EDITED = 385 ;
+INSTANT_FOP_OPTIONS_USER_HAS_FOP = 390 ;
+INSTANT_FOP_OPTIONS_MATCHED = 391 ;
+INSTANT_FOP_OPTIONS_UNAVAILABLE_FOP_SELECTED = 392 ;
+INSTANT_FOP_OPTIONS_BLOCKED = 393 ;
+INSTANT_FOP_OPTIONS_LOADED = 394 ;
+SETTINGS_PASSWORD_RESTRICT = 400 ;
+SETTINGS_CONTENT_FILTER = 401 ;
+SETTINGS_AUTO_UPDATE_GLOBAL = 402 ;
+SETTINGS_AUTO_UPDATE_APP = 403 ;
+SETTINGS_AUTO_UPDATE_MIGRATED = 404 ;
+SETTINGS_SWITCH_ACCOUNT = 406 ;
+SETTINGS_LOCATION_BASED_SUGGESTIONS = 407 ;
+SETTINGS_FINGERPRINT_AUTH = 408 ;
+SETTINGS_GMAIL_ITINERARIES_BASED_SUGGESTIONS = 409 ;
+SETTINGS_FAMILY_FUTURE_SHARING_APPS = 410 ;
+SETTINGS_FAMILY_FUTURE_SHARING_MOVIES = 411 ;
+SETTINGS_FAMILY_FUTURE_SHARING_BOOKS = 412 ;
+SETTINGS_FAMILY_BULK_SHARE_PREVIOUS_APPS = 413 ;
+SETTINGS_FAMILY_BULK_SHARE_PREVIOUS_MOVIES = 414 ;
+SETTINGS_FAMILY_BULK_SHARE_PREVIOUS_BOOKS = 415 ;
+SETTINGS_FAMILY_MEMBER_PURCHASE_APPROVALS_CHANGED = 416 ;
+SETTINGS_FAMILY_MEMBER_PARENTAL_CONTROLS_CHANGED = 417 ;
+SETTINGS_UPDATES_AVAILABLE_NOTIFICATION = 418 ;
+SETTINGS_UPDATES_COMPLETED_NOTIFICATION = 419 ;
+SETTINGS_CRM_NOTIFICATION = 420 ;
+SETTINGS_LAUNCHER_ICON_COUNTER = 421 ;
+SETTINGS_ANDROID_SYSTEM_NOTIFICATION = 422 ;
+SETTINGS_UNAUTH_AUTO_UPDATE_GLOBAL = 423 ;
+SETTINGS_VIDEO_AUTO_PLAY_SETTING_UPDATE = 424 ;
+SETTINGS_FAMILY_FOP_CHALLENGE_COMPLETED = 425 ;
+SETTINGS_FAMILY_FOP_CHALLENGE_STARTED = 426 ;
+SETTINGS_PURCHASE_AUTH = 427 ;
+SETTINGS_DEVICE_SEARCH_HISTORY_CLEARED = 428 ;
+SETTINGS_ALL_PURCHASE_AUTH_SETTINGS_CLEARED = 429 ;
+AVAILABLE_PROMO_OFFER_REDEEMED = 500 ;
+PIN_ENTRY_RESULT = 501 ;
+GAIA_AUTHENTICATION_RESULT = 502 ;
+GPLUS_SIGNED_UP = 503 ;
+WEBVIEW_CHALLENGE_NON_HTTPS = 504 ;
+UPDATE_ALL = 505 ;
+REMOVE_FROM_HISTORY = 506 ;
+WIDGET_EVENT = 507 ;
+PURCHASE_AUTH_RESULT = 508 ;
+DETAILS_2ND_DOCUMENT_FETCH = 509 ;
+SEARCH_SUGGESTIONS_OFFERED = 510 ;
+SEARCH_SUGGESTION_CLICKED = 511 ;
+DETAILS_SERVICE_QUERIED = 512 ;
+REVIEW_ADDED = 513 ;
+REVIEWS_SERVICE_QUERIED = 514 ;
+EXTERNAL_REFERRER_CAPTURED = 515 ;
+EXTERNAL_REFERRER_DROPPED = 516 ;
+EXTERNAL_REFERRER_DELIVERED = 517 ;
+AGE_VERIFICATION_RESPONSE = 518 ;
+CONTENT_FILTERS_SERVICE_QUERIED = 519 ;
+CLICK_TRACKING_ERROR_SEARCH_AD = 520 ;
+CLICK_TRACKING_ERROR_DEEP_LINK = 521 ;
+CLICK_TRACKING_ERROR_INLINE_INSTALL = 522 ;
+SEARCH_RESULTS_RESPONSE = 523 ;
+SEARCH_SUGGESTIONS_REQUEST = 524 ;
+BACKSTACK_CLEARED = 525 ;
+NEWSSTAND_ARTICLE_LOAD_ERROR = 526 ;
+LOGS_UPLOAD_DEFERRED_MISSING_AUTH_TOKEN = 527 ;
+REDIRECTED_TO_ADD_ACCOUNT_FLOW = 528 ;
+BROWSE_DATA_SYNC_SCHEDULED = 529 ;
+BROWSE_DATA_SYNC_SCHEDULE_FAILURE = 530 ;
+BROWSE_DATA_SYNC_INITIATED = 531 ;
+BROWSE_DATA_SYNC_COMPLETED = 532 ;
+FLAG_CONTENT_DFE_COMPLETED = 533 ;
+CLICK_TRACKING_SUCCESS_SEARCH_AD = 534 ;
+CLICK_TRACKING_SUCCESS_DEEP_LINK = 535 ;
+CLICK_TRACKING_SUCCESS_INLINE_INSTALL = 536 ;
+FAMILY_LIBRARY_ONBOARDING_BULK_SHARE_PREVIOUS = 537 ;
+PLAYSHIELD_SIGNALS = 538 ;
+FAVORITE_ENTITIES_MODIFY_REQUEST = 539 ;
+FAVORITE_ENTITIES_MODIFY_RESPONSE = 540 ;
+DEVICE_VERIFICATION_FAILED = 541 ;
+DEVICE_VERIFICATION_COMPLETED = 542 ;
+SEARCH_BOX_MODE_CHANGED = 543 ;
+TEXT_INPUT_SEARCH = 544 ;
+VOICE_INPUT_SEARCH = 545 ;
+MULTIWINDOW_MODE_ENTERED = 546 ;
+MULTIWINDOW_MODE_EXITED = 547 ;
+DEEPLINK_DISCONNECTION_NOTIFICATION_CLEARED = 548 ;
+INLINE_VIDEO_STATE_CHANGED = 549 ;
+SEARCH_TRIGGERED = 550 ;
+DEVICE_VERIFICATION_REQUESTED = 551 ;
+DEVICE_REVERIFICATION_REQUESTED = 552 ;
+DROIDGUARD_SIGNALS = 553 ;
+IMAGE_LOAD_REPORT = 554 ;
+VOLLEY_MAIN_CACHE_DIRECTORY_CREATED = 555 ;
+SYNC_HOME_PAGE_IN_DAILY_HYGIENE_SUCCEEDED = 556 ;
+SYNC_HOME_PAGE_IN_DAILY_HYGIENE_FAILED = 557 ;
+STORE_AUDIOBOOK_PLAYER_EVENT = 558 ;
+PLAY_PROTECT_HOME_LINK_USED = 559 ;
+GET_INSTALL_REFERRER_DROPPED = 560 ;
+GET_INSTALL_REFERRER_DELIVERED = 561 ;
+REFERRER_NOT_FOUND_IN_REFERRER_DS_FOUNT_IN_INSTALLER_DS = 562 ;
+USER_ADDED_ACCOUNT_FROM_REDIRECTION = 563 ;
+USER_ADDED_ACCOUNT_FROM_UNAUTH_FLOW = 564 ;
+AIA_QUICK_INSTALL_ENABLED = 565 ;
+AIA_QUICK_INSTALL_DISABLED = 566 ;
+REFERRER_PACKAGE_STATUS_PACKAGE_ADDED = 567 ;
+REFERRER_PACKAGE_STATUS_PACKAGE_FIRST_LAUNCH = 568 ;
+CRONET_FAILED_TO_LOAD = 569 ;
+AIA_QUICK_INSTALL_INSTALL_ERROR = 570 ;
+AIA_QUICK_INSTALL_INSTALL_SUCCESS = 571 ;
+FETCH_FULL_DOCUMENT_RESULT = 572 ;
+CARD_ACTIONS_BOTTOM_SHEET_TRIGGERED = 573 ;
+DEVELOPER_TRIGGERED_UPDATE_EXPLICIT_W4W = 574 ;
+DEVELOPER_TRIGGERED_UPDATE_EXPLICIT_DOWNLOAD_NOW = 575 ;
+STICKY_TAB_RESET = 576 ;
+SEARCH_SUGGESTIONS_SHOWN = 577 ;
+EC_CHOICE_MAX_TRIGGER_COUNT_REACHED = 578 ;
+INLINE_VIDEO_AD_SHOWN = 579 ;
+INLINE_VIDEO_PLAYBACK_ERROR = 580 ;
+PLAY_PROTECT_LOCKSCREEN_AUTHENTICATION_SUCCESSFUL = 581 ;
+PLAY_PROTECT_LOCKSCREEN_AUTHENTICATION_FAILED = 582 ;
+LICENSING_SERVICE_QUERIED = 583 ;
+VIDEO_AUTOPLAY_REQUESTED = 584 ;
+VIDEO_AUTOPLAY_STARTED = 585 ;
+SEARCH_SUGGESTION_QUERY_BUILDER_CLICKED = 586 ;
+SEARCH_SUGGESTIONS_SESSION_START = 587 ;
+SEARCH_SUGGESTIONS_SESSION_END = 588 ;
+INVALID_SERVER_TIMESTAMP = 589 ;
+CLICK_TRACKING_ERROR_TICKLE = 590 ;
+CLICK_TRACKING_SUCCESS_TICKLE = 591 ;
+INLINE_VIDEO_FAILED_TO_START = 592 ;
+MODULO_CARD_VIEW_INEFFICIENT_RECYCLE = 593 ;
+MODULO_CARD_VIEW_FAILED_BINDING = 594 ;
+GRID_MODULO_CARD_IMPRESSION_TEST_CODE = 595 ;
+CLICK_TRACKING_ERROR_CONTINUE_URL = 596 ;
+CLICK_TRACKING_SUCCESS_CONTINUE_URL = 597 ;
+APP_LAUNCHED = 598 ;
+ACQUISITION_FLOW_STARTED = 600 ;
+ACQUISITION_FLOW_FINISHED = 601 ;
+COMMERCE_FLOW_STARTED = 602 ;
+COMMERCE_FLOW_FINISHED = 603 ;
+ACQUISITION_FLOW_WINDOW_CLOSED = 604 ;
+ACQUISITION_CHECK_IAB_PROMO_RESPONSE = 620 ;
+IAB_IS_BILLING_SUPPORTED_RESPONSE = 621 ;
+IAB_GET_SKU_DETAILS_RESPONSE = 622 ;
+IAB_GET_BUY_INTENT_RESPONSE = 623 ;
+IAB_GET_PURCHASES_RESPONSE = 624 ;
+IAB_CONSUME_PURCHASE_RESPONSE = 625 ;
+IAB_GET_SKU_DETAILS_REQUEST = 626 ;
+IAB_GET_SUBS_MANAGEMENT_INTENT_RESPONSE = 627 ;
+IAB_ACKNOWLEDGE_PURCHASE_RESPONSE = 628 ;
+IAB_REDEEM_CODE_RESPONSE = 629 ;
+PURCHASE_ERROR_LIBRARY_REPLICATION_STARTED = 630 ;
+PURCHASE_ERROR_LIBRARY_REPLICATION_FINISHED = 631 ;
+COMMERCE_LATENCY_MARKER = 640 ;
+PAYMENT_CLIENT_TOKEN_CREATION_TIME = 641 ;
+SET_PURCHASE_FLOW_TEST_CODE = 642 ;
+PROVISIONING_UPDATE_BROADCAST = 643 ;
+RSKU_LOAD_ACTION = 644 ;
+RSKU_SHOW_LOAD_ACTION = 645 ;
+RSKU_SHOW_ACTION = 646 ;
+PURCHASE_CLICK_BEFORE_PROMOTION_REDEMPTION_COMPLETES = 647 ;
+ON_GOING_PROMOTION_REDEMPTION_AFTER_PURCHASE_DELAY = 648 ;
+ACQUIRE_UPDATE_USER_SETTINGS = 649 ;
+FREE_ACQUIRE_CANCELED = 650 ;
+IAB_SHOW_IN_APP_MESSAGES_RESPONSE = 651 ;
+PURCHASE_FLOW_DELAY_START_LOGGING = 652 ;
+IN_APP_BILLING_PREFERRED_ACCOUNT_GAMES_RESPONSE = 653 ;
+IN_APP_BILLING_PREFERRED_ACCOUNT_GAMES_DARK_LAUNCH = 654 ;
+IAB_LIBRARY_NOTIFICATION_FILTERED_CROSS_ACCOUNT = 655 ;
+IN_APP_BILLING_PREFERRED_ACCOUNT_LIBRARY_STATE = 656 ;
+EXIT_AFFORDANCE_SNAP_TO_FULL = 657 ;
+EXIT_AFFORDANCE_SHOW = 658 ;
+IAB_IS_BILLING_SUPPORTED_RESPONSE_FIRST_PARTY = 659 ;
+CONTACT_GOOGLE_PLAY_LINK = 660 ;
+PURCHASE_GI_GET_INITIAL_FLOW_STATE = 700 ;
+PURCHASE_GI_GET_INITIAL_FLOW_STATE_SUCCESS = 701 ;
+PURCHASE_GI_GET_INITIAL_FLOW_STATE_ERROR = 702 ;
+PURCHASE_GI_CREATE_INSTRUMENT = 710 ;
+PURCHASE_GI_CREATE_INSTRUMENT_SUCCESS = 711 ;
+PURCHASE_GI_CREATE_INSTRUMENT_ERROR = 712 ;
+PURCHASE_GI_CREATE_INSTRUMENT_MORE_INFORMATION_REQUIRED = 713 ;
+PURCHASE_PMT_IM_SAVE_PAGE_REQUEST = 720 ;
+PURCHASE_PMT_IM_SAVE_PAGE_RESPONSE = 721 ;
+PURCHASE_PMT_IM_REFRESH_PAGE_REQUEST = 722 ;
+PURCHASE_PMT_IM_REFRESH_PAGE_RESPONSE = 723 ;
+PURCHASE_PMT_PM_SUBMIT_REQUEST = 724 ;
+PURCHASE_PMT_PM_SUBMIT_RESPONSE = 725 ;
+PURCHASE_PMT_CREDIT_CARD_ENTRY_ACTION = 770 ;
+PURCHASE_PMT_DCB_SMS_ASSOCIATION_RESULT = 771 ;
+PURCHASE_PMT_WEB_VIEW_PAGE_LOAD_EVENT = 772 ;
+PURCHASE_PMT_OTP_AUTOFILL_FROM_SMS_EVENT = 773 ;
+PURCHASE_PMT_PM_CHALLENGE_STARTED = 774 ;
+PURCHASE_PMT_PM_CHALLENGE_FINISHED = 775 ;
+PURCHASE_PMT_PROVIDER_INSTALLED = 776 ;
+PURCHASE_PMT_APP_REDIRECT_VALIDATION = 777 ;
+PURCHASE_PMT_APP_REDIRECT_FINISHED = 778 ;
+PURCHASE_PMT_DCB_ATTESTATION_RESULT = 779 ;
+PURCHASE_PMT_DCB_GET_PROPERTIES_RESULT = 780 ;
+PURCHASE_PMT_PM_SECURE_PAYLOAD_RETURNED = 781 ;
+PURCHASE_PMT_MEGALOG_EVENT = 782 ;
+PURCHASE_PMT_IS_SE_AVAILABLE = 783 ;
+PURCHASE_PMT_GET_SE_CARDS_FOR_ACCOUNT = 784 ;
+PURCHASE_PMT_READ_SP_SDK_OPERATION = 785 ;
+PURCHASE_PMT_DEBIT_SP_SDK_OPERATION = 786 ;
+PURCHASE_PMT_IS_DEVICE_UNLOCKED_FOR_PAYMENT = 787 ;
+PURCHASE_PMT_RETRIEVE_IN_APP_PAYMENT_CREDENTIAL = 788 ;
+PURCHASE_PMT_GET_ALL_CARDS_FOR_ACCOUNT = 789 ;
+PURCHASE_PMT_GET_ACTIVE_ACCOUNT = 790 ;
+PURCHASE_PMT_IS_SERVICE_LAYER_ENABLED_FOR_IN_APP = 791 ;
+PURCHASE_PMT_REPORT_IN_APP_TRANSACTION_COMPLETED = 792 ;
+PURCHASE_PMT_REPORT_IN_APP_MANUAL_UNLOCK = 793 ;
+PURCHASE_PMT_NG_BUYFLOW = 794 ;
+REDEEM_CODE_REQUEST = 800 ;
+REDEEM_CODE_RESPONSE = 801 ;
+REVOKE_REQUEST = 850 ;
+REVOKE_RESPONSE = 851 ;
+REAUTH_SETTINGS_FROM_DEVICE = 900 ;
+REAUTH_SETTINGS_AUTH_TOKEN_FETCH = 901 ;
+REAUTH_SETTINGS_FROM_SERVER_REQUEST = 902 ;
+REAUTH_SETTINGS_FROM_SERVER_RESPONSE = 903 ;
+VERIFY_PIN_AUTH_TOKEN_FETCH = 904 ;
+VERIFY_PIN_VIA_REAUTH_API_REQUEST = 905 ;
+VERIFY_PIN_VIA_REAUTH_API_RESPONSE = 906 ;
+VERIFY_PASSWORD_AUTH_TOKEN_FETCH = 907 ;
+VERIFY_PASSWORD_VIA_REAUTH_API_REQUEST = 908 ;
+VERIFY_PASSWORD_VIA_REAUTH_API_RESPONSE = 909 ;
+REAUTH_AUTH_TOKEN_FETCH = 910 ;
+REAUTH_API_VERIFY_REQUEST = 911 ;
+REAUTH_API_VERIFY_RESPONSE = 912 ;
+RECOVERY_OPTIONS_FROM_SERVER_REQUEST = 913 ;
+RECOVERY_OPTIONS_FROM_SERVER_RESPONSE = 914 ;
+WEBLOGIN_GET_AUTH_TOKEN_REQUEST = 940 ;
+WEBLOGIN_GET_AUTH_TOKEN_RESPONSE = 941 ;
+ADD_RECOVERY_OPTIONS_WEBVIEW_STARTED = 942 ;
+ADD_RECOVERY_OPTIONS_WEBVIEW_FINISHED = 943 ;
+TOS_ACCEPTANCE_REQUEST_SENT = 944 ;
+TOS_ACCEPTANCE_DFE_ACKED = 945 ;
+TOS_ACCEPTANCE_REQUEST_FAILED = 946 ;
+TOS_ACCEPTANCE_REQUIRED = 947 ;
+TOS_SUPPRESSED_ACCEPTED_IN_SERVER_NOT_IN_CLIENT = 948 ;
+TOS_IN_SUW_NEWLY_ACCEPTED = 949 ;
+TOS_IN_SUW_ALREADY_ACCEPTED_BEFORE = 950 ;
+REAUTH_ACTIVITY_STARTED = 951 ;
+REAUTH_ACTIVITY_FINISHED = 952 ;
+REAUTH_ACTIVITY_PIN_SETUP_RESULT = 953 ;
+LOCATION_UPDATED_FROM_DEVICE_LAST_KNOWN_LOCATION = 1000 ;
+LOCATION_UPDATED_BASED_ON_COARSE_REQUEST = 1001 ;
+CACHED_LOCATION_UP_TO_DATE = 1002 ;
+CACHED_LOCATION_NOT_REFRESHED_SHORT_MOVEMENT = 1003 ;
+LOCATION_NOT_YET_AVAILABLE = 1004 ;
+LOCATION_TURNED_OFF = 1005 ;
+LOCATION_TURNED_ON = 1006 ;
+AD_CLICK_302_RESPONSE = 1100 ;
+ADID_NOT_ADDED_TO_HEADER = 1101 ;
+ADID_REQUEST = 1102 ;
+RESOLVE_LINK_REQUEST = 1103 ;
+RESOLVE_LINK_RESPONSE = 1104 ;
+REPORT_IN_APP_ITEM_PURCHASE_TO_GMP = 1105 ;
+UNSAFE_AD_CLICK_URL = 1106 ;
+AD_CLICK_ERROR_RESPONSE = 1107 ;
+SCION_PAYLOAD_FETCH_FOR_REPORTING_IN_APP_ITEM_PURCHASE = 1108 ;
+LOCAL_LINK_RESOLVE_SUCCESS = 1109 ;
+LOCAL_LINK_RESOLVE_FAILURE = 1110 ;
+ADID_PERSISTENT_CACHE_HIT = 1111 ;
+ADID_PROVIDER_ASYNC_CACHE_REFRESH = 1112 ;
+ADID_ADDED_TO_HEADER = 1113 ;
+AD_VIEWABLE_FOR_VTC = 1114 ;
+REPORT_SUBSCIPTION_TO_GMP = 1115 ;
+RADS_SCION_PAYLOAD_REFERESH = 1116 ;
+REPORT_STORE_FRONT_PURCHASE_TO_FIREBASE_ANALYTICS = 1117 ;
+REPORT_FREE_APP_ACQUIRE_TO_FIREBASE_ANALYTICS = 1118 ;
+MONETARY_GIFT_DETAILS_REQUEST = 1200 ;
+MONETARY_GIFT_DETAILS_RESPONSE = 1201 ;
+SEND_GIFT_TRIGGERED = 1202 ;
+SEND_GIFT_SHARE_TEXT_REQUEST = 1203 ;
+SEND_GIFT_SHARE_TEXT_RESPONSE = 1204 ;
+MANAGED_CONFIGURATIONS_REQUEST = 1300 ;
+MANAGED_CONFIGURATIONS_RESPONSE = 1301 ;
+MANAGED_CONFIGURATIONS_UPDATED = 1302 ;
+MANAGED_CONFIGURATIONS_UPDATE_SKIPPED = 1303 ;
+MANAGED_CONFIGURATIONS_ERROR = 1304 ;
+KEYED_APP_STATES_METRICS = 1305 ;
+UPDATE_SUBSCRIPTION_INSTRUMENT_REQUEST = 1400 ;
+UPDATE_SUBSCRIPTION_INSTRUMENT_RESPONSE = 1401 ;
+UPDATE_SUBSCRIPTION_INSTRUMENT_DEEPLINK_ACCOUNT_MISMATCH = 1402 ;
+UPDATE_SUBSCRIPTION_INSTRUMENT_FLOW_STARTED = 1403 ;
+UPDATE_SUBSCRIPTION_INSTRUMENT_FLOW_FINISHED = 1404 ;
+REACTIVATE_SUBSCRIPTION_REQUEST = 1430 ;
+REACTIVATE_SUBSCRIPTION_RESPONSE = 1431 ;
+CHANGE_SUBSCRIPTION_PRICE_REQUEST = 1440 ;
+CHANGE_SUBSCRIPTION_PRICE_RESPONSE = 1441 ;
+CHANGE_SUBSCRIPTION_PRICE_SETUP_ERROR = 1442 ;
+GET_SUBSCRIPTION_PRICE_CHANGE_AGREEMENT_REQUEST = 1450 ;
+GET_SUBSCRIPTION_PRICE_CHANGE_AGREEMENT_RESPONSE = 1451 ;
+SUBSCRIPTION_CANCEL_SURVEY_COMPLETE = 1460 ;
+SUBSCRIPTION_CANCEL_SURVEY_QUIT = 1461 ;
+GET_SUBSCRIPTION_REACTIVATION_CONFIRMATION_REQUEST = 1470 ;
+GET_SUBSCRIPTION_REACTIVATION_CONFIRMATION_RESPONSE = 1471 ;
+SET_SUSBCRIPTION_RENEWAL_REMINDER_REQUEST = 1480 ;
+SET_SUBSCRIPTION_RENEWAL_REMINDER_RESPONSE = 1481 ;
+ACTIVATE_EXTERNAL_USER_SUBSCRIPTION_REQUEST = 1490 ;
+ACTIVATE_EXTERNAL_USER_SUBSCRIPTION_RESPONSE = 1491 ;
+WEARSKY_EVENT_BASE = 1500 ;
+WEARSKY_RECEIVED_INITIAL_REQUEST = 1501 ;
+WEARSKY_PACKAGE_INSTALL_COMPLETE = 1502 ;
+WEARSKY_REQUEST_STATUS_DELETED = 1503 ;
+WEARSKY_RETRY_REQUEST = 1504 ;
+WEARSKY_DATAITEM_PROCESSING_ERROR = 1505 ;
+WEARSKY_VERSION = 1506 ;
+WEARSKY_EVENT_7 = 1507 ;
+WEARSKY_EVENT_8 = 1508 ;
+WEARSKY_EVENT_9 = 1509 ;
+WEARSKY_EVENT_10 = 1510 ;
+WEARSKY_EVENT_11 = 1511 ;
+WEARSKY_EVENT_12 = 1512 ;
+WEARSKY_EVENT_13 = 1513 ;
+WEARSKY_EVENT_14 = 1514 ;
+WEARSKY_EVENT_15 = 1515 ;
+WEARSKY_EVENT_16 = 1516 ;
+WEARSKY_EVENT_17 = 1517 ;
+WEARSKY_EVENT_18 = 1518 ;
+WEARSKY_EVENT_19 = 1519 ;
+WEARSKY_EVENT_20 = 1520 ;
+WEAR_SUPPORT_SERVICE_FOREGROUND_RELEASE_ON_SUCCESS = 1550 ;
+WEAR_SUPPORT_SERVICE_FOREGROUND_RELEASE_ON_START_FAILURE = 1551 ;
+WEAR_SUPPORT_HYGIENE_START = 1552 ;
+WEAR_SUPPORT_HYGIENE_FINISH = 1553 ;
+WEAR_SUPPORT_SERVICE_HYGIENE_START = 1554 ;
+WEAR_SUPPORT_SERVICE_HYGIENE_FINISH = 1555 ;
+WEAR_SUPPORT_SERVICE_NODE_UPDATES_START = 1556 ;
+WEAR_SUPPORT_SERVICE_NODE_UPDATES_FINISH = 1557 ;
+WEAR_SUPPORT_SERVICE_PACKAGE_BROADCAST_START = 1558 ;
+WEAR_SUPPORT_SERVICE_PACKAGE_BROADCAST_FINISH = 1559 ;
+WEAR_SUPPORT_SERVICE_AUTO_INSTALL_UNINSTALL_START = 1560 ;
+WEAR_SUPPORT_SERVICE_AUTO_INSTALL_UNINSTALL_FINISH = 1561 ;
+WEAR_SUPPORT_SERVICE_SEND_INSTALLED_APPS_START = 1562 ;
+WEAR_SUPPORT_SERVICE_SEND_INSTALLED_APPS_FINISH = 1563 ;
+WEAR_SUPPORT_SERVICE_AUTO_INSTALL_UPDATE_START = 1564 ;
+WEAR_SUPPORT_SERVICE_AUTO_INSTALL_UPDATE_FINISH = 1565 ;
+WEAR_SUPPORT_SERVICE_SEND_INSTALLED_APPS_INITIAL_START = 1566 ;
+WEAR_SUPPORT_SERVICE_SEND_INSTALLED_APPS_INITIAL_FINISH = 1567 ;
+WEAR_SUPPORT_SERVICE_SEND_INSTALLED_APPS_REQUESTED_START = 1568 ;
+WEAR_SUPPORT_SERVICE_SEND_INSTALLED_APPS_REQUESTED_FINISH = 1569 ;
+LITE_BLOB_SYNC_SCHEDULED = 1600 ;
+LITE_BLOB_SYNC_SCHEDULE_FAILURE = 1601 ;
+LITE_BLOB_SYNC_SCHEDULE_INITIATED = 1602 ;
+LITE_BLOB_SYNC_SCHEDULE_COMPLETED = 1603 ;
+LITE_BLOB_DOWNLOAD_INITIATED = 1604 ;
+LITE_BLOB_DOWNLOAD_FAILURE = 1605 ;
+LITE_BLOB_DOWNLOAD_COMPLETED = 1606 ;
+LITE_BLOB_IMPORT_INITIATED = 1607 ;
+LITE_BLOB_IMPORT_FAILURE = 1608 ;
+LITE_BLOB_IMPORT_COMPLETED = 1609 ;
+LITE_LDS_CLEARED = 1610 ;
+CACHE_AND_SYNC_SCHEDULED = 1611 ;
+CACHE_AND_SYNC_SCHEDULE_FAILURE = 1612 ;
+CACHE_AND_SYNC_FETCH_SUGGESTIONS_TASK_INITIATED = 1613 ;
+CACHE_AND_SYNC_FETCH_SUGGESTIONS_TASK_SUCCESS = 1614 ;
+CACHE_AND_SYNC_DEQUEUE_DFE_TASK_INITIATED = 1615 ;
+CACHE_AND_SYNC_DEQUEUE_IMAGES_TASK_INITIATED = 1616 ;
+CACHE_AND_SYNC_DFE_SYNC_SUCCESS = 1617 ;
+CACHE_AND_SYNC_IMAGES_SYNC_SUCCESS = 1618 ;
+CACHE_AND_SYNC_CONTENT_STILL_FRESH = 1619 ;
+CACHE_AND_SYNC_DAILY_REPORT = 1620 ;
+CACHE_AND_SYNC_OVERALL_SYNC_SUCCESS = 1621 ;
+CACHE_AND_SYNC_JITTERING_SCHEDULED = 1622 ;
+CACHE_AND_SYNC_NOT_SCHEDULABLE_RECENTLY_SCHEDULED = 1623 ;
+CACHE_AND_SYNC_TASK_NOT_RUN_LOW_BATTERY = 1624 ;
+CACHE_AND_SYNC_TASK_NOT_RUN_DEVICE_INTERACTIVE = 1625 ;
+CACHE_AND_SYNC_SYNCING_ONGOING = 1626 ;
+CACHE_AND_SYNC_COMPLETED_CONTENT_FRESH = 1627 ;
+CACHE_AND_SYNC_COMPLETED_CONTENT_NOT_FRESH = 1628 ;
+CACHE_AND_SYNC_CONTENT_WIPED = 1629 ;
+CACHE_AND_SYNC_CACHE_STATE_EXPIRED = 1630 ;
+CACHE_AND_SYNC_OVER_FETCH_SUGGESTIONS_LIMIT = 1631 ;
+CACHE_AND_SYNC_JOB_STARTED = 1632 ;
+APPLICATION_ON_CREATE_START = 1700 ;
+APPLICATION_ON_CREATE_COMPLETE = 1701 ;
+MAIN_ACTIVITY_ON_START = 1702 ;
+PAGE_LOAD_START = 1703 ;
+PAGE_LOAD_END = 1704 ;
+PAGE_LOAD_ERROR = 1705 ;
+PAGE_LOAD_INTERRUPTED = 1706 ;
+MAIN_ACTIVITY_ON_CREATE = 1707 ;
+MAIN_ACTIVITY_ON_READY = 1708 ;
+HOME_HOME_FRAGMENT_ON_CREATE = 1709 ;
+HOME_HOME_FIRST_RPC_INITIATED = 1710 ;
+HOME_HOME_LAST_RPC_COMPLETED = 1711 ;
+DEEP_LINK_SHIM_FRAGMENT_ON_CREATE = 1712 ;
+DEEP_LINK_SHIM_FIRST_RPC_INITIATED = 1713 ;
+DEEP_LINK_SHIM_LAST_RPC_COMPLETED = 1714 ;
+DETAILS_FRAGMENT_ON_CREATE = 1715 ;
+DETAILS_FRAGMENT_FIRST_RPC_INITIATED = 1716 ;
+DETAILS_FRAGMENT_LAST_RPC_COMPLETED = 1717 ;
+PAGE_LOAD_FIRST_RPC_INITIATED = 1718 ;
+PAGE_LOAD_LAST_RPC_COMPLETED = 1719 ;
+MAIN_ACTIVITY_ON_STOP = 1720 ;
+MAIN_ACTIVITY_INTERRUPTED = 1721 ;
+LAUNCH_URL_HANDLER_ACTIVITY_ON_CREATE = 1722 ;
+INLINE_APP_DETAILS_DIALOG_ON_CREATE = 1723 ;
+INLINE_APP_DETAILS_DIALOG_ON_START = 1724 ;
+INLINE_APP_DETAILS_DIALOG_ON_READY = 1725 ;
+INLINE_APP_DETAILS_DIALOG_ON_STOP = 1726 ;
+INLINE_APP_DETAILS_DIALOG_INTERRUPTED = 1727 ;
+INLINE_APP_DETAILS_DIALOG_ON_CREATE_V1 = 1728 ;
+INLINE_APP_DETAILS_DIALOG_ON_START_V1 = 1729 ;
+INLINE_APP_DETAILS_DIALOG_ON_READY_V1 = 1730 ;
+INLINE_APP_DETAILS_DIALOG_ON_STOP_V1 = 1731 ;
+INLINE_APP_DETAILS_DIALOG_INTERRUPTED_V1 = 1732 ;
+TAB_LOAD_START = 1733 ;
+TAB_LOAD_END = 1734 ;
+TAB_LOAD_ERROR = 1735 ;
+TAB_LOAD_INTERRUPTED = 1736 ;
+SUBNAV_LOAD_START = 1737 ;
+SUBNAV_LOAD_END = 1738 ;
+SUBNAV_LOAD_ERROR = 1739 ;
+SUBNAV_LOAD_INTERRUPTED = 1740 ;
+TAB_CONTENT_RPC_INITIATED = 1741 ;
+TAB_CONTENT_RPC_COMPLETED = 1742 ;
+TAB_CONTENT_RPC_ERROR = 1743 ;
+PROCESS_START = 1744 ;
+APPLICATION_ON_CREATE_TRIGGERED = 1745 ;
+DAGGER_COMPONENT_INIT_COMPLETED = 1746 ;
+PAGE_LOAD_FIRST_ON_SCREEN_IMAGE_RENDERED = 1747 ;
+PAGE_LOAD_LAST_ON_SCREEN_IMAGE_RENDERED = 1748 ;
+PAGE_LOAD_END_NO_ANIMATION = 1749 ;
+COMPOUND_DETAILS_MOVED_TO_PEEKING_PAGE = 1800 ;
+COMPOUND_DETAILS_PAGE_EXPANDED_ACTION = 1801 ;
+COMPOUND_DETAILS_PAGE_CONDENSED_ACTION = 1802 ;
+RESTORE_START = 1900 ;
+RESTORE_FINISH = 1901 ;
+RESTORE_GET_DOCUMENTS_START = 1902 ;
+RESTORE_GET_DOCUMENTS_FINISH = 1903 ;
+RESTORE_PACKAGE_START = 1904 ;
+RESTORE_PACKAGE_FINISH = 1905 ;
+RESTORE_FLOW_START = 1906 ;
+RESTORE_FLOW_FINISH = 1907 ;
+RESTORE_FLOW_START_TYPE = 1908 ;
+RESTORE_FLOW_FINISH_TYPE = 1909 ;
+PROMISE_ICON_TAPPED = 1910 ;
+POST_SETUP_APP_USAGE_REPORT = 1911 ;
+SETUP_FINAL_HOLD_START = 1912 ;
+SETUP_FINAL_HOLD_FINISH = 1913 ;
+SETUP_WAITING_FOR_WIFI = 1914 ;
+SETUP_CONTINUE_ON_WIFI = 1915 ;
+SETUP_ALLOW_MOBILE = 1916 ;
+SETUP_PHENOTYPE_SYNC_REQUESTED = 1917 ;
+SETUP_PHENOTYPE_SYNC_SUCCESS = 1918 ;
+SETUP_PHENOTYPE_SYNC_FAILURE = 1919 ;
+SETUP_SERVICE_API_INVOKED = 1920 ;
+SETUP_SERVICE_RECEIVER_INVOKED = 1921 ;
+SETUP_APP_UPDATES_PAUSED = 1922 ;
+SETUP_APP_UPDATES_RESUMED = 1923 ;
+SETUP_PAUSE_APP_UPDATES_TIMEOUT = 1924 ;
+SETUP_WIZARD_PROGRESS_REGISTER_START = 1925 ;
+SETUP_WIZARD_PROGRESS_REGISTERED_SUCCESS = 1926 ;
+SETUP_WIZARD_PROGRESS_ACTIVE = 1927 ;
+SETUP_WIZARD_PROGRESS_UNAVAILABLE = 1928 ;
+SETUP_WIZARD_PROGRESS_UNRELIABLE = 1929 ;
+SETUP_SERVICE_API_RETURN = 1930 ;
+SETUP_WIZARD_PROGRESS_INITIAL = 1931 ;
+SETUP_FLOW_START = 1932 ;
+SETUP_FLOW_UPDATE = 1933 ;
+SETUP_FLOW_FINISH = 1934 ;
+SETUP_PROGRESS_UPDATE = 1935 ;
+MSISDN_FETCH = 2000 ;
+DOWNLOAD_APPS_NETWORK_SETTING_DAILY_REPORT = 2001 ;
+DOWNLOAD_APPS_NETWORK_SETTING_CHANGED_FROM_INSTALL_FLOW = 2002 ;
+DOWNLOAD_APPS_NETWORK_SETTING_CHANGED_FROM_SETTINGS_PAGE = 2003 ;
+WAIT_FOR_WIFI_FEATURE_DISCOVERY_REPORT = 2004 ;
+WAIT_FOR_WIFI_SUCCESSFUL_APP_INSTALL_REPORT = 2005 ;
+WAIT_FOR_WIFI_APP_ACQUISITION_START_REPORT = 2006 ;
+WAIT_FOR_WIFI_APP_ACQUISITION_FINISH_REPORT = 2007 ;
+LARGE_DOWNLOAD_NETWORK_SETTING_CHANGED_FROM_INSTALL_FLOW = 2008 ;
+LARGE_DOWNLOAD_WARNING_SKIPPED = 2009 ;
+ACQUIRE_CACHE_INSTANTIATE = 2030 ;
+ACQUIRE_CACHE_RETRIEVE = 2031 ;
+ACQUIRE_CACHE_SAVE = 2032 ;
+ACQUIRE_CACHE_REMOVAL = 2033 ;
+ACQUIRE_CACHE_ENTRY_REMOVAL = 2034 ;
+ACQUIRE_CACHE_BLACKLIST_RETRIEVE = 2035 ;
+ACQUIRE_CACHE_DENYLIST_RETRIEVE = 2037 ;
+BULK_ACQUIRE_REQUEST = 2050 ;
+BULK_ACQUIRE_RESPONSE = 2051 ;
+BULK_ACQUIRE_REQUEST_NOT_AVAILABLE = 2052 ;
+GET_DISK_UTILS_OUTCOME = 2100 ;
+WEBSKY_TO_PHONESKY_DDL_RETURN = 2200 ;
+VR_HOME_SETUP_OVERALL = 2220 ;
+LAUNCHER_SUGGESTIONS_REQUEST_COMPLETE = 2300 ;
+LAUNCHER_SUGGESTIONS_ON_DEVICE_INSTANT_APPS_FETCHED = 2301 ;
+LAUNCHER_SUGGESTIONS_SERVER_APPS_FETCHED = 2302 ;
+WEARSKY_START_FAST_NETWORK_REQUESTED = 2400 ;
+WEARSKY_START_FAST_NETWORK_AVAILABLE = 2401 ;
+WEARSKY_START_FAST_NETWORK_RELEASED = 2402 ;
+WEARSKY_MAIN_ACTIVITY_SPINNER_DISMISSED = 2403 ;
+LAUNCHER_ICON_COUNTER_STATUS = 2500 ;
+LAUNCHER_ICON_COUNTER_COUNT_CHANGE = 2501 ;
+SCHEDULER_WAKEUP = 2520 ;
+SCHEDULER_WAKEUP_ALREADY_AWAKE = 2521 ;
+SCHEDULER_WAKEUP_COMPLETE = 2522 ;
+SCHEDULER_WAKEUP_FALLBACK = 2523 ;
+SCHEDULER_EXECUTOR_SESSION_START = 2524 ;
+SCHEDULER_DEVICE_STATE_CHANGE = 2525 ;
+SCHEDULER_EXECUTOR_TIMEOUT = 2526 ;
+SCHEDULER_EXECUTOR_SESSION_END = 2527 ;
+SCHEDULER_JOB_SCHEDULED = 2528 ;
+SCHEDULER_JOB_CANCELLED = 2529 ;
+SCHEDULER_JOB_CONSTRAINTS_FAILED_ON_START = 2530 ;
+SCHEDULER_JOB_START = 2531 ;
+SCHEDULER_JOB_START_DEADLINE_OVERRIDE = 2532 ;
+SCHEDULER_JOB_END_TIMEOUT = 2533 ;
+SCHEDULER_JOB_END_COMPLETED = 2534 ;
+SCHEDULER_JOB_END_CONSTRAINTS_CHANGED = 2535 ;
+SCHEDULER_JOB_END_RESCHEDULED_NEW = 2536 ;
+SCHEDULER_JOB_END_RESCHEDULED_RETRY = 2537 ;
+SCHEDULER_ERROR_CLOCK_SET_TO_PAST = 2538 ;
+SCHEDULER_ERROR_MORE_JOBS_THAN_EXPECTED = 2539 ;
+SCHEDULER_JOB_END_HIGH_PRIORITY_TAKEOVER = 2540 ;
+SCHEDULER_WAKEUP_BATCH = 2541 ;
+SCHEDULER_WAKEUP_COMPLETE_BATCH = 2542 ;
+SCHEDULER_JOB_DETACHED = 2543 ;
+SCHEDULER_JOB_END_CANCELLED = 2544 ;
+SCHEDULER_JOB_END_STOP_AFTER_PASSED = 2545 ;
+SCHEDULER_JOB_SCHEDULED_FAILED = 2546 ;
+SCHEDULER_CONNECTIVITY_CHECK_DEBUG = 2547 ;
+SCHEDULER_START = 2548 ;
+SCHEDULER_END = 2549 ;
+VERIFY_APPS_INSTALL_RECEIVE_VERIFICATION_REQUEST = 2620 ;
+VERIFY_APPS_BEGIN_INSTALL_VERIFICATION = 2621 ;
+VERIFY_APPS_BEGIN_PARENT_VERIFICATION = 2622 ;
+VERIFY_APPS_VERIFY_INSTALL = 2623 ;
+VERIFY_APPS_INSTALL_VERIFICATION_TIMEOUT = 2624 ;
+VERIFY_APPS_SHA256_START = 2625 ;
+VERIFY_APPS_SHA256_FINISH = 2626 ;
+VERIFY_APPS_NETWORK_REQUEST_START = 2627 ;
+VERIFY_APPS_NETWORK_REQUEST_FINISH = 2628 ;
+VERIFY_APPS_AUTO_DISABLE_ERROR = 2629 ;
+VERIFY_APPS_AMPUTATION_ERROR = 2630 ;
+VERIFY_APPS_POSSIBLE_PLAY_INJECTION = 2631 ;
+VERIFY_APPS_VERSION_CODE_MISMATCH = 2632 ;
+VERIFY_APPS_DIALOG_UNINSTALL = 2633 ;
+VERIFY_APPS_MANUAL_UNINSTALL = 2634 ;
+VERIFY_APPS_APK_CORRUPTION = 2635 ;
+VERIFY_APPS_NOTIFICATION_DISABLE = 2636 ;
+VERIFY_APPS_DIALOG_DISABLE = 2637 ;
+VERIFY_APPS_NOTIFICATION_REMOVAL = 2638 ;
+VERIFY_APPS_DIALOG_REMOVAL = 2639 ;
+VERIFY_APPS_NON_CORRUPTED_APK = 2640 ;
+VERIFY_APPS_NOTIFICATION_UPDATE = 2641 ;
+DFE_NOTIFICATION_RECEIVED = 2800 ;
+DFE_NOTIFICATION_PROCESSED = 2801 ;
+INSTANT_APP_LAUNCH_BUTTON_HIDDEN_APP_WITHOUT_DEFAULT_URL = 2900 ;
+INSTANT_APP_LAUNCH_BUTTON_HIDDEN_RUNTIME_NOT_PRESENT = 2901 ;
+INSTANT_APP_LAUNCH_BUTTON_HIDDEN_USER_PREFERS_BROWSER = 2902 ;
+INSTANT_APP_LAUNCH_BUTTON_HIDDEN_APP_IN_HOLD_BACK = 2903 ;
+INSTANT_APP_LAUNCH_BUTTON_HIDDEN_UNKNOWN_REASON = 2904 ;
+INSTANT_APP_LAUNCH_BUTTON_HIDDEN_INTENT_DOES_NOT_RESOLVE = 2905 ;
+INSTANT_APP_LAUNCH_BUTTON_SHOWN = 2906 ;
+INSTANT_APP_LAUNCH_BUTTON_HIDDEN_GMS_CORE_UNAVAILABLE = 2907 ;
+INSTANT_APP_LAUNCH_BUTTON_HIDDEN_BAD_PRE_LAUNCH_DESTINATION = 2908 ;
+INSTANT_APP_LAUNCH = 2909 ;
+INSTANT_APP_LAUNCH_BUTTON_HIDDEN_SYSTEM_SETTING_DISABLED = 2910 ;
+INSTANT_APP_LAUNCH_BUTTON_HIDDEN_ANDROID_USER_DISABLED = 2911 ;
+INSTANT_APP_LAUNCH_KEY_RESOLUTION_STARTED = 2912 ;
+INSTANT_APP_LAUNCH_KEY_NO_DEFAULT_URL = 2913 ;
+INSTANT_APP_LAUNCH_KEY_DEFAULT_URL_MISMATCH = 2914 ;
+INSTANT_APP_LAUNCH_BUTTON_HIDDEN = 2915 ;
+INSTANT_APP_LAUNCH_KEY_RESOLUTION_FAILED = 2916 ;
+ASSIST_CARD_REQUEST_FACTORY_OUTCOME = 2950 ;
+P2P_CONNECT = 3000 ;
+P2P_DISCONNECT = 3001 ;
+P2P_EVALUATE_START = 3002 ;
+P2P_EVALUATE_END = 3003 ;
+P2P_INSTALL_START = 3004 ;
+P2P_INSTALL_END = 3005 ;
+P2P_INSTALL_PROGRESS = 3006 ;
+P2P_ACQUISITION_REQUESTED = 3007 ;
+P2P_ACQUISITION_FINISHED = 3008 ;
+P2P_GET_UPDATE_TOKEN = 3009 ;
+P2P_UPDATE_SCAN_START = 3010 ;
+P2P_STOP_UPDATE_SCAN = 3011 ;
+P2P_PROMPT_FOR_APP_UPDATES = 3012 ;
+P2P_UPDATE_START = 3013 ;
+P2P_UPDATE_END = 3014 ;
+P2P_UPDATE_PROGRESS = 3015 ;
+P2P_ACQUISITION_ABANDONED = 3016 ;
+P2P_UPDATE_OPT_IN = 3017 ;
+P2P_UPDATE_OPT_OUT = 3018 ;
+P2P_UPDATE_ELIGIBLE_FOUND = 3019 ;
+P2P_SENDER_EVALUATE_START = 3020 ;
+P2P_SENDER_EVALUATE_END = 3021 ;
+NOTIFICATION_NOT_SHOWN_SYSTEM_SETTINGS_OPT_OUT = 3050 ;
+NOTIFICATION_SCHEDULED = 3051 ;
+NOTIFICATION_DELAYED = 3052 ;
+NOTIFICATION_DISCARDED = 3053 ;
+ANDROID_NOTIFICATION_SETTINGS = 3054 ;
+NOTIFICATION_CENTER_IN_APP_COUNTER_COUNT_CHANGE = 3100 ;
+SILENT_RICH_USER_NOTIFICATION_RECEIVED = 3101 ;
+NOTIFICATION_RICH_USER_NOTIFICATION_HOLDBACK_RECEIVED = 3102 ;
+NOTIFICATION_RICH_USER_NOTIFICATION_PING_RECEIVED = 3103 ;
+NOTIFICATION_RICH_USER_NOTIFICATION_REVOKE_RECEIVED = 3104 ;
+NOTIFICATION_AND_OFFER_CENTER_IN_APP_COUNTER_COUNT_CHANGE = 3105 ;
+CACHE_HIT = 3150 ;
+CACHE_FAIL = 3151 ;
+ACCELERATOR_CACHE_HIT = 3152 ;
+ACCELERATOR_CACHE_FAIL = 3153 ;
+ACCELERATOR_CACHE_DOWNLOAD_FAIL = 3154 ;
+ACCELERATOR_CACHE_MISS = 3155 ;
+ACCELERATOR_CLEAR_BLACKLIST = 3156 ;
+ACCELERATOR_CLEAR_DENYLIST = 3157 ;
+MITOSIS_RUN_SESSION = 3250 ;
+MITOSIS_DOWNLOAD = 3251 ;
+MITOSIS_STORAGE = 3252 ;
+MITOSIS_CLEANUP = 3253 ;
+MITOSIS_OBSOLETE = 3254 ;
+TOS_SHOWN = 3300 ;
+TOS_CONTAINS_AIA_LANGUAGE = 3301 ;
+TOS_ACCEPTED = 3302 ;
+TOS_DECLINED = 3303 ;
+TOS_WITH_AIA_LANGUAGE_ACCEPTED = 3304 ;
+TOS_WITH_AIA_LANGUAGE_DECLINED = 3305 ;
+TOS_INSTANT_APPS_OPT_IN_SUCCESS = 3306 ;
+TOS_INSTANT_APPS_OPT_IN_FAILURE = 3307 ;
+TOS_DISMISSED_VIA_BACK_BUTTON = 3308 ;
+TOS_DISMISSED_VIA_TOUCH_OUTSIDE_DIALOG = 3309 ;
+TOS_INSTANT_APPS_OPT_IN_STARTED = 3310 ;
+TOS_INSTANT_APPS_OPT_IN_SKIPPED_NO_CLIENT = 3311 ;
+TOS_TO_BE_SHOWN_WITHOUT_AIA_LANGUAGE_NULL_TOC = 3312 ;
+TOS_INSTANT_APPS_OPT_IN_SKIPPED_USER_ALREADY_EXPLICITLY_OPTED_OUT = 3313 ;
+SPLIT_INSTALL_API_START_INSTALL = 3350 ;
+SPLIT_INSTALL_API_ON_START_INSTALL = 3351 ;
+SPLIT_INSTALL_API_COMPLETE_INSTALL = 3352 ;
+SPLIT_INSTALL_API_ON_COMPLETE_INSTALL = 3353 ;
+SPLIT_INSTALL_API_CANCEL_INSTALL = 3354 ;
+SPLIT_INSTALL_API_ON_CANCEL_INSTALL = 3355 ;
+SPLIT_INSTALL_API_GET_SESSION_STATE = 3356 ;
+SPLIT_INSTALL_API_ON_GET_SESSION_STATE = 3357 ;
+SPLIT_INSTALL_API_GET_SESSION_STATES = 3358 ;
+SPLIT_INSTALL_API_ON_GET_SESSION_STATES = 3359 ;
+SPLIT_INSTALL_API_MARK_FOR_REMOVAL = 3360 ;
+SPLIT_INSTALL_API_ON_MARK_FOR_REMOVAL = 3361 ;
+SPLIT_INSTALL_API_ON_ERROR = 3362 ;
+SPLIT_INSTALL_API_INTERNAL_ERROR = 3363 ;
+SPLIT_INSTALL_API_DEFERRED_INSTALL = 3364 ;
+SPLIT_INSTALL_API_ON_DEFERRED_INSTALL = 3365 ;
+LANGUAGE_CHANGE_BULKDETAILS_SUCCESS = 3366 ;
+LANGUAGE_CHANGE_BULKDETAILS_TIMEOUT = 3367 ;
+LANGUAGE_CHANGE_BULKDETAILS_ERROR = 3368 ;
+LANGUAGE_CHANGE_INSTALL_DEFERRED = 3369 ;
+LANGUAGE_CHANGE_INSTALL_IMMEDIATE = 3370 ;
+LANGUAGE_CHANGE_SCHEDULING_ERROR = 3371 ;
+SPLIT_INSTALL_API_AUTOCOMPLETE_ATTEMPT = 3372 ;
+SPLIT_INSTALL_API_AUTOCOMPLETE_SUCCESS = 3373 ;
+SPLIT_INSTALL_API_AUTOCOMPLETE_FAILURE = 3374 ;
+SPLIT_INSTALL_API_DEFERRED_UNINSTALL_ATTEMPT = 3375 ;
+SPLIT_INSTALL_API_DEFERRED_UNINSTALL_SUCCESS = 3376 ;
+SPLIT_INSTALL_API_DEFERRED_UNINSTALL_FAILURE = 3377 ;
+SPLIT_INSTALL_API_CLEANER_START = 3378 ;
+SPLIT_INSTALL_API_CLEANER_END = 3379 ;
+SPLIT_INSTALL_API_CLEANER_DATA = 3380 ;
+SPLIT_INSTALL_API_DEFERRED_INSTALL_ATTEMPT = 3381 ;
+SPLIT_INSTALL_API_DEFERRED_INSTALL_SUCCESS = 3382 ;
+SPLIT_INSTALL_API_DEFERRED_INSTALL_FAILURE = 3383 ;
+SPLIT_INSTALL_API_DEFERRED_INSTALL_BULKDETAILS_SUCCESS = 3384 ;
+SPLIT_INSTALL_API_DEFERRED_INSTALL_BULKDETAILS_FAILURE = 3385 ;
+REALTIME_INSTALL_EVENT = 3386 ;
+DEFERRED_LANGUAGE_CHANGE_ATTEMPT = 3387 ;
+DEFERRED_LANGUAGE_CHANGE_FINISH = 3388 ;
+SPLIT_INSTALL_API_USER_ACK_RESUME_INSTALL = 3389 ;
+SPLIT_INSTALL_API_USER_ACK_CANCEL_INSTALL = 3390 ;
+LANGUAGE_CHANGE_START_BROADCAST = 3391 ;
+LANGUAGE_CHANGE_FINISHED_CLEARING_CACHE = 3392 ;
+SPLIT_INSTALL_API_GET_SPLITS_FOR_APP_UPDATE = 3393 ;
+SPLIT_INSTALL_API_ON_GET_SPLITS_FOR_APP_UPDATE = 3394 ;
+SPLIT_INSTALL_API_COMPLETE_INSTALL_FOR_APP_UPDATE = 3395 ;
+SPLIT_INSTALL_API_ON_COMPLETE_INSTALL_FOR_APP_UPDATE = 3396 ;
+SPLIT_INSTALL_API_CLEANER_SCHEDULED = 3397 ;
+SPLIT_INSTALL_API_DEFERRED_LANGUAGE_INSTALL = 3398 ;
+SPLIT_INSTALL_API_DEFERRED_LANGUAGE_UNINSTALL = 3399 ;
+MARKETING_OPT_IN_SAVE_REQUEST_FAILED = 3400 ;
+MARKETING_OPT_IN_SAVE_REQUEST_SUCCEEDED = 3401 ;
+HETERODYNE_SYNC_REQUESTED = 3450 ;
+HETERODYNE_SYNC_COMPLETED = 3451 ;
+PHENOTYPE_EXPERIMENTS_COMMIT_INITIATED = 3452 ;
+PHENOTYPE_EXPERIMENTS_COMMIT_COMPLETED = 3453 ;
+HETERODYNE_PERIODIC_SYNC_JOB_START = 3454 ;
+HETERODYNE_PERIODIC_SYNC_JOB_SUCCESS = 3455 ;
+HETERODYNE_PERIODIC_SYNC_JOB_FAILURE = 3456 ;
+INSTANT_LAUNCH_API_SUCCESS = 3500 ;
+INSTANT_LAUNCH_API_SERVER_ERROR = 3501 ;
+INSTANT_LAUNCH_API_NO_DEFAULT_ENTRY_POINT = 3502 ;
+INSTANT_LAUNCH_API_EXPERIMENT_DISABLED = 3503 ;
+INSTANT_LAUNCH_API_MISSING_ID = 3504 ;
+INSTANT_LAUNCH_API_MISSING_URI = 3505 ;
+INSTANT_LAUNCH_API_ALREADY_INSTALLED = 3506 ;
+INSTANT_LAUNCH_API_START_LOADING = 3507 ;
+INSTANT_LAUNCH_API_CANNOT_LAUNCH_ON_DEVICE = 3508 ;
+INSTALL_SERVICE_REQUEST_INFO = 3550 ;
+INSTALL_SERVICE_REQUEST_INSTALL = 3551 ;
+INSTALL_SERVICE_COMPLETE_UPDATE = 3552 ;
+DEV_TRIGGERED_UPDATE_HYGIENE_START = 3553 ;
+DEV_TRIGGERED_UPDATE_HYGIENE_END = 3554 ;
+DEV_TRIGGERED_UPDATE_CLEANUP_DONE = 3555 ;
+DEV_TRIGGERED_UPDATE_AUTOCOMPLETE_START = 3556 ;
+DEV_TRIGGERED_UPDATE_AUTOCOMPLETE_SUCCESS = 3557 ;
+DEV_TRIGGERED_UPDATE_AUTOCOMPLETE_FAILURE = 3558 ;
+HEADLESS_DEPENDENCY_INSTALL_ACTIVITY_ON_CREATE = 3559 ;
+ASYNC_CLUSTER_REQUEST_INITIATED = 3600 ;
+ASYNC_CLUSTER_REQUEST_COMPLETE = 3601 ;
+ASYNC_REQUESTED_CLUSTER_LOAD_COMPLETE = 3602 ;
+ASYNC_CLUSTER_ERROR = 3603 ;
+FOREGROUND_COORDINATOR_ACQUIRE = 3650 ;
+FOREGROUND_COORDINATOR_RELEASE = 3651 ;
+ART_PROFILES_UPLOAD_REPORT = 3750 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_EMPTY_ACCOUNT_NO_ACTION = 3800 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_UPDATING_ACCOUNT = 3801 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_RECOVER_OPT_IN_STATE_FROM_GCORE = 3802 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_DETECTED_PENDING_OPERATION = 3803 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_NEW_ACCOUNT_ENABLED = 3804 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_NEW_ACCOUNT_DISABLED = 3805 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_NEW_ACCOUNT_UNSET = 3806 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_ACTION_REQUIRED = 3807 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_OPERATION_GET_OPT_IN_INFO = 3850 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_OPERATION_OPT_IN = 3851 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_OPERATION_OPT_IN_BEFORE_REJECT = 3852 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_OPERATION_REJECT_OPT_IN = 3853 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_OPERATION_OPT_IN_TO_CLEAR = 3854 ;
+INSTANT_APPS_ACCOUNT_SWITCHED_OPERATION_DELETE_ALL_DATA = 3855 ;
+SAFE_MODE_START = 3900 ;
+SAFE_MODE_FINISH = 3901 ;
+SAFE_MODE_ERROR = 3902 ;
+EMERGENCY_SELF_UPDATE_START = 3903 ;
+EMERGENCY_SELF_UPDATE_FINISH = 3904 ;
+EMERGENCY_SELF_UPDATE_ERROR = 3905 ;
+RECOVERY_MODE_ERROR = 3906 ;
+SAFE_MODE_VERSION_UPGRADE = 3907 ;
+EMERGENCY_SELF_UPDATE_VERSION_UPGRADE = 3908 ;
+RECOVERY_MODE_HYGIENE_METALOG = 3909 ;
+RECOVERY_MODE_LOG_PROCESSOR_METALOG = 3910 ;
+SAFE_SELF_UPDATE_SERVICE_START = 3911 ;
+RECOVERY_MODE_REGULAR_DOWNLOAD_BROADCAST_RECEIVED = 3912 ;
+DNS_PREFETCH_FAILURE = 4000 ;
+FAILED_TO_SET_CRONET_EXPERIMENTAL_OPTIONS = 4001 ;
+FAILED_TO_UPDATE_CRONET_EXPERIMENTAL_OPTIONS = 4002 ;
+ACCOUNT_MISMATCH_DETECTED = 4050 ;
+ACCOUNT_MISMATCH_WAITING_FOR_DRAWER_OPEN = 4051 ;
+ACCOUNT_MISMATCH_WAITING_FOR_ACCOUNT_SWITCH = 4052 ;
+ACCOUNT_MISMATCH_WAITING_FOR_NAVIGATION = 4053 ;
+ACCOUNT_MISMATCH_COMPLETED = 4054 ;
+ACCOUNT_MISMATCH_TERMINATED = 4055 ;
+FLUSH_LOGS_DEBUG_START = 4100 ;
+FLUSH_LOGS_DEBUG_END = 4101 ;
+DO_NOT_USE_THIS_RANGE_UNLESS_FOR_CLUSTER_TYPE = 4102 ;
+ALL_REVIEWS_PAGE_DISPLAY_END = 4211 ;
+SELF_UPDATE_SCHEDULING_CANCEL_JOB_ERROR = 4220 ;
+SELF_UPDATE_SCHEDULING_ERROR = 4221 ;
+SELF_UPDATE_SCHEDULING_POLICY_DIFFS = 4222 ;
+BACKED_UP_PHOTOS_INFO_UPDATED = 4250 ;
+BACKED_UP_PHOTOS_DELETED = 4251 ;
+BACKED_UP_PHOTOS_CARD_SERVED = 4252 ;
+BACKED_UP_PHOTOS_INFO_REQUESTED = 4253 ;
+DELETE_BACKED_UP_PHOTOS_REQUESTED = 4254 ;
+PHOTOS_SERVICE_DISCONNECTED = 4255 ;
+CHECK_INSTRUMENT_ACCOUNT_SETUP_NOTIFICATION_SENT = 4301 ;
+SYNCHRONIZED_GMS_UPDATE_NOTIFY = 4350 ;
+SYNCHRONIZED_GMS_UPDATE_RESPONSE = 4351 ;
+AUTO_UPDATE_ON_BATTERY_SINGLE_APP_UPDATED = 4352 ;
+AUTO_UPDATE_DISCOVERED = 4353 ;
+AUTO_UPDATE_ON_METERED_DATA_BUDGET_OPTION_SELECTED = 4354 ;
+AUTO_UPDATE_CHECK_ON_METERED_DATA_BUDGET = 4355 ;
+AUTO_UPDATE_ON_METERED_DATA_BUDGET_EXCEEDED = 4356 ;
+AUTO_UPDATE_ON_METERED_DATA_BUDGET_USED_MORE_THAN_RESERVED = 4357 ;
+AUTO_UPDATE_ON_METERED_DATA_BUDGET_HYGIENE_CHECK = 4358 ;
+APP_UPDATED = 4359 ;
+DAILY_HYGIENE_REATTEMPT_LANGUAGE_SPLIT_INSTALL = 4400 ;
+DAILY_HYGIENE_RUN_DEV_TRIGGERED_UPDATE_HYGIENE = 4401 ;
+DAILY_HYGIENE_ART_PROFILE_UPLOAD = 4402 ;
+DAILY_HYGIENE_APK_CORRUPTION = 4403 ;
+DAILY_HYGIENE_INSTANT_APPS_CLEANUP = 4405 ;
+DAILY_HYGIENE_DEFERRED_VPA_NOTIFICATION = 4406 ;
+DAILY_HYGIENE_ACQUIRE_PRELOADED_APPS = 4407 ;
+DAILY_HYGIENE_LOG_SESSION_STATS = 4408 ;
+DAILY_HYGIENE_INSTANT_APPS_ARCHIVE_PREFETCH = 4409 ;
+ENTERPRISE_CLIENT_POLICY_SYNC_START = 4450 ;
+ENTERPRISE_CLIENT_POLICY_SYNC_ERROR = 4451 ;
+LOYALTY_MEMBERSHIP_SIGNUP_REQUEST = 4500 ;
+LOYALTY_MEMBERSHIP_SIGNUP_RESPONSE = 4501 ;
+LOYALTY_OPEN_REWARD_PACKAGE_REQUEST = 4502 ;
+LOYALTY_OPEN_REWARD_PACKAGE_RESPONSE = 4503 ;
+LOYALTY_CLAIM_REWARD_REQUEST = 4504 ;
+LOYALTY_CLAIM_REWARD_SUCCESS = 4505 ;
+LOYALTY_CLAIM_REWARD_FAILURE = 4506 ;
+LOYALTY_FIREBALL_FILTERING = 4507 ;
+POINTS_PROMOTION_ACTIVATION_REQUEST = 4508 ;
+POINTS_PROMOTION_ACTIVATION_SUCCESS = 4509 ;
+POINTS_PROMOTION_ACTIVATION_ERROR = 4510 ;
+QUEST_PROMOTION_ACTIVATION_REQUEST = 4511 ;
+QUEST_PROMOTION_ACTIVATION_SUCCESS = 4512 ;
+QUEST_PROMOTION_ACTIVATION_ERROR = 4513 ;
+QUEST_PROMOTION_CLAIM_REWARD_REQUEST = 4514 ;
+QUEST_PROMOTION_CLAIM_REWARD_SUCCESS = 4515 ;
+QUEST_PROMOTION_CLAIM_REWARD_ERROR = 4516 ;
+SPLIT_INSTALL_API_ON_DEFERRED_LANGUAGE_INSTALL = 4550 ;
+SPLIT_INSTALL_API_ON_DEFERRED_LANGUAGE_UNINSTALL = 4551 ;
+SPLIT_INSTALL_ON_LOW_STORAGE = 4552 ;
+SPLIT_INSTALL_API_SKIPPED_INSTALLED_SPLIT = 4553 ;
+LANGUAGE_CHANGE_INSTALL_IMMEDIATE_TRIGGERED = 4554 ;
+LANGUAGE_CHANGE_INSTALL_RETRY_TRIGGERED = 4555 ;
+LANGUAGE_CHANGE_INSTALL_DEFERRED_TRIGGERED = 4556 ;
+LANGUAGE_CHANGE_INSTALL_UNKNOWN = 4557 ;
+APP_LANGUAGE_CHANGE_START_BROADCAST = 4558 ;
+APP_LANGUAGE_CHANGE_INSTALL_IMMEDIATE_TRIGGERED = 4559 ;
+UNKNOWN_PLAY_CORE_EVENT = 4560 ;
+SPLIT_INSTALL_PLAY_CORE_START_INSTALL_ACTION_START = 4561 ;
+SPLIT_INSTALL_PLAY_CORE_START_INSTALL_PHONESKY_API_CALL = 4562 ;
+PHONESKY_DATA_USAGE_INFO = 4600 ;
+INSTANT_APP_ATTRIBUTED_INSTALL = 4650 ;
+INSTANT_APP_USAGE_SERVICE_REQUEST_FAILED = 4651 ;
+UNINSTALL_WIZARD_RECOMMENDATIONS_RESPONSE = 4700 ;
+UNINSTALL_DESTINATION_RECOMMENDATIONS_RESPONSE = 4701 ;
+UNINSTALL_DESTINATION_SORT_TYPE_CHANGED = 4702 ;
+UNINSTALL_DESTINATION_UPDATE_AVAILABLE_SORT_TYPES = 4703 ;
+GTAF_GET_CPID = 4800 ;
+GTAF_GET_MDP = 4801 ;
+PREREGISTRATION_STATUS_API_ERROR = 4810 ;
+PREREGISTRATION_STATUS_API_GET_PREREGISTRATION_AVAILABILITY_FAILURE = 4811 ;
+PREREGISTRATION_STATUS_API_GET_PREREGISTRATION_AVAILABILITY_SUCCESS = 4812 ;
+PREREGISTRATION_STATUS_API_GET_CURRENT_USER_PREREGISTRATION_STATUS_FAILURE = 4813 ;
+PREREGISTRATION_STATUS_API_GET_CURRENT_USER_PREREGISTRATION_STATUS_SUCCESS = 4814 ;
+COUNTERS_METALOG = 4900 ;
+CACHE_PERFORMANCE_SUMMARY = 4950 ;
+DOWNLOAD_POST_PROCESSING_START = 4960 ;
+DOWNLOAD_POST_PROCESSING_SUCCESS = 4961 ;
+DOWNLOAD_POST_PROCESSING_ERROR = 4962 ;
+GROUP_INSTALL_REQUEST = 4963 ;
+GROUP_INSTALL_CONSTRAINT_MET = 4964 ;
+GROUP_INSTALL_START = 4965 ;
+GROUP_INSTALL_STAGED_READY = 4966 ;
+GROUP_INSTALL_STAGED_NOT_READY = 4967 ;
+GROUP_INSTALL_SUCCESS = 4968 ;
+GROUP_INSTALL_FAILED = 4969 ;
+GROUP_INSTALL_CANCELED = 4970 ;
+STATIC_SHARED_LIBRARY_CROSS_PROFILE_ACTIVATION = 4971 ;
+INSTALL_ATTEMPT = 4972 ;
+INSTALL_ATTEMPT_ERROR = 4973 ;
+PACKAGE_REMOVED = 4974 ;
+GET_DOWNLOADS_MAIN_PROCESS = 4975 ;
+GET_DOWNLOADS_DS_PROCESS = 4976 ;
+FS_VERITY_INSTALLER_STREAM = 4977 ;
+GET_DOWNLOADS_RESPONSE = 4978 ;
+INSTALL_REQUEST_CANDIDATES = 4979 ;
+DOWNLOAD_ABANDONED = 4980 ;
+INSTALL_BLOCKED_ON_INSTALLER_BUSY = 4981 ;
+INSTALLER_V2_RECOVERY = 4982 ;
+INSTALLER_V2_ORPHANED_DOWNLOADS = 4983 ;
+INSTALL_COMMITTED = 4984 ;
+DATA_SUBSCRIPTION_ERROR = 5010 ;
+OFFLINE_ACQUISITION_REQUEST_STORED = 5020 ;
+OFFLINE_ACQUISITION_JOB_START = 5021 ;
+OFFLINE_ACQUISITION_NOTIFICATION_SENT = 5022 ;
+OFFLINE_ACQUISITION_VERSION_CHANGED = 5023 ;
+OFFLINE_ACQUISITION_INSTALL_REQUESTED = 5024 ;
+OFFLINE_ACQUISITION_JOB_RESCHEDULED = 5025 ;
+OFFLINE_ACQUISITION_JOB_FINISHED = 5026 ;
+OFFLINE_ACQUISITION_FAILURE = 5027 ;
+DEVELOPER_TRIGGERED_ROLLBACK_ATTEMPT = 5040 ;
+DEVELOPER_TRIGGERED_ROLLBACK_FINISHED = 5041 ;
+DEVELOPER_TRIGGERED_ROLLBACK_COMMITTED = 5042 ;
+DEVELOPER_TRIGGERED_ROLLBACK_CANCELLED_PENDING_SESSION = 5043 ;
+APP_CONTENT_CLUSTER_PREVIEW_LOAD_FAILED = 5050 ;
+ASSET_MODULE_API_ON_ERROR = 5100 ;
+ASSET_MODULE_API_GET_SESSION_STATE = 5101 ;
+ASSET_MODULE_API_ON_GET_SESSION_STATE = 5102 ;
+ASSET_MODULE_API_GET_SESSION_STATES = 5103 ;
+ASSET_MODULE_API_ON_GET_SESSION_STATES = 5104 ;
+ASSET_MODULE_API_START_DOWNLOAD = 5105 ;
+ASSET_MODULE_API_ON_START_DOWNLOAD = 5106 ;
+ASSET_MODULE_API_NOTIFY_CHUNK_TRANSFERRED = 5107 ;
+ASSET_MODULE_API_ON_NOTIFY_CHUNK_TRANSFERRED = 5108 ;
+ASSET_MODULE_API_NOTIFY_MODULE_COMPLETED = 5109 ;
+ASSET_MODULE_API_ON_NOTIFY_MODULE_COMPLETED = 5110 ;
+ASSET_MODULE_API_NOTIFY_SESSION_COMPLETED = 5111 ;
+ASSET_MODULE_API_ON_NOTIFY_SESSION_COMPLETED = 5112 ;
+ASSET_MODULE_API_NOTIFY_SESSION_FAILED = 5113 ;
+ASSET_MODULE_API_ON_NOTIFY_SESSION_FAILED = 5114 ;
+ASSET_MODULE_API_CANCEL_DOWNLOAD = 5115 ;
+ASSET_MODULE_API_ON_CANCEL_DOWNLOAD = 5116 ;
+ASSET_MODULE_API_INTERNAL_ERROR = 5117 ;
+ASSET_MODULE_API_CLEANER_START = 5118 ;
+ASSET_MODULE_API_CLEANER_END = 5119 ;
+ASSET_MODULE_API_PHONESKY_FAILING_SESSION = 5120 ;
+ASSET_MODULE_API_CLEANER_DATA = 5121 ;
+ASSET_MODULE_API_KEEP_ALIVE = 5122 ;
+ASSET_MODULE_API_ON_KEEP_ALIVE = 5123 ;
+ASSET_MODULE_API_GET_CHUNK_FILE_DESCRIPTOR = 5124 ;
+ASSET_MODULE_API_ON_GET_CHUNK_FILE_DESCRIPTOR = 5125 ;
+ASSET_MODULE_FAST_FOLLOW_START_DOWNLOAD = 5126 ;
+ASSET_MODULE_PHONESKY_CANCEL_DOWNLOAD = 5127 ;
+ASSET_MODULE_FAST_FOLLOW_ON_START_DOWNLOAD = 5128 ;
+ASSET_MODULE_PHONESKY_ON_CANCEL_DOWNLOAD = 5129 ;
+ASSET_MODULE_API_REQUEST_DOWNLOAD_INFO = 5130 ;
+ASSET_MODULE_API_ON_REQUEST_DOWNLOAD_INFO = 5131 ;
+ASSET_MODULE_API_REMOVE_MODULE = 5132 ;
+ASSET_MODULE_API_ON_REMOVE_MODULE = 5133 ;
+ASSET_MODULE_UPDATE_START_DOWNLOAD = 5134 ;
+ASSET_MODULE_UPDATE_ON_START_DOWNLOAD = 5135 ;
+ASSET_MODULE_START_DOWNLOAD_INTERNAL = 5136 ;
+ASSET_MODULE_COMPLETE_DOWNLOAD_INTERNAL = 5137 ;
+ASSET_MODULE_NOTIFICATION_CANCEL_DOWNLOAD = 5138 ;
+ASSET_MODULE_COMPLETE_TRANSFER_INTERNAL = 5139 ;
+GL_EXTENSIONS_FETCH = 5150 ;
+DEVICE_CONNECTIVITY_PROFILE_REFRESHED_AND_FILLED = 5200 ;
+ACQUIRE_REFRESH_REQUEST = 5250 ;
+ACQUIRE_REFRESH_RESPONSE = 5251 ;
+LOG_SAMPLING_TEST_BASE_EVENT = 5300 ;
+LOG_SAMPLING_TEST_1 = 5301 ;
+LOG_SAMPLING_TEST_2 = 5302 ;
+GET_LAUNCH_REVIEW_FLOW_INFO_DELIVERED = 5305 ;
+GET_LAUNCH_REVIEW_FLOW_INFO_DROPPED = 5306 ;
+IN_APP_REVIEW_ACTIVITY_DROPPED = 5307 ;
+IN_APP_REVIEW_DIALOG_USER_DISMISS = 5308 ;
+IN_APP_REVIEW_PLAYSTAMP_CHECKED = 5309 ;
+LOAD_TFLITE_RUNTIME = 5310 ;
+LOAD_TFLITE_MODEL = 5311 ;
+ML_INFERENCE = 5312 ;
+ML_FEATURE_EXTRACTION = 5313 ;
+ML_SIGNAL_STORE = 5314 ;
+NOTIFICATION_CLICKABILITY_STATS_REPORT = 5315 ;
+PREREGISTRATION_NOTIFICATION_APP_ALREADY_INSTALLED = 5360 ;
+PREREGISTRATION_NOTIFICATION_APP_IN_PREREGISTRATION = 5361 ;
+PREREGISTRATION_NOTIFICATION_APP_NOT_AVAILABLE = 5362 ;
+PREREGISTRATION_RECOMMENDATION_NOTIFICATION_SETTING_TOGGLED = 5363 ;
+PREREGISTRATION_DFE_NOTIFICATION_PRODUCTION_RELEASE = 5364 ;
+PREREGISTRATION_NOTIFICATION_RETRY_APP_ALREADY_INSTALLED = 5365 ;
+PREREGISTRATION_NOTIFICATION_NEW_APP_RELEASE_FOUND = 5366 ;
+PREREGISTRATION_NOTIFICATION_APP_ALREADY_INSTALLED_DAY_1 = 5367 ;
+PREREGISTRATION_NOTIFICATION_APP_IN_PREREGISTRATION_DAY_1 = 5368 ;
+PREREGISTRATION_NOTIFICATION_APP_NOT_AVAILABLE_DAY_1 = 5369 ;
+PREREGISTRATION_NOTIFICATION_RETRY_APP_ALREADY_INSTALLED_DAY_1 = 5370 ;
+PREREGISTRATION_NOTIFICATION_NEW_APP_RELEASE_FOUND_DAY_1 = 5371 ;
+PREREGISTRATION_NOTIFICATION_ACKNOWLEDGEMENT_EXPIRED = 5372 ;
+PREREGISTRATION_NOTIFICATION_ACKNOWLEDGEMENT_EXPIRED_DAY_1 = 5373 ;
+CASHMERE_REPORT = 5380 ;
+CASHMERE_FUNNEL_FAILURE = 5381 ;
+CASHMERE_FUNNEL_SUCCESS = 5382 ;
+CASHMERE_DOWNLOAD_JOB_SCHEDULED = 5383 ;
+CASHMERE_DOWNLOAD_JOB_STARTED = 5384 ;
+CASHMERE_DOWNLOAD_JOB_STOPPED = 5385 ;
+FETCH_DROIDGUARD_TOKEN_SUCCESS = 5410 ;
+FETCH_DROIDGUARD_TOKEN_FAILURE = 5411 ;
+INIT_DROIDGUARD_FAILURE_PLAY_SERVICES_APK_UNAVAILABLE = 5412 ;
+SEARCH_ENGINE_CHOICES_PRESENTED = 5430 ;
+DEFAULT_SEARCH_ENGINE_SELECTED = 5431 ;
+DEVICE_INFO = 5450 ;
+RETRY_CHARGING_SUBSCRIPTION_INSTRUMENT_REQUEST = 5451 ;
+RETRY_CHARGING_SUBSCRIPTION_INSTRUMENT_RESPONSE = 5452 ;
+PLAY_PASS_SETUP_PAGE_HEADER_VIDEO_LOAD_FAILED = 5461 ;
+SELF_UPDATE_RESUMED = 5480 ;
+SELF_UPDATE_FILEBYFILE_THROTTLED = 5481 ;
+SELF_UPDATE_RETRIEVE_PACKAGE_STATE = 5482 ;
+SELF_UPDATE_INSTALL_DATA_UPDATE = 5483 ;
+INVALID_SELF_UPDATE_STATE_TRANSITION = 5484 ;
+SELF_UPDATE_DS_DOWNLOAD_CLEANUP = 5485 ;
+SELF_UPDATE_DS_DOWNLOAD_GET_URI = 5486 ;
+UNAUTH_UPDATE_APP_CERTIFICATE_MISMATCH = 5530 ;
+PREREG_AUTO_INSTALL_ACQUISITION_SUCCEEDED = 5580 ;
+PREREG_AUTO_INSTALL_ACQUISITION_FAILED = 5581 ;
+PREREG_AUTO_INSTALL_ACQUISITION_FAILED_REQUIRE_USER_ACTION = 5582 ;
+PREREG_AUTO_INSTALL_SUCCEEDED = 5583 ;
+PREREG_AUTO_INSTALL_FAILED_USER_DISABLED = 5584 ;
+PREREG_AUTO_INSTALL_FAILED_REQUIRE_CHECKOUT_FLOW = 5585 ;
+PREREG_AUTO_INSTALL_FAILED_REQUIRE_WIFI_CONNECTION = 5586 ;
+PREREG_AUTO_INSTALL_FAILED_TESTING_PROGRAM = 5587 ;
+PREREG_AUTO_INSTALL_FAILED_EARLY_ACCESS_PROGRAM = 5588 ;
+PREREG_AUTO_INSTALL_FAILED_NOT_ANDROID_APP = 5589 ;
+PREREG_AUTO_INSTALL_FAILED_MATURE_APP = 5590 ;
+PREREG_AUTO_INSTALL_FAILED_MULTIPLE_DEVICES = 5591 ;
+PREREG_AUTO_INSTALL_FAILED_SCHEDULE_INSTALL = 5592 ;
+PREREG_AUTO_INSTALL_FAILED_ACCOUNT_UNAVAILABLE = 5593 ;
+PREREG_AUTO_INSTALL_FAILED_IAP_NOT_SEEN = 5594 ;
+PREREG_AUTO_INSTALL_FAILED_CONTAINS_ADS_NOT_SEEN = 5595 ;
+PREREG_AUTO_INSTALL_FAILED_INVALID_DOCUMENT = 5596 ;
+PREREG_AUTO_INSTALL_FAILED_DOWNLOAD_ERROR = 5597 ;
+PREREG_AUTO_INSTALL_FAILED_INSTALL_ERROR = 5598 ;
+PREREG_AUTO_INSTALL_FAILED_DOWNLOAD_CANCELLED = 5599 ;
+PREREG_AUTO_INSTALL_SCHEDULED = 5600 ;
+PREREG_AUTO_INSTALL_DIALOG_DISMISSED = 5601 ;
+PREREG_AUTO_INSTALL_ENABLED = 5602 ;
+PREREG_AUTO_INSTALL_DISABLED = 5603 ;
+PREREG_EARLY_ACCESS_ENABLED = 5604 ;
+PREREG_EARLY_ACCESS_DISABLED = 5605 ;
+PREREG_AUTO_INSTALL_FAILED_USER_INELIGIBLE = 5606 ;
+PREREG_AUTO_INSTALL_APK_SIZE_LARGE_REQUIRES_UNMETERED_NETWORK = 5607 ;
+PREREG_EARLY_ACCESS_CAP_REACHED = 5608 ;
+PREWARM_SERVICE_CALLED = 5630 ;
+PREWARM_SERVICE_PREFETCH_SUCCEEDED = 5631 ;
+PREWARM_SERVICE_PREFETCH_FAILED = 5632 ;
+PREWARM_SERVICE_PREFETCH_THROTTLED = 5633 ;
+PREWARM_SERVICE_PREFETCH_IMAGE_SUCCEEDED = 5634 ;
+PREWARM_SERVICE_PREFETCH_IMAGE_FAILED = 5635 ;
+PREWARM_SERVICE_PREFETCH_IMAGE_FAILED_CACHE_MISS = 5636 ;
+PREWARM_SERVICE_PREFETCH_IMAGE_DETAILS_PARSE_FAILED = 5637 ;
+SERVER_DRIVEN_AUTO_UPDATE_DIFF = 5640 ;
+HEADLESS_CLIENT_BATTERY_DRAIN_REPORT = 5641 ;
+PREREG_INSTALL_EVENT_SCHEDULED = 6000 ;
+PREREG_AWAITING_INSTALLATION = 6001 ;
+PREREG_INSTALL_FINISHED = 6002 ;
+PREREG_INSTALL_ERROR = 6003 ;
+PREREG_UNINSTALLED = 6004 ;
+PREREG_UNINSTALL_ERROR = 6005 ;
+HAB_GAME_INSTANCE_STARTED = 6020 ;
+GMSCORE_MODULE_DEPENDENCY_INSTALL_START = 6031 ;
+GMSCORE_MODULE_DEPENDENCY_INSTALL_IN_PROGRESS = 6032 ;
+GMSCORE_MODULE_DEPENDENCY_INSTALL_FINISH = 6033 ;
+GMSCORE_MODULE_DEPENDENCY_INSTALL_ERROR = 6034 ;
+GMSCORE_MODULE_DEPENDENCY_IGNORED_NO_METADATA = 6035 ;
+GMSCORE_MODULE_DEPENDENCY_IGNORED_MODULE_UNAVAILABLE = 6036 ;
+GMSCORE_MODULE_DEPENDENCY_IGNORED_INSUFFICIENT_STORAGE = 6037 ;
+AUTO_UPDATE_INSTALL_CONSTRAINTS_DIFF = 6051 ;
+P2P_START_ADVERTISING = 6060 ;
+P2P_START_ADVERTISING_RESULT = 6061 ;
+P2P_STOP_ADVERTISING = 6062 ;
+P2P_START_DISCOVERY = 6063 ;
+P2P_START_DISCOVERY_RESULT = 6064 ;
+P2P_STOP_DISCOVERY = 6065 ;
+P2P_ENDPOINT_DISCOVERED = 6066 ;
+P2P_ENDPOINT_LOST = 6067 ;
+P2P_CONNECTION_REMOTE_REQUESTED = 6068 ;
+P2P_CONNECTION_REQUESTED = 6069 ;
+P2P_CONNECTION_REQUEST_RESULT = 6070 ;
+P2P_CONNECTION_ACCEPTED = 6071 ;
+P2P_CONNECTION_ACCEPTED_RESULT = 6072 ;
+P2P_CONNECTION_REJECTED = 6073 ;
+P2P_CONNECTION_REMOTE_REJECTED = 6074 ;
+P2P_CONNECTION_ESTABLISHED = 6075 ;
+P2P_SESSION_INITIALIZED = 6076 ;
+P2P_SESSION_INITIALIZATION_FAILED = 6077 ;
+P2P_SESSION_SEND_FILEGROUP_METADATA = 6078 ;
+P2P_SESSION_SEND_FILEGROUP_METADATA_RESULT = 6079 ;
+P2P_SESSION_RECEIVE_FILEGROUP_METADATA = 6080 ;
+P2P_SESSION_SEND_FILEGROUP_REQUEST = 6081 ;
+P2P_SESSION_SEND_FILEGROUP_REQUEST_RESULT = 6082 ;
+P2P_SESSION_RECEIVE_FILEGROUP_REQUEST = 6083 ;
+P2P_TRANSFER_STARTED = 6084 ;
+P2P_TRANSFER_SUCCEEDED = 6085 ;
+P2P_TRANSFER_CANCELED = 6086 ;
+P2P_TRANSFER_ERROR = 6087 ;
+P2P_APP_BLOCKLISTED = 6088 ;
+P2P_APP_ALREADY_INSTALLED = 6089 ;
+P2P_APP_INSTALL_INTENT_NEEDED = 6090 ;
+P2P_SESSION_SEND_INCREMENTAL_FILEGROUP_METADATA = 6091 ;
+P2P_SESSION_SEND_INCREMENTAL_FILEGROUP_METADATA_RESULT = 6092 ;
+P2P_SESSION_RECEIVE_INCREMENTAL_FILEGROUP_METADATA = 6093 ;
+P2P_SESSION_DISCONNECTED = 6094 ;
+ADD_FOP_POST_SUCCESS_STEP_REQUEST = 6160 ;
+ADD_FOP_POST_SUCCESS_STEP_RESPONSE = 6161 ;
+GMSCORE_RECOVERY_TRIGGERED = 6170 ;
+DATALOADER_CREATE = 6180 ;
+DATALOADER_START = 6181 ;
+DATALOADER_PREPARE_IMAGE = 6182 ;
+DATALOADER_STOP = 6185 ;
+DATALOADER_DESTROY = 6186 ;
+DATALOADER_ERROR = 6187 ;
+DATALOADER_REST_STREAM_START = 6188 ;
+DATALOADER_REST_STREAM_FINISHED = 6189 ;
+DATALOADER_RESUME_APP_ALREADY_LOADED = 6190 ;
+DATALOADER_HANDLED_ERROR = 6191 ;
+DATALOADER_REST_STREAM_SINGLE_RETRY_FAILURE = 6192 ;
+DATALOADER_PENDING_READS = 6193 ;
+DATALOADER_UNRECOVERABLE_FAILURE_SCHEDULING_MIGRATION = 6194 ;
+DATALOADER_UNRECOVERABLE_FAILURE_MIGRATION_TRIGGERED = 6195 ;
+DATALOADER_UNRECOVERABLE_FAILURE_MIGRATION_SKIPPED = 6196 ;
+DATALOADER_REST_STREAM_EXPLICITLY_CANCELLED = 6197 ;
+DATALOADER_UNRECOVERABLE_FAILURE_MIGRATION_DEDUPED = 6198 ;
+DATALOADER_IDLE_NUGGET_ONLY = 6199 ;
+MP_LOGGING_TEST = 6200 ;
+GPP_HOME_ENTRY_POINT = 6220 ;
+PERMISSIONS_AUTO_REVOKED = 6221 ;
+OS_APP_USAGE_STATS_DATA_LOST = 6222 ;
+APP_USAGE_STATS_DATA_UPDATED = 6223 ;
+APP_USAGE_STATS_INCONSISTENT_DATA_ERROR = 6224 ;
+PERMISSION_REVOCATION_APP_STATS = 6225 ;
+PURCHASE_FLOW_BOTGUARD_TRIGGERED = 6240 ;
+PURCHASE_FLOW_BOTGUARD_SUCCEEDED = 6241 ;
+PURCHASE_FLOW_BOTGUARD_FAILED = 6242 ;
+INCREMENTAL_INSTALL_STARTED = 6260 ;
+INCREMENTAL_INSTALL_SUCCEEDED = 6261 ;
+INCREMENTAL_INSTALL_FAILED = 6262 ;
+INCREMENTAL_FALLBACK_SINGLE_APP = 6263 ;
+INCREMENTAL_FALLBACK_TOTAL_DISABLEMENT = 6264 ;
+INCREMENTAL_NUGGET_INSTALLATION_SESSION = 6265 ;
+INCREMENTAL_FALLBACK_INSTALL_LOOP = 6266 ;
+INCREMENTAL_MIGRATE_APP_OFF_INCFS_SUCCEEDED = 6267 ;
+INCREMENTAL_MIGRATE_APP_OFF_INCFS_FAILED = 6268 ;
+INCREMENTAL_BOLT_ICON_FALSE_NEGATIVE = 6269 ;
+INCREMENTAL_BOLT_ICON_FALSE_POSITIVE = 6270 ;
+INCREMENTAL_MIGRATION_UPDATE_DISABLED_MIGRATION_FLAG_OFF = 6271 ;
+INCREMENTAL_MIGRATION_UPDATE_DISABLED_INSTALL_V2_OFF = 6272 ;
+INCREMENTAL_MIGRATION_UPDATE_SCHEDULED = 6273 ;
+INCREMENTAL_MIGRATION_UPDATE_SUCCEEDED = 6274 ;
+INCREMENTAL_MIGRATION_UPDATE_FAILED = 6275 ;
+INCREMENTAL_NUGGET_INSTALLATION_WITH_LOW_BANDWIDTH = 6276 ;
+INCREMENTAL_AUTOUPDATE_RECOVERY_SCHEDULED = 6277 ;
+OFFERS_TAB_RED_DOT_DISMISSED = 6280 ;
+NOTIFICATION_CENTER_TAB_RED_DOT_DISMISSED = 6281 ;
+APP_PACK_JOIN_STARTED = 6300 ;
+APP_PACK_JOIN_SUCCEEDED = 6301 ;
+APP_PACK_JOIN_FAILED = 6302 ;
+APP_PACK_LEAVE_STARTED = 6303 ;
+APP_PACK_LEAVE_SUCCEEDED = 6304 ;
+APP_PACK_LEAVE_FAILED = 6305 ;
+PREWARM_GMSCORE_WALLET_CANCELED_EXCEPTION = 6321 ;
+PREWARM_GMSCORE_WALLET_EXECUTION_EXCEPTION = 6322 ;
+PREWARM_GMSCORE_WALLET_INTERRUPTED_EXCEPTION = 6323 ;
+PREWARM_GMSCORE_WALLET_TIMEOUT_EXCEPTION = 6324 ;
+PREWARM_GMSCORE_WALLET_CLIENT_UNAVAILABLE = 6325 ;
+APP_OPS_DEVICE_ID_RECOVERY_PACKAGE_UPDATED = 6330 ;
+APP_OPS_DEVICE_ID_RECOVERY_PACKAGE_UPDATE_FAILURE = 6331 ;
+APP_OPS_DEVICE_ID_RECOVERY_PACKAGE_REFRESHED = 6332 ;
+INCREMENTAL_READLOGS_INITIALIZED = 6350 ;
+INCREMENTAL_READLOGS_CACHE_FILE_CREATED = 6351 ;
+INCREMENTAL_READLOGS_CACHE_FILE_CREATE_FAILED = 6352 ;
+INCREMENTAL_READLOGS_SINGLE_FLUSH_START = 6353 ;
+INCREMENTAL_READLOGS_SINGLE_FLUSH_END = 6354 ;
+INCREMENTAL_READLOGS_SESSION_FLUSH_SUCCESS = 6355 ;
+INCREMENTAL_READLOGS_SESSION_FLUSH_FAILED = 6356 ;
+INCREMENTAL_READLOGS_DISABLED_BY_SECONDARY_USER_INSTALLATION = 6357 ;
+INCREMENTAL_READLOGS_DISABLED_INTENTIONALLY = 6358 ;
+INCREMENTAL_READLOGS_IMPLICITLY_OPTED_IN = 6359 ;
+INCREMENTAL_READLOGS_OPTED_IN = 6360 ;
+INCREMENTAL_READLOGS_OPTED_OUT = 6361 ;
+INCREMENTAL_READLOGS_AADC_STATUS_ELIGIBLE = 6362 ;
+INCREMENTAL_READLOGS_AADC_STATUS_INELIGIBLE = 6363 ;
+INCREMENTAL_READLOGS_AADC_STATUS_CHANGED_FROM_ELIGIBLE_TO_INELIGIBLE = 6364 ;
+INCREMENTAL_READLOGS_AADC_STATUS_CHANGED_FROM_INELIGIBLE_TO_ELIGIBLE = 6365 ;
+INCREMENTAL_READLOGS_AADC_STATUS_UNKNOWN = 6366 ;
+LAUNCHER_FEATURE_EVENT = 6370 ;
+ENX_FLOW_STARTED = 6380 ;
+ENX_DOC_NOT_FOUND = 6381 ;
+ENX_DOC_NOT_ENX = 6382 ;
+ENX_DOC_NOT_AVAILABLE_TO_USER = 6383 ;
+ENX_NO_NETWORK = 6384 ;
+ENX_NOT_FIRST_PARTY_CALLER = 6385 ;
+ENX_ALREADY_INSTALLED = 6386 ;
+ENX_OK = 6387 ;
+ENX_CANCELED = 6388 ;
+ENX_TRIGGERED_CONSENT = 6389 ;
+PLAY_PASS_CONTENT_LAUNCHER_APP_INFO_LOAD_FAILED = 6390 ;
+EXTERNAL_INSTALL_ATTEMPT = 6400 ;
+INTEGRITY_API = 6410 ;
+PLAY_CORE_VERSION_DATA = 6420 ;
+NOTIFICATION_RESUME_HANDOFF_REVOKE_RECEIVED = 6430 ;
+HANDOFF_INITIATE_REQUEST = 6431 ;
+HANDOFF_INITIATE_RESPONSE = 6432 ;
+HANDOFF_GET_LINK_REQUEST = 6433 ;
+HANDOFF_GET_LINK_RESPONSE = 6434 ;
+HANDOFF_ACCOUNT_MISMATCH = 6436 ;
+HANDOFF_MULTIPLE_AVAILABLE = 6437 ;
+HANDOFF_RESUMED = 6438 ;
+HANDOFF_COMPLETED = 6439 ;
+HANDOFF_INITIATED = 6440 ;
+VOICE_SEARCH_BUTTON_SHOWN = 6500 ;
+VOICE_SEARCH_BUTTON_HIDDEN = 6501 ;
+VOICE_SEARCH_REQUEST_INITIATED = 6502 ;
+VOICE_SEARCH_REQUEST_RESULTS_RECEIVED = 6503 ;
+PLAY_INSTALL_API_REQUEST = 6510 ;
+APP_ERROR_LOGGED = 6530 ;
+GAMES_SETUP_INSTALL_ON_CREATE = 6550 ;
+GAMES_SETUP_INSTALL_FIRST_RPC_INITIATED = 6551 ;
+GAMES_SETUP_INSTALL_LAST_RPC_COMPLETED = 6552 ;
+GAMES_SETUP_INSTALL_LOAD_ERROR = 6553 ;
+CROSS_INSTALL_USER = 6570 ;
+CROSS_INSTALL_ACQUISITION_FINISHED = 6571 ;
+CROSS_INSTALL_COOKIE_UPDATE_REQUESTED = 6572 ;
+CROSS_INSTALL_COOKIE_UPDATE_SUCCESS = 6573 ;
+CROSS_INSTALL_COOKIE_UPDATE_FAILED = 6574 ;
+RAPID_AUTO_UPDATE_ON_LOW_STORAGE = 6590 ;
+HYPE_PANEL_HERO_VIDEO_SHOWN = 6591 ;
+HYPE_PANEL_HERO_IMAGE_SHOWN = 6592 ;
+AOT_OPTIMIZATION_STATE = 6611 ;
+AOT_OPTIMIZATION_STATE_RETRIEVAL_ERROR = 6612 ;
+AOT_OPTIMIZATION_STATE_RETRIEVAL_START = 6613 ;
+PCSI_STALE_SEQUENCE_DATA = 6614 ;
+INCREMENTAL_FEATURES_NONE = 6701 ;
+INCREMENTAL_FEATURES_KERNEL_V1 = 6702 ;
+INCREMENTAL_FEATURES_KERNEL_V1_WITH_SELINUX_PATCH = 6703 ;
+INCREMENTAL_FEATURES_KERNEL_V2 = 6704 ;
+FEEDBACK_SURVEY_DATA = 6720 ;
+FEEDBACK_SURVEY_DATA_UPLOAD_FAILURE = 6721 ;
+FEEDBACK_SURVEY_SETTINGS_PERSONALIZATION_OPT_IN = 6722 ;
+FEEDBACK_SURVEY_SETTINGS_PERSONALIZATION_OPT_OUT = 6723 ;
+FEEDBACK_SURVEY_SETTINGS_PERSONALIZATION_DELETE_PAST_ACTIVITY = 6724 ;
+INCREMENTAL_INSTALL_FAILURE_RETRY_DISABLED = 6820 ;
+INCREMENTAL_INSTALL_FAILURE_RETRY_REQUESTED = 6821 ;
+INCREMENTAL_INSTALL_FAILURE_RETRY_SCHEDULED = 6822 ;
+INCREMENTAL_INSTALL_FAILURE_RETRY_SUCCEEDED = 6823 ;
+INCREMENTAL_INSTALL_FAILURE_RETRY_FAILED = 6824 ;
+IN_APP_OFFER_UI_TIMEOUT = 6870 ;
+IN_APP_OFFER_POPSTICK_DISMISSED = 6871 ;
+IN_APP_OFFER_CONFIRMATION_DIALOG_DISMISSED = 6872 ;
+SYSTEM_COMPONENT_UPDATE_PARENT_APPROVAL_CHECKED = 6900 ;
+ENTERPRISE_DEVICE_REPORT_STATES_UPLOADED = 6920 ;
+ENTERPRISE_DEVICE_REPORT_STATES_NOT_UPLOADED = 6921 ;
+ENTERPRISE_DEVICE_REPORT_INFO = 6922 ;
+DEVICE_DRIVERS_NEURAL_NETWORKS_API_DATA_COLLECTION_ERROR = 6950 ;
+INCREMENTAL_STREAMING_DISABLED_BECAUSE_PREDICTED_LOW_BANDWIDTH = 7000 ;
+INCREMENTAL_STREAMING_DISABLED_BECAUSE_RETURNING_USER = 7001 ;
+IN_APP_MESSAGE_POPSTICK_DISMISSAL = 7020 ;
+UNHIBERNATION_FROM_INTENT = 7040 ;
+  }
+  optional Type backgroundEvent = 1 [default = OTHER];
+  // Additional parameters used by some events
+  // Flattened Docid (e.g. package name) of document in the event
+  optional string document = 2;
+  // An internal (engineering/debug) annotation of the event.
+  optional string reason = 3;
+  // Error code (HTTP status & other client-internal codes) for error events
+  // For more details, see:
+  // https://sites.google.com/a/google.com/universal-store/documentation/android-client/download-error-codes
+  optional int32 error_code = 4;
+  // The name of the Java exception that was thrown.
+  // Used to communicate client exceptions, network errors and server 500s.
+  optional string exception_type = 5;
+  // The server_logs_cookie as received from the server
+  // See PlayStoreUiElement.server_logs_cookie for details.
+  optional bytes server_logs_cookie = 6;
+  // Purchase related
+  // The offer type purchased (as ordinal value of finsky.OfferType.Id), see
+  // google3/wireless/android/finsky/proto/common.proto.
+  // Might be redundant with data in server_logs_cookie, but we won't always
+  // have a token.
+  optional int32 offer_type = 7;
+  // For a settings change, an int capturing what the setting changed from.
+  // The interpretation of this integer will depend on the type.
+  optional int32 from_setting = 8;
+  // For a settings change, an int capturing what the setting changed to.
+  // The interpretation of this integer will depend on the type.
+  optional int32 to_setting = 9;
+  // When a session is initiated, upload all out-of-band session data about
+  // the client's current state.
+  optional PlayStoreSessionData session_info = 10;
+  // App data for app-related background events.
+  optional AppData app_data = 11;
+  // For DFE request background events, the server latency as reported via
+  // ResponseWrapper.server_metadata.latency_millis.
+  optional int64 server_latency_ms = 12;
+  // For network request background events, the client observed latency.
+  optional int64 client_latency_ms = 13;
+  // For type=NLP_REPAIR_STATUS, more details
+  optional NlpRepairStatus nlp_repair_status = 14;
+  // For success/fail reports (e.g. password auth check) a simple true/false
+  optional bool operation_success = 15;
+  // Host name of server used for a WebViewChallenge.  Never the full URL.
+  optional string host = 16;
+  // For type WIDGET_EVENT, data describing the event.
+  optional WidgetEventData widget_event_data = 17;
+  // For type WIFI_AUTO_UPDATE_ATTEMPT, data describing the event.
+  optional WifiAutoUpdateAttempt wifi_auto_update_attempt = 18;
+  // For events that involve retries, a place to note the number of attempts
+  optional int32 attempts = 19;
+  // For acquisition / purchase related operations, whether
+  // Offer.checkout_flow_required was 'true' or 'false'.
+  optional bool offer_checkout_flow_required = 20;
+  // For search suggestion events, additional data about the
+  // query, latency, etc.
+  optional SearchSuggestionReport search_suggestion_report = 21;
+  optional PostSetupAppUsageReport postSetupAppUsageReport=112;
+}
+
+message PlayStoreSessionData {
+  // True if the global auto-update setting is enabled on the client.
+  optional bool global_auto_update_enabled = 1;
+  // True if the auto-update over wifi only setting is enabled on the client.
+  optional bool global_auto_update_over_wifi_only = 2;
+  // Number of times the user has been shown the auto-update migration dialog.
+  optional int32 auto_update_cleanup_dialog_num_times_shown = 3;
+  // The network type at the time this event was logged (as provided by
+  // the SDK). See Android ConnectivityManager.TYPE_* for values.
+  // http://developer.android.com/reference/android/net/ConnectivityManager.html
+  optional int32 network_type = 4;
+  // The network subtype at the time this event was logged (as provided by
+  // the SDK). See Android TelephonyManager.NETWORK_TYPE_* for values.
+  // http://developer.android.com/reference/android/telephony/TelephonyManager.html
+  optional int32 network_sub_type = 5;
+  // The number of active accounts on the device.
+  optional int32 num_accounts_on_device = 6;
+  // The number of apps that are installed on the device.
+  optional int32 num_installed_apps = 7;
+  // The number of installed apps that have auto-update enabled on the device.
+  optional int32 num_auto_updating_installed_apps = 8;
+  // The number of installed apps that have auto-update disabled on the device.
+  optional int32 num_installed_apps_not_auto_updating = 9;
+  // True if gaia password auth is opted out.
+  optional bool gaia_password_auth_opted_out = 10;
+  // The current content filter level
+  optional int32 content_filter_level = 11;
+  // True if the user has "allow unknown sources" checked
+  optional bool allow_unknown_sources = 12;
+  // "Prompt for FOP" (Burnsie) data
+  optional PromptForFopData prompt_for_fop_data = 13;
+}
+// This message is added to a PlayStoreBackgroundActionEvent for search
+// suggestions (displayed or clicked).
+message SearchSuggestionReport {
+  // The query as entered by the user.
+  optional string query = 1;
+  // The query as rewritten by the suggestion
+  optional string suggested_query = 2;
+  // The client-observed latency.
+  optional int64 client_latency_ms = 3;
+}
+// This message will be emitted (in a background event) by code that handles
+// Nlp repairs.
+message NlpRepairStatus {
+  enum RepairStatus {
+    UNKNOWN = 0;
+    // The NLP has been found and appears to be functional.
+    PROVIDER_FOUND = 1;
+    // The NLP is not working, but all other prerequisites are
+    // satisfied, and a fix should be applied
+    PROVIDER_NEEDS_REPAIR = 2;
+    // The NLP is not working, but we are in a holdoff state
+    // so no repair will be attempted.
+    PROVIDER_REPAIR_HOLDOFF = 3;
+    // The device is running the wrong SDK version
+    WRONG_SDK_VERSION = 4;
+    // The NLP package was not found
+    PACKAGE_NOT_FOUND = 5;
+    // The NLP package has unexpected package flags
+    WRONG_FLAGS = 6;
+    // The NLP package has the wrong version #
+    WRONG_VERSION = 7;
+    // The NLP package has the wrong signature
+    WRONG_SIGNATURE = 8;
+    // The NLP package is disabled
+    PACKAGE_DISABLED = 9;
+  }
+  optional RepairStatus repair_status = 1 [ default = UNKNOWN ];
+  // The package flags of the currently-installed NLP (if found)
+  optional int32 flags = 2;
+  // The version code of the currently-installed NLP (if found)
+  optional int32 version_code = 3;
+  // The signature hash of the currently-installed NLP (if incorrect)
+  optional string signature_hash = 4;
+  // Set to true if test-keys version was found (not set for user builds)
+  optional bool found_test_keys = 5;
+  // Set to true if we are blocked from retry until next boot
+  optional bool holdoff_until_boot = 6;
+  // Set to true if we are blocked from retry until data wipe
+  optional bool holdoff_until_wipe = 7;
+  // Set to true if we have successfully installed the fixer
+  optional bool holdoff_after_install = 8;
+  // The package-enabled bits for the currently-installed NLP
+  optional int32 enabled = 9;
+}
+message AppData {
+  // The app version of the event.
+  optional int32 version = 1;
+  // For installations, the version currently installed on the device.
+  //
+  // Presence of this field means that this event is about an app update.
+  optional int32 old_version = 2;
+  // True if the currently installed version is a system app.
+  optional bool system_app = 3;
+}
+// Data to help track usage and changes to widgets
+message WidgetEventData {
+  // The various widget classes (map to Java classes)
+  enum WidgetClassId {
+    UNKNOWN_WIDGET = 0;
+    MARKET_WIDGET = 1;
+    RECOMMENDED_WIDGET = 2;
+    NOWPLAYING_WIDGET = 3;
+  }
+  // Java class receiving the widget event
+  optional WidgetClassId class_id = 1;
+  // The intent action
+  enum IntentActionId {
+    UNKNOWN_ACTION = 0;
+    ENABLED = 1;
+    DISABLED = 2;
+    UPDATE_OPTIONS = 3;
+    DELETED = 4;
+  }
+  // The intent action received
+  optional IntentActionId intent_action_id = 2;
+  // Number of widgets
+  optional int32 num_widgets = 3;
+  // The remaining fields are sent only with APPWIDGET_UPDATE_OPTIONS
+  // Widget type (all, apps, books, movies, music, magazines)
+  // These id's will be the same as the values in Common.Backend
+  // Or -1 if the string type could not be matched
+  optional int32 backendId = 4;
+  // Min & Max dimensions
+  optional int32 min_width = 5;
+  optional int32 min_height = 6;
+  optional int32 max_width = 7;
+  optional int32 max_height = 8;
+}
+// Data describing a wifi auto update attempt.
+message WifiAutoUpdateAttempt {
+  // True if auto update succeeded. False if auto update failed because wifi
+  // connecitivty was not available.
+  optional bool auto_update_success = 1;
+  // The number of consecutive failed attempts that have occured since the
+  // first failed attempt. Is 1 on first fail.
+  optional int32 num_failed_attempts = 2;
+  // Time passed since first failed attempt. Is 0 on first fail.
+  optional int64 time_since_first_fail_ms = 3;
+  // Time interval of wifi checks
+  optional int64 wifi_check_interval_ms = 4;
+}
+// Stats about "Prompt for FOP" (Burnsie)
+message PromptForFopData {
+  // Whether the user is considered to have a FOP
+  // (as determined via DFE /checkInstrument)
+  optional bool has_fop = 1;
+  // Whether the user added a FOP via Burnsie flow.
+  optional bool fop_added = 2;
+  // Number of times the "primer" dialog has been shown.
+  optional int32 num_dialog_shown = 3;
+  // Number of times the actual "Complete your account" screen was shown.
+  optional int32 num_fop_selector_shown = 4;
+  // Number of times the user snoozed the Burnsie flow.
+  optional int32 num_snooze = 5;
+}
+
+// DEPRECATED(11/07/2013): sent by old clients. Use GenericNotificationAction
+// Details about a user-visible notification sent from old clients
+message PlayGamesNotificationActionDeprecated {
+  enum NotificationActionType {
+    // The notification was received on the device.
+    RECEIVED = 1;
+    // The notification was displayed to the user.
+    DISPLAYED = 2;
+    // The user saw the notification and dismissed it.
+    DISMISSED = 3;
+    // The user interacted with the notification and opened it.
+    OPENED = 4;
+    // The system chose to revoke this notification without the user seeing it.
+    // This could be because of action on another device, time limit, etc.
+    CANCELED = 5;
+    // This notification was consumed by another client before being displayed
+    // to the user.
+    CONSUMED = 6;
+    // Next index: 7;
+  }
+  // The type of action this log event represents.
+  optional NotificationActionType action_type = 1;
+  // The IDs of the notifications this action is for, if any.
+  repeated string notification_id = 2;
+  // How many notifications are being displayed to the user.
+  optional int32 displayed_count = 3;
+  // Next index: 4;
+}
+// Details about the user-visible android notification
+message PlayGamesAndroidNotificationAction {
+  enum NotificationActionType {
+    // The notification type was unknown
+    UNKNOWN = 0;
+    // The notification was received on the device.
+    RECEIVED = 1;
+    // The notification was displayed to the user.
+    DISPLAYED = 2;
+    // The user saw the notification and dismissed it.
+    DISMISSED = 3;
+    // The user interacted with the notification and opened it.
+    OPENED = 4;
+    // The system chose to revoke this notification without the user seeing it.
+    // This could be because of action on another device, time limit, etc.
+    CANCELED = 5;
+    // This notification was consumed by another client before being displayed
+    // to the user.
+    CONSUMED = 6;
+    // Next index: 7;
+  }
+  // The type of action this log event represents.
+  optional NotificationActionType action_type = 1;
+  // The IDs of the notifications this action is for, if any.
+  repeated string notification_id = 2;
+  // How many notifications are being displayed to the user.
+  optional int32 displayed_count = 3;
+  // Next index: 4;
+}
+// Details about the iOS notification
+message PlayGamesIosNotificationAction {
+  // The action the notification
+  enum NotificationActionType {
+    // The notification type was unknown
+    UNKNOWN = 0;
+    // The notification was received on the device.
+    APP_CONSUMED = 1;
+    // Next index: 2;
+  }
+  // The type of action this log event represents.
+  optional NotificationActionType action_type = 1;
+  // Next index: 2;
+}
+// Details about a user-visible notification
+message PlayGamesGenericNotificationAction {
+  // The type of notification action this was
+  enum NotificationPlatform {
+    UNKNOWN = 0;
+    // The notification was on an android device
+    ANDROID = 1;
+    // The notification was on an iOS device
+    IOS = 2;
+    // Next index: 3;
+  }
+  // Which type of notification this was
+  optional NotificationPlatform action_type = 1;
+  // Only one of the fields below will be populated
+  // The Android notification details
+  optional PlayGamesAndroidNotificationAction android_action = 2;
+  // The iOS notification details
+  optional PlayGamesIosNotificationAction ios_action = 3;
+  // Next index: 4;
+}
+// Details about an iOS device registration
+message PlayGamesIosDeviceRegister {
+  // 32 byte APNS device token assigned by apple.
+  optional bytes apns_device_token = 1;
+  // The iOS sdk version that sent the registration
+  optional string sdk_version = 2;
+  // The language of the device
+  optional string language = 3;
+  // Next index: 4
+}
+// Details about an iOS device unregistration
+message PlayGamesIosDeviceUnregister {
+  // 32 byte APNS device token assigned by apple.
+  optional bytes apns_device_token = 1;
+  // Next index: 2
+}
+// Details about an iOS specific type of message
+message PlayGamesIosDeviceAction {
+  // The type of iOS action
+  enum IosDeviceActionType {
+    UNKNOWN = 0;
+    // The device token was registered
+    REGISTER_DEVICE = 1;
+    // The device token was unregistered
+    UNREGISTER_DEVICE = 2;
+    // Next index: 3
+  }
+  // What type of token registration was this and
+  optional IosDeviceActionType action_type = 1;
+  // Only one of these fields will be filled depending on action_type
+  // The details of registration
+  optional PlayGamesIosDeviceRegister register_action = 2;
+  // The details of the unregistration
+  optional PlayGamesIosDeviceUnregister unregister_action = 3;
+  // Next index: 4;
+}
+// Details about the game tab in the destination app
+message PlayGamesDestinationAppGameTabInfo {
+  // The application collection being viewed
+  enum ApplicationCollection {
+    UNKNOWN_COLLECTION = 0;
+    FEATURED = 1;
+    MULTIPLAYER = 2;
+    PLAYED = 3;
+    RECOMMENDED = 4;
+    DOWNLOADED = 5;
+    ALL_GAMES = 6;
+    HIDDEN_GAMES = 7;
+    INSTALLED = 8;
+    // Next index = 9
+  }
+  // The collection type being displayed
+  optional ApplicationCollection collection = 1;
+  // True if user is viewing the top of the list, false if user has scrolled
+  // down
+  optional bool top_of_list = 2;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 3;
+  // Next index: 4
+}
+// Details about a game purchase from the destination app
+message PlayGamesDestinationAppGamePurchase {
+  // The price displayed to the user; null or 0 means free
+  optional int64 price_micros = 1;
+  // The purchase was successfully completed.  (This only matters when
+  // is_start_action = false.)
+  optional bool has_completed_purchase = 2;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 3;
+  // How far down in search / recommendations this game was displayed.
+  optional uint32 ranking_position = 4;
+  // Next index: 5
+}
+// Details about a game in the destination app
+message PlayGamesDestinationAppGameAction {
+  // Which section the user is viewing on the game detail page
+  enum GameDetailSection {
+    // UNKNOWN
+    UNKNOWN_SECTION = 0;
+    // About game
+    ABOUT = 1;
+    // The achievements for the game
+    ACHIEVEMENT_LIST = 2;
+    // The leaderboards for the game
+    LEADERBOARD_LIST = 3;
+    // Friends who also play this game
+    FRIEND_LIST = 4;
+    // Next index: 5
+  }
+  // The app id of the game
+  optional string application_id = 1;
+  // The section the user is viewing
+  optional GameDetailSection section = 2;
+  // User launched the game from the dest app
+  optional bool launched_game = 3;
+  // Leaderboard actions if the player chose a specific leaderboard
+  optional PlayGamesLeaderboardAction leaderboard = 4;
+  // User clicked to purchase game from the dest app
+  optional PlayGamesDestinationAppGamePurchase game_purchase = 5;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 6;
+  // How far down in search / recommendations this game was displayed.
+  optional uint32 ranking_position = 7;
+  // Next index: 8
+}
+// Details about the game tab in the destination app
+message PlayGamesDestinationAppPlayerTabInfo {
+  // The application collection being viewed
+  enum PlayerCollection {
+    // Unknown default actions
+    UNKNOWN_COLLECTION = 0;
+    // List of everyone in your circles
+    ALL = 1;
+    // List of people in your circles who have recently played games
+    MOST_RECENT = 2;
+    // List of people you may know
+    YOU_MAY_KNOW = 3;
+    // Next index: 4
+  }
+  // The collection type being displayed
+  optional PlayerCollection collection = 1;
+  // True if user is viewing the top of the list, false if user has scrolled
+  // down
+  optional bool top_of_list = 2;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 3;
+  // Next index: 4
+}
+// Details about a player in the destination app
+message PlayGamesDestinationAppPlayerAction {
+  // Which section the user is viewing on the player detail page
+  enum PlayerDetailSection {
+    // UNKNOWN
+    UNKNOWN_SECTION = 0;
+    // List of recently played games
+    RECENTLY_PLAYED = 1;
+    // Next index: 2
+  }
+  // The section the user is viewing
+  optional PlayerDetailSection section = 1;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 2;
+  // How far down in search / recommendations this game was displayed.
+  optional uint32 ranking_position = 3;
+  // Next index: 4
+}
+// Details about an action taken in the Settings page
+message PlayGamesDestinationAppSettingsAction {
+  // True if the user switched accounts
+  optional bool switched_account = 1;
+  // True if the user enabled notifications, false if the user disabled
+  // notifications
+  optional bool mobile_notifications_enabled = 2;
+  // True if the user enabled email notifications, false if the user
+  // disabled email notifications
+  optional bool email_notifications_enabled = 3;
+  // True if the user enabled social sharing, false if the user
+  // disabled social sharing
+  optional bool social_sharing_enabled = 4;
+  // The app id that the user chose to unmute notifications
+  repeated string unmuted_notifications_app_id = 5;
+  // Next index: 6
+}
+// Details about a destination app action
+message PlayGamesDestinationAppAction {
+  // The page in the destination app that the user clicked on
+  enum DestinationAppPageType {
+    // Unknown page
+    UNKNOWN_PAGE_TYPE = 0;
+    // The splash screen
+    SPLASH_SCREEN = 1;
+    // The list of games
+    GAME_TAB = 2;
+    // The list of players/friends
+    PLAYER_TAB = 3;
+    // The list of matches
+    MATCH_TAB = 4;
+    // The detail page for a game
+    GAME_DETAIL = 5;
+    // The detail page for a player
+    PLAYER_DETAIL = 6;
+    // The settings page
+    SETTINGS = 7;
+    // Launched the play store
+    PLAY_STORE = 8;
+    // Next index: 9
+  }
+  // The page the user wants to view
+  optional DestinationAppPageType page_type = 1;
+  // Details about the game tab if page_type == GAMES_TAB
+  optional PlayGamesDestinationAppGameTabInfo game_tab_info = 2;
+  // Details about an action to a specific game
+  optional PlayGamesDestinationAppGameAction game_action = 3;
+  // Details about actions inside the settings page
+  optional PlayGamesDestinationAppSettingsAction settings_action = 4;
+  // Details about the player tab if page_type == PLAYER_TAB
+  optional PlayGamesDestinationAppPlayerTabInfo player_tab_info = 5;
+  // Details about an action to a specific player
+  optional PlayGamesDestinationAppPlayerAction player_action = 6;
+  // Next index: 7
+}
+// Details about a leaderboard list view, top scores, or score window action
+message PlayGamesLeaderboardAction {
+  enum LeaderboardType {
+    // Unknown leaderboard type
+    UNKNOWN_LEADERBOARD_TYPE = 0;
+    // Public leaderboard
+    PUBLIC = 1;
+    // Social leaderboard
+    SOCIAL = 2;
+    // Next index = 3;
+  }
+  enum ScoreWindowType {
+    // Unknown score window type
+    UNKNOWN_SCORE_WINDOW = 0;
+    // The "daily" score window
+    DAILY = 1;
+    // The "weekly" score window
+    WEEKLY = 2;
+    // The "all time" score window
+    ALL_TIME = 3;
+    // Next index = 4;
+  }
+  // The leaderboard id this action is requesting
+  optional string leaderboard_id = 1;
+  // The type of the leaderboard
+  optional LeaderboardType leaderboard_type = 2;
+  // The score window type requested, if applicable
+  optional ScoreWindowType score_window_type = 3;
+  // Next index = 4;
+}
+// Details about a GPlus upgrade action
+message PlayGamesGPlusUpgrade {
+  enum GPlusUpgradeStatus {
+    // Unknown state
+    UNKNOWN_GPLUS_UPGRADE = 0;
+    // User accepted the G+ upgrade
+    ACCEPT = 1;
+    // User cancelled G+ upgrade
+    CANCEL = 2;
+    // Next index: 3
+  }
+  // Status of GPlus upgrade screen
+  optional GPlusUpgradeStatus state = 1;
+  // Next index: 2
+}
+// Details about the sign in account
+message PlayGamesSignInAccount {
+  enum AccountStatus {
+    // Unknown account status
+    UNKNOWN_ACCOUNT_STATUS = 0;
+    // User created a new account
+    NEW = 1;
+    // Proceeded passed the sign-in without account selector because user only
+    // has one account
+    PROCEED_NO_ACCOUNT_SELECTOR = 2;
+    // Proceeded passed the sign-in with account selector because user has
+    // multiple accounts
+    PROCEED_WITH_ACCOUNT_SELECTOR = 3;
+    // User canceled account sign-in
+    CANCEL = 4;
+    // Next index: 5
+  }
+  // The status of the account sign-in
+  optional AccountStatus status = 1;
+  // Next index: 2
+}
+// Details of an action taken inside a game
+message PlayGamesInGameAction {
+  enum GameActionType {
+    // Unknown action
+    UNKNOWN_GAME_ACTION = 0;
+    // User viewed the achievement list
+    ACHIEVEMENT_LIST = 1;
+    // User viewed the leaderboard list
+    LEADERBOARD_LIST = 2;
+    // User viewed a leaderboard top score
+    LEADERBOARD_TOP_SCORES = 3;
+    // User viewed a leaderboard score window
+    LEADERBOARD_SCORE_WINDOW = 4;
+    // User viewed game settings
+    SETTINGS = 5;
+    // User signed out of a game
+    SIGN_OUT = 6;
+    // User viewed the select opponents UI
+    SELECT_OPPONENTS = 7;
+    // User viewed the player search UI
+    PLAYER_SEARCH = 8;
+    // User viewed the waiting room UI
+    WAITING_ROOM = 9;
+    // User viewed the multiplayer inbox UI
+    MULTIPLAYER_INBOX = 10;
+    // User viewed the send request UI
+    SEND_REQUEST = 11;
+    // User viewed the request inbox UI
+    REQUEST_INBOX = 12;
+    // Next index: 13
+  }
+  // The action type
+  optional GameActionType type = 1;
+  // Leaderboard action, populated if one of the leaderboard game actions
+  // were taken by the user
+  optional PlayGamesLeaderboardAction leaderboard = 2;
+  // Next index: 3
+}
+// Details of a sign-in action
+message PlayGamesSignInAction {
+  enum SignInActionType {
+    // Unknown action
+    UNKNOWN_SIGN_IN_ACTION = 0;
+    // Games service connection attempt
+    // Sent whenever a game attempts to connect to the games service.
+    CONNECTION_START = 1;
+    // Sign in required
+    // Sent when a game was sent the SIGN_IN_REQUIRED result.
+    SIGN_IN_REQUIRED = 2;
+    // Connection success
+    // Sent when a game successfully connects to the games service.
+    CONNECTION_SUCCESS = 3;
+    // Next index: 4
+  }
+  // The account selector screen
+  optional PlayGamesSignInAccount account = 1;
+  // The G+ upgrade screen
+  optional PlayGamesGPlusUpgrade gplus_upgrade = 2;
+  // The type of action this event represents
+  optional SignInActionType type = 3;
+  // Next index: 4
+}
+// Details of a circle-modification action
+message PlayGamesModifyCirclesAction {
+  enum CircleActionSource {
+    // Unknown circle source
+    UNKNOWN = 0;
+    // Participant list
+    PARTICIPANT_LIST = 1;
+    // Recently played players
+    RECENTLY_PLAYED_PLAYERS = 2;
+    // Player search
+    PLAYER_SEARCH = 3;
+    // Player detail
+    PLAYER_DETAIL = 4;
+    // "You may know" list (player screen)
+    YOU_MAY_KNOW_LIST_PLAYERS = 5;
+    // "You may know" list (homescreen)
+    YOU_MAY_KNOW_LIST_HOMESCREEN = 6;
+    // Next index: 7
+  }
+  // The source of the modification action
+  optional CircleActionSource source = 1;
+  // Whether or not the player was added to circles
+  optional bool added = 2;
+  // Next index: 3
+}
+// Details about the request
+message PlayGamesRequestInfo {
+  // True if the action indicates the start of the request, false if the action
+  // indicates the end of the request.  This field is necessary only when we
+  // care about the latency of this action.  In order to accurately calculate
+  // latency, also include the start_timestamp_millis field below.
+  optional bool is_start_action = 1;
+  // The 3P application id making the request
+  optional string application_id = 2;
+  // The start timestamp that should be logged if we care about latency of this
+  // action.  Should only be logged if is_start_action = false. This should
+  // correspond to the PlaylogLogProto timestamp_millis field so that we can
+  // later Dremel the start and stop log events.
+  optional int64 start_timestamp_millis = 3;
+  // The instance ID of the application making the request. On Android, this
+  // will be a package name. On iOS, this will be the bundle identifier.
+  optional string instance_id = 4;
+  // Version of the client SDK that sent this request.
+  optional string client_version = 5;
+  // Next index: 6;
+}
+// A Play Games log event
+message PlayGamesLogEvent {
+  // General info about the request.  Every action should log this field.
+  optional PlayGamesRequestInfo request_info = 1;
+  // A user sign-in action
+  optional PlayGamesSignInAction sign_in = 2;
+  // An action that occurs within a game
+  optional PlayGamesInGameAction in_game = 3;
+  // An action that occurs within the games destination app
+  optional PlayGamesDestinationAppAction dest_app = 4;
+  // DEPRECATED(11/07/2013): action only sent by old clients. Instead use
+  // generic_notification.
+  optional PlayGamesNotificationActionDeprecated notification = 5;
+  // Notification action used by all clients
+  optional PlayGamesGenericNotificationAction generic_notification = 6;
+  // An iOS device registration/unregistration action
+  optional PlayGamesIosDeviceAction ios_action = 7;
+  // Action logged when modifying the state of the user's circles
+  optional PlayGamesModifyCirclesAction modify_circles = 8;
+  // Next index: 9
+}
+
+
+message SequenceEvent {
+  message SequenceIndividualEvent {
+    message PageVisitEvent {//akil
+      enum PageTypeEnum {
+          //UNKNOWN=0;
+          HOME=1;
+          DETAILS=2;
+          MY_APPS=3;
+          SEARCH=4;
+          DEEP_LINK=5;
+          INLINE_APP_DETAILS=6;
+          INLINE_APP_DETAILS_V1=7;
+          SETTINGS=8;
+          UNINSTALL_MANAGER_DESTINATION=9;
+          REINSTALL_DIALOG=10;
+          BROWSE=11;
+          TUBESKY_FULLSCREEN_VIDEO=12;
+          POINTS_PROMOTION_CONTENT=13;
+          MY_APPS_V3_PENDING_DOWNLOADS=14;
+          UNINSTALL_MANAGER_V4_PAGE=15;
+          HANDOFF_PAGE=16;
+          QUEST_DETAILS=17;
+          HANDOFF_INSTRUCTIONS=18;
+          WEARSKY_ACCOUNTS=19;
+          WEARSKY_UNAUTH_HOME=20;
+          WEARSKY_UNAUTH_UPDATES_CANCELLATION=21;
+          WEARSKY_SCREEN_SHOTS_VIEWER=22;
+          WEARSKY_ABOUT=23;
+          WEARSKY_MORE_INFO=24;
+          WEARSKY_APPS_FROM_PHONE=25;
+          SYSTEM_UPDATES=26;
+          PRIVACY_LABEL_PAGE=27;
+          SUBSCRIPTION_CENTER=28;
+          SUBSCRIPTION_MANAGEMENT=29;
+          LOYALTY_VOUCHER=30;
+          PLAY_PASS_SPLASH_PAGE=31;
+      }
+      enum PageSubTypeEnum {
+          UNKNOWN=0;
+          HOME_APPS=1;
+          HOME_GAMES=2;
+          HOME_PLAY_PASS=3;
+          HOME_MOVIES=4;
+          HOME_BOOKS=5;
+          HOME_DEALS=6;
+          DETAILS_PRE_INSTALL=7;
+          DETAILS_SHORT_POST_INSTALL=8;
+          DETAILS_LONG_POST_INSTALL=9;
+          DETAILS_APPS=10;
+          DETAILS_BOOKS=11;
+      }
+      optional int32 activityEnum=1; //?  MAIN_ACTIVITY = 3
+      optional PageTypeEnum pageType=2;
+      optional PageSubTypeEnum pageSubType=3;
+      optional int64 tabIndex=4;
+      optional bytes tabServerLogsCookie=5;
+      optional bytes pageServerLogsCookie=6;
+    }
+    enum SequenceEventEnum {
+      DETAILS_PAGE_IS_INSTALLED = -1 ;
+      //UNKNOWN = 0 ;
+      PAGE_LOAD_START = 1 ;
+      PAGE_LOAD_END = 2 ;
+      PROCESS_START = 3 ;
+      APPLICATION_ON_CREATE_TRIGGERED = 4 ;
+      DAGGER_COMPONENT_INIT_COMPLETED = 5 ;
+      APPLICATION_ON_CREATE_COMPLETE = 6 ;
+      MAIN_ACTIVITY_ON_CREATE = 7 ;
+      MAIN_ACTIVITY_ON_START = 8 ;
+      MAIN_ACTIVITY_ON_READY = 9 ;
+      PAGE_LOAD_FIRST_RPC_INITIATED = 10 ;
+      PAGE_LOAD_LAST_RPC_COMPLETED = 11 ;
+      PAGE_LOAD_FIRST_ON_SCREEN_IMAGE_RENDERED = 12 ;
+      PAGE_LOAD_LAST_ON_SCREEN_IMAGE_RENDERED = 13 ;
+      PAGE_FRAGMENT_ON_PAUSE = 14 ;
+      MAIN_ACTIVITY_ON_STOP = 15 ;
+      NAV_MANAGER_SHOW_PAGE = 16 ;
+      NAV_MANAGER_BACK_PRESS = 17 ;
+      HOME_TAB_CHANGED = 18 ;
+      USER_SCROLLED = 19 ;
+      USER_BACKGROUNDED_APP = 20 ;
+      PAGE_LOAD_ERROR = 21 ;
+      DEVICE_ORIENTATION_CHANGED = 22 ;
+      HOME_TAB_SELECTED = 23 ;
+      CLUSTER_RENDERING_START = 24 ;
+      CLUSTER_RENDERING_END = 25 ;
+      LOCAL_LINK_RESOLVE_SUCCESS = 26 ;
+      LOCAL_LINK_RESOLVE_FAILURE = 27 ;
+      CARD_RENDERING_START = 28 ;
+      CARD_RENDERING_END = 29 ;
+      MY_APPS_V3_OVERVIEW_TAB_LOAD_START = 30 ;
+      MY_APPS_V3_OVERVIEW_TAB_LOAD_END = 31 ;
+      MY_APPS_V3_PLAY_PROTECT_SECTION_LOAD_START = 32 ;
+      MY_APPS_V3_PLAY_PROTECT_SECTION_LOAD_END = 33 ;
+      MY_APPS_V3_UPDATES_SECTION_LOAD_START = 34 ;
+      MY_APPS_V3_UPDATES_SECTION_LOAD_END = 35 ;
+      MY_APPS_V3_STORAGE_SECTION_LOAD_START = 36 ;
+      MY_APPS_V3_STORAGE_SECTION_LOAD_END = 37 ;
+      PAGE_RENDERING_START = 38 ;
+      PAGE_RENDERING_END = 39 ;
+      PAGE_DATA_LOAD_START = 40 ;
+      PAGE_DATA_LOAD_END = 41 ;
+      MY_APPS_V3_OVERVIEW_TAB_RENDERING_START = 42 ;
+      MY_APPS_V3_OVERVIEW_TAB_RENDERING_END = 43 ;
+      MY_APPS_V3_OVERVIEW_TAB_DATA_LOAD_START = 44 ;
+      MY_APPS_V3_OVERVIEW_TAB_DATA_LOAD_END = 45 ;
+      MY_APPS_V3_PLAY_PROTECT_SECTION_RENDERING_START = 46 ;
+      MY_APPS_V3_PLAY_PROTECT_SECTION_RENDERING_END = 47 ;
+      MY_APPS_V3_PLAY_PROTECT_SECTION_DATA_LOAD_START = 48 ;
+      MY_APPS_V3_PLAY_PROTECT_SECTION_DATA_LOAD_END = 49 ;
+      MY_APPS_V3_UPDATES_SECTION_RENDERING_START = 50 ;
+      MY_APPS_V3_UPDATES_SECTION_RENDERING_END = 51 ;
+      MY_APPS_V3_UPDATES_SECTION_DATA_LOAD_START = 52 ;
+      MY_APPS_V3_UPDATES_SECTION_DATA_LOAD_END = 53 ;
+      MY_APPS_V3_STORAGE_SECTION_RENDERING_START = 54 ;
+      MY_APPS_V3_STORAGE_SECTION_RENDERING_END = 55 ;
+      MY_APPS_V3_STORAGE_SECTION_DATA_LOAD_START = 56 ;
+      MY_APPS_V3_STORAGE_SECTION_DATA_LOAD_END = 57 ;
+      SEARCH_SUGGESTIONS_PAGE_LIST_LOAD_START = 58 ;
+      SEARCH_SUGGESTIONS_PAGE_LIST_LOAD_END = 59 ;
+      MY_APPS_V3_MANAGE_TAB_LOAD_START = 60 ;
+      MY_APPS_V3_MANAGE_TAB_LOAD_END = 61 ;
+      MY_APPS_V3_MANAGE_TAB_RENDERING_START = 62 ;
+      MY_APPS_V3_MANAGE_TAB_RENDERING_END = 63 ;
+      MY_APPS_V3_MANAGE_TAB_DATA_LOAD_START = 64 ;
+      MY_APPS_V3_MANAGE_TAB_DATA_LOAD_END = 65 ;
+      DATA_FETCH_START = 66 ;
+      DATA_FETCH_COMPLETE = 67 ;
+      UI_MODEL_RECEIVED = 68 ;
+      FIRST_DATA_FETCH_STARTED = 69 ;
+      LAST_DATA_FETCH_COMPLETED = 70 ;
+      DATA_FETCH_ERROR = 71 ;
+      SUBNAV_TAB_SELECTED = 72 ;
+      SUBNAV_TAB_SELECTED_STATE_CHANGE = 73 ;
+      SUBNAV_TAB_DATA_FETCH_STARTED = 74 ;
+      SUBNAV_TAB_DATA_FETCH_COMPLETED = 75 ;
+      SUBNAV_TAB_LOAD_ERROR = 76 ;
+      SUBNAV_TAB_LOAD_END = 77 ;
+      PAGE_LOAD_END_NO_ANIMATION = 78 ;
+      DELIVER_RESPONSE_START = 79 ;
+      VERTICAL_SCROLL_INTERRUPTION_START = 80 ;
+      VERTICAL_SCROLL_INTERRUPTION_END = 81 ;
+      HORIZONTAL_SCROLL_INTERRUPTION_START = 82 ;
+      HORIZONTAL_SCROLL_INTERRUPTION_END = 83 ;
+      CLUSTER_RENDERING_DATA_READY = 84 ;
+      HOME_UI_MODEL_RECEIVED = 85 ;
+      APP_SYNC_INDICATOR_HEALTHY = 86 ;
+      APP_SYNC_PREFETCH_LIST_RECEIVED = 87 ;
+      APP_SYNC_DOWNLOAD_SCHEDULED = 88 ;
+      APP_SYNC_DOWNLOAD_STARTED = 89 ;
+      APP_SYNC_DOWNLOAD_COMPLETED = 90 ;
+      APP_SYNC_DOWNLOAD_FAILURE = 91 ;
+      INLINE_DEEP_LINK_OVERLAY_REQUESTED = 92 ;
+      INLINE_DEEP_LINK_OVERLAY_SHOWN = 93 ;
+      DETAILS_PAGE_FULL_ITEM_RECEIVED = 94 ;
+    }
+    message SequenceIndividualEventInfo {//akhi
+      message SequenceIndividualEventDetails {//akhj
+        optional bytes bytes1=1;
+        optional bytes bytes2=2;
+        optional string url=3;
+      }
+      optional SequenceEventEnum event=1;
+      optional SequenceIndividualEventDetails details=2;
+    }
+    optional int64 duration=1;
+    optional SequenceIndividualEventInfo eventInfo=2;
+    //optional akgi=3;
+    optional PageVisitEvent pageVisit=4;
+  } 
+  repeated SequenceIndividualEvent individualEvent=1;
+  
+}
+
+message PlayStoreLogEvent { // akjq MarketEventProto
+  // At most one of the following fields should be filled in.
+  // A tree of UI elements displayed on the screen.
+  optional PlayStoreImpressionEvent impression = 1;
+  // An explicit action taken by the user (click, tap, or swipe).
+  optional PlayStoreClickEvent click = 3;
+  // A background action that is interesting enough to be logged, but is not a
+  // direct result of an impression or a click.
+  optional PlayStoreBackgroundActionEvent background_action = 4;
+  // A search action performed by the user.
+  optional PlayStoreSearchEvent search = 5;
+  // A deep link event that resolved successfully.
+  optional PlayStoreDeepLinkEvent deep_link = 6;
+  optional int32 typeOfEventCounter=9;
+  optional int64 eventID=10;
+  optional int64 lastEventID=11;
+  optional bytes serverLogsCookie=14;
+  optional SequenceEvent sequenceEvent=17;
+}
+
+message InstantAppData { // adwg
+  enum ConnectionType {
+   UNKNOWN=0;
+    NONE=1;
+    WIRED=2;
+    WIFI=3;
+    TWO_G=4;
+    THREE_G=5;
+    FOUR_G=6;
+    FIVE_G=9;
+    CELLULAR_UNKNOWN=7;
+    BLUETOOTH=8;
+  }
+  optional int32 optInCount=6;
+  optional ConnectionType connectionType =7;
+  optional string instantAppUuid=11;
+  optional string eventUuid=17;
+}
+
+message WestinghouseEvent{ // adwh
+  optional int32 westinghouseEvent=1;
+  optional InstantAppData instantAppData=2; 
+  optional int64 currentID=3;
+  optional int64 parentID=4;
+}
+
+// Semi-arbitrary key-value pairs describing the event. Common entries
+// will be extracted into strongly typed fields in the GWS log records.
+message LogEventKeyValues {
+  optional string key = 1;
+  optional string value = 2;
+}
+// The set of currently active experiments for a given LogEvent.
+//
+// Next tag: 4
+message ActiveExperiments {
+  // The list of IDs of client-behavior-altering experiments that are on.
+  repeated string client_altering_experiment = 1;
+  // The list of IDs of other experiments that are on. The client must not
+  // change its hehavior in response to these experiments.
+  repeated string other_experiment = 2;
+  // The list of GWS experiments that are on. These are not targeted by Playlog.
+  repeated int32 gws_experiment = 3;
+  repeated int64 play_experiment = 4;
+  repeated int64 unsupported_play_experiment = 5;
+}
+// Next tag: 11
+message LogEvent {
+  // Epoch time in milliseconds.
+  optional int64 event_time_ms = 1;
+  // For Market/Store event:
+  // type "1" = impression event
+  // type "3" = UI event, including click event
+  // type "4" = background event
+  // type "6" = deep link event
+  // type "9" = counter events
+  // type "10" = sequence event
+  // type "11" = visual elements event
+  optional string type_of_event = 2;
+  // These might contain PII and will not be stored for more than 8 days.
+  // If possible, please create a named field in the protos below instead.
+  repeated LogEventKeyValues value = 3;
+  // A source specific extension (typically a serialized proto). The type of
+  // this data is determined by the log_source of the enclosing LogRequest.
+  optional bytes source_extension = 6;
+  // The set of currently active experiments. If missing, then the server will
+  // assume that experiment on/off status has not changed since the previous
+  // LogEvent message in the same LogRequest proto. If missing in the very first
+  // LogEvent of a LogRequest, then the server will assume that all experiments
+  // are off.
+  optional ActiveExperiments active_experiments = 7;
+  // A JsProto version of source_extension, using array serialization format.
+  optional bytes source_extension_js = 8;
+  // DL
+  // A string for identifying a test run.  Usually logs from test apps or from normal v
+  optional string test_id =14;
+  optional int64 timezone_offset_seconds=15;
+  optional bytes experiment_ids = 16;
+
+  message ClientInfoProto {
+    optional AndroidClientInfo androidClientInfo=2;
+  }
+  optional ClientInfoProto client_ve=18;
+  message PlaystoreSettings { //akcy
+    optional int32 orientation=1;
+    optional bool isInteractive=2;
+    optional bool isForeground=3;
+    optional string GoogleAdId=5;
+    optional bool limit_ad_tracking=6;
+  }
+  optional PlaystoreSettings playstoreSettings=19; 
+  optional int64 currentServerTimeMillis=21;
+}

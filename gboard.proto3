@@ -1,0 +1,140 @@
+// LATIN_IME log source in https://play.googleapis.com/log/batch data
+
+syntax = "proto3";
+
+//import "google/protobuf/any.proto";
+
+message LatinIME_LogEntry { // pzj
+	int64 currentTimeMillis = 1;
+	InputInfo input_info = 6; // opw
+	KeyboardEvent keyboardEvent = 11; // ejp, ejo
+	sint64 timeZoneOffset = 15;
+	int64 elapsedRealtime = 17;
+	bool handsetLocked = 25; // (i.e. requires pin to unlock)	
+}
+
+enum KeyboardEvent {
+	DEFAULT_EVENT = 0;
+	IMS_CREATED_BEFORE_USER_UNLOCKED = 1;
+	SHARED_PREFERENCE_CHANGED = 2;
+	COMMIT_TEXT = 3;
+	IME_TEXT_CANDIDATE_SELECTED = 4;
+	IMS_INPUT_VIEW_CREATED = 8;
+	IMS_ON_START_INPUT_VIEW = 9;
+	IMS_INPUT_VIEW_FINISHED = 10;
+	TEXT_AUTOCORRECTED = 11;
+	PERIODIC_TASK_SERVICE_RUN = 13;
+	INVALID_WORD_UNDERLINED = 14;
+	INPUT_METHOD_ENTRY_CHANGED = 16;
+	SETTINGS_ACTIVITY_CREATED = 18;
+	// SETTINGS_ACTIVITY_FINISHED = ???
+	SYNC_STATS_RECORDED = 19;
+	NEXT_WORD_SUGGESTION = 22;
+	DELETED_WORD = 25;
+	EDIT_WORD = 26;
+	TEXT_CANDIDATES_APPENDED = 41;
+	VOICE_INPUT_START = 42;
+	VOICE_INPUT_STOP = 43;
+	SUPERPACKS_STUFF = 50;
+	ACCESS_POINT_FEATURE_CLICKED = 54;
+	OPEN_ACCESS_POINTS = 56;
+	PRESSED_SPACE = 103;
+	REMOVED_SPACE = 104;
+	KEYBOARD_MODE_CHANGED = 110;
+	IMS_INPUT_VIEW_STARTED = 111;
+	KEYBOARD_ACTIVATED = 130;
+	RATEUS_USAGE = 148;
+	KEYBOARD_BODY_SHOWN = 167;
+	KEYBOARD_SHOWN_LATENCY = 168;
+	RICH_CONTENT_SUGGESTION_IMPRESSION = 180;
+	LANGUAGE_MODEL_LOAD_INFO = 197;
+	RICH_CONTENT_SUGGESTION_STATE_TRANSITION = 206;
+	RICH_CONTENT_SUGGESTION_IMAGES_LOADED = 213;
+	ON_START_RECOGNITION = 215;
+	ON_STOP_RECOGNITION = 216;
+	TAB_OPEN = 223;
+	CATEGORY_SWITCH = 229;
+	IMPRESSION = 230;
+	ABANDON_CLIENT_DIFF_DUE_TO_STALE_CLIENT_REQUEST = 238;
+	SUGGESTION_DISPLAYED = 242;
+	SUGGESTION_CLICKED = 243;
+	PINNED_ACTION_DISPLAYED = 244;
+	PINNED_ACTION_CLICKED = 245;
+	EXTENSION_OPEN = 248;
+	RUNTIME_PARAMETERS_IME_ONACTIVATE = 264;
+	SUGGESTION_LONG_PRESSED = 274;
+	ENTER_EMOJI_GIF = 276;
+}
+
+message InputInfo {
+	WordInputInfo word_input_info = 2; // otg
+	KeyboardUsageInfo keyboard_usage_info = 5; // oqn
+}
+
+message KeyboardUsageInfo {
+	int32 editorInfoInputType = 1;	// https://developer.android.com/reference/android/text/InputType
+	// enum ??? = 2;
+	bool bool = 3;
+	string applicationName = 4;
+	KeyboardType keyboardType = 5;
+	// enum ??? = 6;
+	// bool ??? = 7;
+}
+
+enum KeyboardType {
+	SOFT = 0;
+	HARD_QWERTY	= 2;
+	HARD_12KEYS	= 3;
+}
+
+message WordInputInfo{
+	int32 characterSequenceLength = 1;
+	bool isGestureInput = 2;
+	TextCompletionInfo text_completion_info = 7; // oow
+	// message list ??? = 8;
+	bool TEXT_COMPOSING_DELETED = 9;
+	bool isVoiceInput = 11;
+	// message list ??? = 14;
+	int32 committedTextLength = 15;
+	// bool gestureSomeWords = 16
+	// int32 ??? = 17;
+	// int32 ??? = 18;
+	// int32 ??? = 19;
+	bool TEXT_COMMIT_DELETED = 20;
+	// bool ??? = 21;
+	// enum ??? = 22;
+	bool TAPPING_CORRECTED = 23;
+	TypeOfInput typeOfInput = 24;
+	// osx OSX = 29;
+	// bool ??? = 30;
+	int32 timeToEnterWord = 31;
+	fixed64 randomThread = 32;
+}
+
+enum TypeOfInput{
+	DEFAULT_ENUM = 0;
+	DEFAULT_OTG = 1;
+	GESTURE = 2;
+	SELECT_CANDIDATE = 3;
+	PREDICTION = 4;
+	AUTOCORRECTION = 5;
+	VOICE = 14;
+}
+
+message TextCompletionInfo{
+	// int32 pgh_h = 1;
+	// float list ??? = 2;
+	// float ??? = 3;
+	int32 textCandidateIndex = 4;
+	int32 completionInfoPosition = 7;
+	// bool ??? = 8;
+	int32 charSequenceSplitBySpaceLength = 9;
+	int32 charSequenceLength = 10;
+	int32 completionInfoRank = 11;
+	// 13 int32 ??? = 13;
+	// 14 in32 ??? = 14;
+	// 15 message list ??? = 15;
+	// 16 int32 ??? = 16;
+	// 17 int32 ??? = 17;
+	// message ??? = 24;
+}

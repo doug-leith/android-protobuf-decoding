@@ -1,0 +1,66 @@
+syntax = "proto2";
+
+import "google/protobuf/any.proto";
+
+message HeterodyneResponse { //cfkr
+	message HeterodyneConfig { //cfkg
+		message AuthTokenIndex {//cfko
+			optional int32 index=1;
+		}
+		message PackageDetails {//cfla
+			optional string packageName=1;
+			optional int32 version=2;
+			optional AuthTokenIndex authTokenIndex=3;
+			optional int64 baselineCl=4;
+		}
+		optional PackageDetails packageDetails=1;
+		message Tag {//cfkz
+			optional int32 partitionId=1;
+			optional bytes bytesTag=2; //coca message
+		};
+		enum FlagValueType {
+			UNKNOWN_VAL=0;
+			INTEGER_VAL=1;
+			BOOL_VAL=2;
+			FLOAT_VAL=3;
+			STRING_VAL=4;
+			BLOB_VAL=5;
+		}
+		message Flag {//cfkv
+			optional string flagName=1;
+			optional int32 intVal=2;
+			optional bool boolVal=3;
+			optional float floatVal=4;
+			optional string stringVal=5;
+			//optional google.protobuf.Any blob=6; // its a protobuf
+			optional bool valueIsSet=7;
+			optional int32 flagType=8;
+			optional FlagValueType valueType=9;
+		};
+		message TagOrFlagListProtoList{//cfky
+			optional Tag tagProto=1;
+			repeated Flag flag=2;
+			//optional google.protobuf.Any cfkw=3;
+		};
+		repeated TagOrFlagListProtoList tagOrFlagListProtoList=2;
+		optional google.protobuf.Any experimentToken=3;
+		optional string serverToken=4;
+		message Cfkn {//cfkn
+			optional PackageDetails packageDetails=1;
+			optional google.protobuf.Any  token=2;
+			optional int32 provenance=3;
+		}
+		repeated Cfkn cfkn=6;
+		//optional bytes coca=7;
+		//optional google.protobuf.Any cfkk=10;
+
+	};
+	repeated HeterodyneConfig heterodyneConfig=1;
+	optional bytes bytesTag=2;
+	optional string pseudonymousIdToken=3;
+	optional int64 servertimestamp=4;
+	//message_codx e=6;
+	
+}
+
+         

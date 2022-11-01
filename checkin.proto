@@ -280,8 +280,9 @@ message CheckinRequest {
 }
 
 message CheckinResponse {
-    optional bool statsOk = 1;
-    repeated Intent intent = 2;
+    optional bool statsOk = 1; // Whether statistics were recorded properly
+    repeated Intent intent = 2;  // Time of day from server (Java epoch)
+    
     message Intent {
         optional string action = 1;
         optional string dataUri = 2;
@@ -294,15 +295,36 @@ message CheckinResponse {
         }
     }
     optional int64 timeMs = 3;
+
+  // from https://source.chromium.org/chromium/chromium/src/+/main:google_apis/gcm/protocol/checkin.proto;bpv=1;bpt=1;l=49
+
+  // Provisioning is sent if the request included an obsolete digest.
+  //
+  // For version <= 2, 'digest' contains the digest that should be
+  // sent back to the server on the next checkin, and 'setting'
+  // contains the entire gservices table (which replaces the entire
+  // current table on the device).
+  //
+  // for version >= 3, 'digest' will be absent.  If 'settings_diff'
+  // is false, then 'setting' contains the entire table, as in version
+  // 2.  If 'settings_diff' is true, then 'delete_setting' contains
+  // the keys to delete, and 'setting' contains only keys to be added
+  // or for which the value has changed.  All other keys in the
+  // current table should be left untouched.  If 'settings_diff' is
+  // absent, don't touch the existing gservices table.
+  //
     optional string digest = 4;
     repeated GservicesSetting setting = 5;
     message GservicesSetting {
         optional bytes name = 1;
         optional bytes value = 2;
     }
-    optional bool marketOk = 6;
-    optional fixed64 androidId = 7;
-    optional fixed64 securityToken = 8;
+
+    optional bool marketOk = 6;  // If Market got the market_checkin data OK.
+
+    optional fixed64 androidId = 7;  // From the request, or newly assigned
+    optional fixed64 securityToken = 8;  // The associated security token
+
     optional bool settingsDiff = 9;
     repeated string deleteSetting = 10;
     optional string versionInfo = 11;

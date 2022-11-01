@@ -47,7 +47,7 @@ message FirebaseAnalyticsEvents { //ahcq
    string operating_system_version=9;
    string Build_MODEL=10;
    string language_country=11;
-   int32 timezone_offset_mins=12;
+   int32 c=12;
 
   //AppMetadata
    string app_store =13;
@@ -57,7 +57,7 @@ message FirebaseAnalyticsEvents { //ahcq
    int64 gms_version=18;  // firebase_analytics_collection_disabled ? 19629 : 19003
    string google_ad_id=19;
    bool no_ad_id=20;  //?
-   string random_hex=21;
+   string appInstanceId=21;
    uint64 dev_cert_hash=22; // originally signed, make unsigned so prints more nicely
    int32 daily_conversions_count=23;
    string health_monitor_sample=24;
@@ -78,13 +78,13 @@ message FirebaseAnalyticsEvents { //ahcq
    string android_id_str=34;
    int64 config_version=35; //?
    int64 android_id_int=36;
-   string  always_null=37; // field achq.I, always null?
+   string cookie=37; // field achq.I, always null?
    int32 retry_count=39;
    string admob_app_id=41;
    google.protobuf.Any L=44;  //ahca
    repeated uint32 M=45;  //bxvj
    int64 dynamite_version=46;
    int64 O=47; // unused?
-   string unknown=52; //?
+   string consent_state=52; // adStorageConsentGranted, analyticsStorageConsentGranted e.g. "G1<adStorageConsentGranted><analyticsStorageConsentGranted>" with "-"=null, "1"=true, "0"=false, e.g. "G1--" => adStorageConsentGranted=null, analyticsStorageConsentGranted=null
 
 }

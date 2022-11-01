@@ -1,0 +1,106 @@
+syntax="proto2";
+
+
+message LockboxRequest { // LogEventProto crai
+  enum EventType {
+  // from https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/app/usage/UsageEvents.java
+    ACTIVITY_RESUMED=1 ;// denoting that an {@link android.app.Activity} moved to the background
+    ACTIVITY_PAUSED = 2 ;// denoting that an {@link android.app.Activity} moved to the background
+    END_OF_DAY = 3 ;// component was in the foreground when the stats rolled over
+    CONTINUE_PREVIOUS_DAY = 4;
+    CONFIGURATION_CHANGE = 5 ;// device configuration has changed
+    SYSTEM_INTERACTION = 6 ;// package was interacted with in some way by the system
+    USER_INTERACTION = 7 ;//package was interacted with in some way by the user
+    SHORTCUT_INVOCATION = 8 ;// an action equivalent to a ShortcutInfo is taken by the user
+    CHOOSER_ACTION = 9 ;// package was selected by the user for ChooserActivity
+    NOTIFICATION_SEEN = 10 ;//notification was viewed by the user
+    STANDBY_BUCKET_CHANGED = 11 ;// a change in App Standby Bucket
+    NOTIFICATION_INTERRUPTION = 12 ;//an app posted an interruptive notification
+    SLICE_PINNED_PRIV = 13 ;//A Slice was pinned by the default launcher or the default assistant
+    SLICE_PINNED = 14;
+    SCREEN_INTERACTIVE = 15 ;// screen has gone in to an interactive state (turned on for full user interaction)
+    SCREEN_NON_INTERACTIVE = 16 ;// screen has gone in to a non-interactive state
+    KEYGUARD_SHOWN = 17 ;// screen's keyguard has been shown
+    KEYGUARD_HIDDEN = 18 ;// screen's keyguard has been hidden i.e. when the user unlocks their phone after turning it on
+  FOREGROUND_SERVICE_START = 19;
+  FOREGROUND_SERVICE_STOP = 20;
+  CONTINUING_FOREGROUND_SERVICE = 21;
+  ROLLOVER_FOREGROUND_SERVICE = 22;
+  ACTIVITY_STOPPED = 23 ;//An activity becomes invisible on the UI
+  ACTIVITY_DESTROYED = 24;
+  FLUSH_TO_DISK = 25 ;// flush of UsageStatsDatabase to file system
+  DEVICE_SHUTDOWN = 26;
+  DEVICE_STARTUP = 27;
+  USER_UNLOCKED = 28 ;// a user has been unlocked for the first time
+  USER_STOPPED = 29 ;
+  LOCUS_ID_SET = 30;
+  APP_COMPONENT_USED = 31;
+  }
+
+  message LockboxUsageReport { // LockboxUsageReportProto ccdz
+    enum KeyboardHidden {
+        KEYBOARDHIDDEN_UNDEFINED=0;
+        KEYBOARDHIDDEN_NO=1;
+    	KEYBOARDHIDDEN_YES=2;
+    }
+    enum NavigationHidden {
+        NAVIGATIONIDDEN_UNDEFINED=0;
+        NAVIGATIONHIDDEN_NO=1;
+    	NAVIGATIONHIDDEN_YES=2;
+    }
+    enum Orientation {
+    	ORIENTATION_UNDEFINED=0;
+    	ORIENTATION_PORTRAIT=1;
+    	ORIENTATION_LANDSCAPE=2;
+    	ORIENTATION_SQUARE=3;
+    }
+    enum UINightMode {
+    	UI_MODE_NIGHT_UNDEFINED=0;
+    	UI_MODE_NIGHT_NO=1;
+    	UI_MODE_NIGHT_YES=2;
+    }
+    enum UIModeType {
+    	UI_MODE_TYPE_UNDEFINED=0;
+    	UI_MODE_TYPE_NORMAL=1;
+    	UI_MODE_TYPE_DESK=2;
+    	UI_MODE_TYPE_CAR=3;
+    	UI_MODE_TYPE_TELEVISION=4;
+    	UI_MODE_TYPE_APPLIANCE=5;
+    	UI_MODE_TYPE_WATCH=6;
+    	UI_MODE_TYPE_VR_HEADSET=7;
+    }
+  	message LockdownConfigInfo{ //cccq
+  		optional float fontScale=1;
+  		optional string locale=2;
+  		optional int32 screenLayout=3;
+  		optional Orientation orientation=4;
+  		optional UIModeType uiModeType=5;
+  		optional UINightMode uiNightMode=6;
+  		optional KeyboardHidden keyboardHidden=7;
+  		optional KeyboardHidden hardKeyboardHidden=8;
+  		optional NavigationHidden navigationHidden=9;
+  	}
+      optional EventType eventType=1;
+      optional int64 timestamp=2;
+      optional string packageName=3;
+      optional string className=4;
+      optional LockdownConfigInfo lockdownConfigInfoProto=5;
+      optional int32 versionCode=7;
+      optional string versionName=8;
+      optional int32 appStandbyBucket=11;
+  }
+  message KeyValuePair {
+    optional string key=1;
+    optional string value=2;
+  }
+  optional int64 currentTimeMillis=1;
+  optional string packageName=2;
+  repeated KeyValuePair keyValuePair=3;
+  repeated LockboxUsageReport lockboxUsageReport=6;
+  optional int32 eventID=11;
+  optional int64 eventFlowId=12;
+  optional int64 timeZoneOffset=15;
+  optional int64 elapsedRealtime=17;
+  optional int64 bootCount=22;
+  optional bool otDirectBootMode=25;
+}

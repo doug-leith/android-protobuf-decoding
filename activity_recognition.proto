@@ -1,0 +1,164 @@
+syntax = "proto2";
+
+message Tokens { //bfyb
+  //repeated int32 b=1;
+  //repeated int32 c=2;
+  repeated int32 token=3; // only this is ever set.  
+  //repeated int32 d=4;
+}
+
+message ExperimentTokens { //bnar
+  optional Tokens tokens=1;
+  repeated bytes tokenBytes=2; 
+  optional bool hasContent=3; // true when content is set
+}
+
+enum ActiveNetworkType {
+    MOBILE=0;
+    NONE=-1;
+    WIFI=1;
+    MOBILE_MMS=2;
+    MOBILE_SUPL=3;
+    MOBILE_DUN=4;
+    MOBILE_HIPRI=5;
+    WIMAX=6;
+    BLUETOOTH=7;
+    DUMMY=8;
+    ETHERNET=9;
+    MOBILE_FOTA=10;
+    MOBILE_IMS=11;
+    MOBILE_CBS=12;
+    WIFI_P2P=13;
+    MOBILE_IA=14;
+    MOBILE_EMERGENCY=15;
+    PROXY=16;
+    VPN=17;
+}
+
+enum MobileSubtype{
+    UNKNOWN_MOBILE_SUBTYPE=0;
+    GPRS=1;
+    EDGE=2;
+    UMTS=3;
+    CDMA=4;
+    EVDO_0=5;
+    EVDO_A=6;
+    RTT=7;
+    HSDPA=8;
+    HSUPA=9;
+    HSPA=10;
+    IDEN=11;
+    EVDO_B=12;
+    LTE=13;
+    EHRPD=14;
+    HSPAP=15;
+    GSM=16;
+    TD_SCDMA=17;
+    IWLAN=18;
+    LTE_CA=19;
+    COMBINED=100;
+}
+
+message ConnectionDetails {//bmyx
+  optional ActiveNetworkType activeNetworkType=1;
+  optional MobileSubtype mobileSubtype=2;
+}
+
+message ActivityRecognitionCreator {
+	optional string creatorPackage=1;
+	optional string service=2;
+}
+
+message Activity {
+	enum ActivityEnum {
+		IN_VEHICLE=0;
+		ON_BICYCLE=1;
+		ON_FOOT=2;
+		STILL=3;
+		UNKNOWN=4;
+		TILTING=5;
+		WALKING=7;
+		RUNNING=8;
+		IN_ROAD_VEHICLE=16;
+		IN_RAIL_VEHICLE=17;
+	}
+	optional float confidence=2;
+	optional ActivityEnum activity=3;
+}
+
+message ActivityDetected {
+	repeated Activity activity= 1;
+	optional int64 timeMillis=2;
+	optional int64  currentTimeMillis=3;
+	optional int32 sensorSourceEnum=4;
+}
+
+message ActivityDetectedList{
+	repeated ActivityRecognitionCreator activityRecognitionCreator=1;
+	repeated ActivityDetected activityDetected=2;
+}
+
+message ActivityDetectedCHRE {
+  //optional int32 a=1; // ??
+  optional int64 chreAbsoluteTimeInMillis=2;
+  optional int64  currentTimeMillis=3;
+  //optional int32 sensorSourceEnum=4;
+  repeated Activity activity= 5;
+}
+
+message ActivityDetectedCHREList{
+  optional int32 always2=1;
+  repeated ActivityDetectedCHRE activityDetected=2;
+}
+
+message ActivitySourceTransition {
+	optional int32 transitionType=1; // 2=added, 3=removed
+	optional ActivityRecognitionCreator activityRecognitionCreator=2;
+	//optional int32 always1=3;
+	optional int64 currentTimeMillis=4;
+}
+
+message ActivityIntervalSetting {
+	repeated ActivityRecognitionCreator activityRecognitionCreator=1;
+	optional int64 intervalMillis=2;
+	optional int64 currentTimeMillis=3;
+}
+
+message ActivityTransitionEvent {
+  optional Activity oldActivity1=1;
+  optional Activity newActivity1=2;
+  optional int64 intervalMillis=3;
+}
+
+//\u0001ဉ\u0000 b ARIntervalSetting
+//\u0002ဉ\u0001 c ActivityDetectedList
+//\u0003ဉ\u0002 d
+//\u0004ဉ\u0003 e ActivityTransitionEventProto
+//\u0006ဉ\u0005 f
+//\u0007ဉ\u0006 g AcitivitySourceTransition
+//\bဉ\u0007 h 8
+//\tဉ\b i 9
+//\nဉ\t j 10
+//\u000bဉ\n k ActivityDetectedList
+//\fဉ\u000b l
+//\u000eဉ\r m
+//\u000fဉ\u000e n
+//\u0010ဉ\u000f\u0011ဉ\u0010\u0012ဉ\u0011\u0015ဉ\u0014\u0016ဉ\u0015\u0017ဉ\u0016\u0018ဉ\u0017\u0019ဉ\u0018\u001aဉ\u0019\u001bဉ\u001a", new Object[]{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x"});
+
+message ActivityRecognitionEvent{
+  repeated ActivityIntervalSetting activityIntervalSetting=1;
+	repeated ActivityDetectedList activityDetectedList=2;
+  repeated ActivityTransitionEvent activityTransitionEvent=4;
+  repeated ActivitySourceTransition activitySourceTransition7=7;
+  repeated ActivityDetectedCHREList activityDetectedCHREList=11;
+}
+
+message ActivityRecognitionRequest {
+  optional int64 currentTimeMillis=1;
+ 	repeated ActivityRecognitionEvent  activityRecognitionEvent=6;
+ 	optional int32 eventID=11;
+	optional ExperimentTokens experimentTokens=16; //bnar
+	optional int32 bootCount=22;
+	optional ConnectionDetails connectionDetails=23;  //bmyx
+
+}

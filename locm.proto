@@ -1,0 +1,119 @@
+syntax = "proto2";
+
+
+message LocRequest { // cjji
+	
+	message Header { // cjht
+		optional string googlePlayServicesVersion=1;
+		optional string buildFingerprint=2;
+		optional string glsID =3;
+		optional string locale=5;
+	}
+	optional Header header=1;
+
+	message Location { // cjhl
+
+		message MobileCellInfoWrapper { // cjhg
+			message MobileCellInfo { // cjhf
+				optional int32 networkId=1;
+				optional int32 cellId=2;
+				optional int32 Mnc=3;
+				optional int32 Mcc=4;
+				optional int32 signalStrength=5;
+				optional int32 signalStrength_TimingAdvance=7;
+				optional int32 radioType=10;
+				optional int32 ltePhysicalCellID=11;
+				optional int32 lteTrackingAreaCode=12;
+			}
+			optional  MobileCellInfo primaryCell=1;
+			optional int64 timestamp=2;
+			repeated  MobileCellInfo neighbor=3;
+		}
+		message GpsInfo { //cjhs
+			message LatLong { // cjhn
+				optional fixed32 lat=1; // round(lat*1e7);
+				optional fixed32 long=2; // round(long*1e7);
+			}
+			optional LatLong latLong=1;
+			optional int32 accuracy=3;
+			optional int64 gpsTime=6;
+			optional int32 gpsProviderEnum=8;
+			optional int32 altitude=10;
+			optional int32 bearing=13;
+			optional float speed=16;
+			optional bool batteryCharging=17;
+		}
+		message WifiScanWrapper { // cjjc
+			message WifiScan { // cjja
+				optional string ssid=2;
+				optional int32 channel=3;
+				optional int32 rssi=4;
+				optional int64 bssid=5;
+				optional int64 macAddress=8;
+				optional int32 scanDuration=12;
+			}
+			optional int64 timestamp=1;
+			repeated WifiScan wifiSignal=2;
+
+		}
+		enum ActivityEnum {
+			IN_VEHICLE=0;
+			ON_BICYCLE=1;
+			ON_FOOT=2;
+			STILL=3;
+			UNKNOWN=4;
+			TILTING=5;
+			EXITING_VEHICLE=6;
+			WALKING=7;
+			RUNNING=8;
+			OFF_BODY=9;
+			TRUSTED_GAIT=10;
+			FLOOR_CHANGE=11;
+			ON_STAIRS=12;
+			ON_ESCALATOR=13;
+			IN_ELEVATOR=14;
+			SLEEPING=15;
+			IN_ROAD_VEHICLE=16;
+			IN_RAIL_VEHICLE=17;
+			IN_TWO_WHEELER_VEHICLE=18;
+			IN_FOUR_WHEELER_VEHICLE=19;
+			IN_CAR=20;
+			IN_BUS=21;
+			CAR_CRASH=22;
+		}
+		message DetectedActivity{ // cjfi
+			optional ActivityEnum activity=1;
+			optional int32 confidence=2;
+		}
+		message DetectedActivityWrappper {// cjfj
+			optional int64 timestamp=1;
+			repeated DetectedActivity detectedActivity=2;
+			optional int32 detectorInfoId=3;
+		}
+		optional MobileCellInfoWrapper cellSignals=1;
+		optional WifiScanWrapper wifiSignals=2;
+		optional GpsInfo gpsInfo=3;
+		optional DetectedActivityWrappper detectedActivities=19;
+
+		//message cjgt {//cjgt
+		//	message cjfu {//cjfu
+		//		message cjfw {//cjfw
+		//			repeated int64 longList=1;
+		//		}
+		//		optional cjfw cjfw=1;
+		//	}
+		//	optional cjfu b=5;
+		//}
+	}
+
+	repeated Location signals=4;
+}
+
+message KollektomatRequest { // cjvx
+	message GRPCRequest { //gRPCRequestProto
+		optional string type=1;
+		optional LocRequest locRequest=2;
+	}
+	repeated GRPCRequest request =1;
+	repeated string operation=2;
+}

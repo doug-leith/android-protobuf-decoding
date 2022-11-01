@@ -1,0 +1,14 @@
+// see https://gist.github.com/Romern/e58e634e4d70b2be5b57d7abdb77f7ef
+syntax = "proto2";
+
+message GoogleSpatulaHeader {
+	message AppCertificate{
+		optional string packageName = 1;
+		optional string hashPackageCert = 3;
+	}
+	optional AppCertificate appCertificate=1;
+	optional string hashAppCertificate = 2;
+	optional int64 androidID = 3;
+	optional int64 device_key1 = 4;
+	optional string device_key2 = 5;
+}

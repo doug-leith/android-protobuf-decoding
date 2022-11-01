@@ -1,0 +1,88 @@
+syntax = "proto2";
+
+message FirelogEvent {
+	message CustomAttributes {
+		optional string key=1;
+		optional string value=2;
+	}
+	message PerfSessions {
+		optional string sessionID=1;
+	}
+	message ApplicationInfo {
+		optional string googleAppId=1;
+		optional string appInstanceId=2;
+		message AndroidAppInfo {
+			optional string packageName=1;
+			optional string sdkVersion=2;
+			optional string versionName=3;
+		}
+		optional AndroidAppInfo androidAppInfo=3;
+		optional int32 applicationProcessState=5;
+		optional CustomAttributes customAttributes=6;
+	}
+	optional ApplicationInfo applicationInfo=1;
+	message TraceMetric {
+		optional string name=1;
+		optional bool isAuto=2;
+		optional int64 clientStartTimeis=4;
+		optional int64 durationUs=5;
+		message Counters {
+			optional string key=1;
+			optional int64 value=2;
+		}
+		optional Counters counters=6;
+		//optional subtraces=7;
+		optional CustomAttributes customAttributes=8;
+		optional PerfSessions perfSessions=9;
+	}
+	optional TraceMetric traceMetric=2;
+	message NetworkRequestMetric {
+		optional string url=1;
+		enum HttpMethod {
+		HTTP_METHOD_UNKNOWN=0;
+        GET=1;
+        PUT=2;
+        POST=3;
+        DELETE=4;
+        HEAD=5;
+        PATCH=6;
+        OPTIONS=7;
+        TRACE=8;
+        CONNECT=9;        
+		}
+		optional HttpMethod httpMethod=2;
+		optional int64 requestPayloadBytes=3;
+		optional int64 responsePayloadBytes=4;
+		optional int32 httpResponseCode=5;
+		optional string responseContentType=6;
+		optional int64 clientStartTimeUs=7;
+		optional int64 timeToRequestCompletedUs=8;
+		optional int64 timeToResponseInitiatedUs=9;
+		optional int64 timeToResponseCompletedUs=10;
+		optional int32 networkClientErrorReason=11;
+		optional CustomAttributes customAttributes=12;
+		optional PerfSessions perfSessions=13;
+	}
+	optional NetworkRequestMetric networkRequestMetric= 3;
+	message GaugeMetric {
+		optional string sessionId=1;
+		message CpuMetricReadings {
+			optional int64 clientTimeUs=1;
+			optional int64  userTimeUs=2;
+			optional int64 systemTimeUs=3;
+		}
+		optional CpuMetricReadings cpuMetricReadings=2;
+		//optional gaugeMetadata=3;
+		message AndroidMemoryReadings {
+			optional int64 clientTimeUs=1;
+			optional int32 usedAppJavaHeapMemoryKb=2;
+		}
+		optional AndroidMemoryReadings androidMemoryReadings=4;
+	}
+	optional GaugeMetric gaugeMetric=4;
+	message TransportInfo  {
+		optional int32 dispatchDestination=1;
+	}
+	optional TransportInfo transportInfo=5;
+}
+

@@ -1,0 +1,9 @@
+syntax = 'proto2';
+
+message TronFieldConfigList {
+	message TronFieldConfig {
+		optional int32 key=1;
+		optional int32 tag =2;
+	}
+	repeated TronFieldConfig tronFieldConfig=1;
+}

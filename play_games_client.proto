@@ -1,0 +1,496 @@
+/ Play Store logging protos.  This is sent as a field within
+// clientanalytics.proto.
+
+syntax = "proto2";
+package wireless_android_play_playlog;
+option java_package = "com.google.wireless.android.play.playlog.proto";
+option java_outer_classname = "PlayGames";
+option optimize_for = LITE_RUNTIME;
+
+// DEPRECATED(11/07/2013): sent by old clients. Use GenericNotificationAction
+// Details about a user-visible notification sent from old clients
+message PlayGamesNotificationActionDeprecated {
+  enum NotificationActionType {
+    // The notification was received on the device.
+    RECEIVED = 1;
+    // The notification was displayed to the user.
+    DISPLAYED = 2;
+    // The user saw the notification and dismissed it.
+    DISMISSED = 3;
+    // The user interacted with the notification and opened it.
+    OPENED = 4;
+    // The system chose to revoke this notification without the user seeing it.
+    // This could be because of action on another device, time limit, etc.
+    CANCELED = 5;
+    // This notification was consumed by another client before being displayed
+    // to the user.
+    CONSUMED = 6;
+    // Next index: 7;
+  }
+  // The type of action this log event represents.
+  optional NotificationActionType action_type = 1;
+  // The IDs of the notifications this action is for, if any.
+  repeated string notification_id = 2;
+  // How many notifications are being displayed to the user.
+  optional int32 displayed_count = 3;
+  // Next index: 4;
+}
+// Details about the user-visible android notification
+message PlayGamesAndroidNotificationAction {
+  enum NotificationActionType {
+    // The notification type was unknown
+    UNKNOWN = 0;
+    // The notification was received on the device.
+    RECEIVED = 1;
+    // The notification was displayed to the user.
+    DISPLAYED = 2;
+    // The user saw the notification and dismissed it.
+    DISMISSED = 3;
+    // The user interacted with the notification and opened it.
+    OPENED = 4;
+    // The system chose to revoke this notification without the user seeing it.
+    // This could be because of action on another device, time limit, etc.
+    CANCELED = 5;
+    // This notification was consumed by another client before being displayed
+    // to the user.
+    CONSUMED = 6;
+    // Next index: 7;
+  }
+  // The type of action this log event represents.
+  optional NotificationActionType action_type = 1;
+  // The IDs of the notifications this action is for, if any.
+  repeated string notification_id = 2;
+  // How many notifications are being displayed to the user.
+  optional int32 displayed_count = 3;
+  // Next index: 4;
+}
+// Details about the iOS notification
+message PlayGamesIosNotificationAction {
+  // The action the notification
+  enum NotificationActionType {
+    // The notification type was unknown
+    UNKNOWN = 0;
+    // The notification was received on the device.
+    APP_CONSUMED = 1;
+    // Next index: 2;
+  }
+  // The type of action this log event represents.
+  optional NotificationActionType action_type = 1;
+  // Next index: 2;
+}
+// Details about a user-visible notification
+message PlayGamesGenericNotificationAction {
+  // The type of notification action this was
+  enum NotificationPlatform {
+    UNKNOWN = 0;
+    // The notification was on an android device
+    ANDROID = 1;
+    // The notification was on an iOS device
+    IOS = 2;
+    // Next index: 3;
+  }
+  // Which type of notification this was
+  optional NotificationPlatform action_type = 1;
+  // Only one of the fields below will be populated
+  // The Android notification details
+  optional PlayGamesAndroidNotificationAction android_action = 2;
+  // The iOS notification details
+  optional PlayGamesIosNotificationAction ios_action = 3;
+  // Next index: 4;
+}
+// Details about an iOS device registration
+message PlayGamesIosDeviceRegister {
+  // 32 byte APNS device token assigned by apple.
+  optional bytes apns_device_token = 1;
+  // The iOS sdk version that sent the registration
+  optional string sdk_version = 2;
+  // The language of the device
+  optional string language = 3;
+  // Next index: 4
+}
+// Details about an iOS device unregistration
+message PlayGamesIosDeviceUnregister {
+  // 32 byte APNS device token assigned by apple.
+  optional bytes apns_device_token = 1;
+  // Next index: 2
+}
+// Details about an iOS specific type of message
+message PlayGamesIosDeviceAction {
+  // The type of iOS action
+  enum IosDeviceActionType {
+    UNKNOWN = 0;
+    // The device token was registered
+    REGISTER_DEVICE = 1;
+    // The device token was unregistered
+    UNREGISTER_DEVICE = 2;
+    // Next index: 3
+  }
+  // What type of token registration was this and
+  optional IosDeviceActionType action_type = 1;
+  // Only one of these fields will be filled depending on action_type
+  // The details of registration
+  optional PlayGamesIosDeviceRegister register_action = 2;
+  // The details of the unregistration
+  optional PlayGamesIosDeviceUnregister unregister_action = 3;
+  // Next index: 4;
+}
+// Details about the game tab in the destination app
+message PlayGamesDestinationAppGameTabInfo {
+  // The application collection being viewed
+  enum ApplicationCollection {
+    UNKNOWN_COLLECTION = 0;
+    FEATURED = 1;
+    MULTIPLAYER = 2;
+    PLAYED = 3;
+    RECOMMENDED = 4;
+    DOWNLOADED = 5;
+    ALL_GAMES = 6;
+    HIDDEN_GAMES = 7;
+    INSTALLED = 8;
+    // Next index = 9
+  }
+  // The collection type being displayed
+  optional ApplicationCollection collection = 1;
+  // True if user is viewing the top of the list, false if user has scrolled
+  // down
+  optional bool top_of_list = 2;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 3;
+  // Next index: 4
+}
+// Details about a game purchase from the destination app
+message PlayGamesDestinationAppGamePurchase {
+  // The price displayed to the user; null or 0 means free
+  optional int64 price_micros = 1;
+  // The purchase was successfully completed.  (This only matters when
+  // is_start_action = false.)
+  optional bool has_completed_purchase = 2;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 3;
+  // How far down in search / recommendations this game was displayed.
+  optional uint32 ranking_position = 4;
+  // Next index: 5
+}
+// Details about a game in the destination app
+message PlayGamesDestinationAppGameAction {
+  // Which section the user is viewing on the game detail page
+  enum GameDetailSection {
+    // UNKNOWN
+    UNKNOWN_SECTION = 0;
+    // About game
+    ABOUT = 1;
+    // The achievements for the game
+    ACHIEVEMENT_LIST = 2;
+    // The leaderboards for the game
+    LEADERBOARD_LIST = 3;
+    // Friends who also play this game
+    FRIEND_LIST = 4;
+    // Next index: 5
+  }
+  // The app id of the game
+  optional string application_id = 1;
+  // The section the user is viewing
+  optional GameDetailSection section = 2;
+  // User launched the game from the dest app
+  optional bool launched_game = 3;
+  // Leaderboard actions if the player chose a specific leaderboard
+  optional PlayGamesLeaderboardAction leaderboard = 4;
+  // User clicked to purchase game from the dest app
+  optional PlayGamesDestinationAppGamePurchase game_purchase = 5;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 6;
+  // How far down in search / recommendations this game was displayed.
+  optional uint32 ranking_position = 7;
+  // Next index: 8
+}
+// Details about the game tab in the destination app
+message PlayGamesDestinationAppPlayerTabInfo {
+  // The application collection being viewed
+  enum PlayerCollection {
+    // Unknown default actions
+    UNKNOWN_COLLECTION = 0;
+    // List of everyone in your circles
+    ALL = 1;
+    // List of people in your circles who have recently played games
+    MOST_RECENT = 2;
+    // List of people you may know
+    YOU_MAY_KNOW = 3;
+    // Next index: 4
+  }
+  // The collection type being displayed
+  optional PlayerCollection collection = 1;
+  // True if user is viewing the top of the list, false if user has scrolled
+  // down
+  optional bool top_of_list = 2;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 3;
+  // Next index: 4
+}
+// Details about a player in the destination app
+message PlayGamesDestinationAppPlayerAction {
+  // Which section the user is viewing on the player detail page
+  enum PlayerDetailSection {
+    // UNKNOWN
+    UNKNOWN_SECTION = 0;
+    // List of recently played games
+    RECENTLY_PLAYED = 1;
+    // Next index: 2
+  }
+  // The section the user is viewing
+  optional PlayerDetailSection section = 1;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 2;
+  // How far down in search / recommendations this game was displayed.
+  optional uint32 ranking_position = 3;
+  // Next index: 4
+}
+// Details about an action taken in the Settings page
+message PlayGamesDestinationAppSettingsAction {
+  // True if the user switched accounts
+  optional bool switched_account = 1;
+  // True if the user enabled notifications, false if the user disabled
+  // notifications
+  optional bool mobile_notifications_enabled = 2;
+  // True if the user enabled email notifications, false if the user
+  // disabled email notifications
+  optional bool email_notifications_enabled = 3;
+  // True if the user enabled social sharing, false if the user
+  // disabled social sharing
+  optional bool social_sharing_enabled = 4;
+  // The app id that the user chose to unmute notifications
+  repeated string unmuted_notifications_app_id = 5;
+  // Next index: 6
+}
+// Details about a destination app action
+message PlayGamesDestinationAppAction {
+  // The page in the destination app that the user clicked on
+  enum DestinationAppPageType {
+    // Unknown page
+    UNKNOWN_PAGE_TYPE = 0;
+    // The splash screen
+    SPLASH_SCREEN = 1;
+    // The list of games
+    GAME_TAB = 2;
+    // The list of players/friends
+    PLAYER_TAB = 3;
+    // The list of matches
+    MATCH_TAB = 4;
+    // The detail page for a game
+    GAME_DETAIL = 5;
+    // The detail page for a player
+    PLAYER_DETAIL = 6;
+    // The settings page
+    SETTINGS = 7;
+    // Launched the play store
+    PLAY_STORE = 8;
+    // Next index: 9
+  }
+  // The page the user wants to view
+  optional DestinationAppPageType page_type = 1;
+  // Details about the game tab if page_type == GAMES_TAB
+  optional PlayGamesDestinationAppGameTabInfo game_tab_info = 2;
+  // Details about an action to a specific game
+  optional PlayGamesDestinationAppGameAction game_action = 3;
+  // Details about actions inside the settings page
+  optional PlayGamesDestinationAppSettingsAction settings_action = 4;
+  // Details about the player tab if page_type == PLAYER_TAB
+  optional PlayGamesDestinationAppPlayerTabInfo player_tab_info = 5;
+  // Details about an action to a specific player
+  optional PlayGamesDestinationAppPlayerAction player_action = 6;
+  // Next index: 7
+}
+// Details about a leaderboard list view, top scores, or score window action
+message PlayGamesLeaderboardAction {
+  enum LeaderboardType {
+    // Unknown leaderboard type
+    UNKNOWN_LEADERBOARD_TYPE = 0;
+    // Public leaderboard
+    PUBLIC = 1;
+    // Social leaderboard
+    SOCIAL = 2;
+    // Next index = 3;
+  }
+  enum ScoreWindowType {
+    // Unknown score window type
+    UNKNOWN_SCORE_WINDOW = 0;
+    // The "daily" score window
+    DAILY = 1;
+    // The "weekly" score window
+    WEEKLY = 2;
+    // The "all time" score window
+    ALL_TIME = 3;
+    // Next index = 4;
+  }
+  // The leaderboard id this action is requesting
+  optional string leaderboard_id = 1;
+  // The type of the leaderboard
+  optional LeaderboardType leaderboard_type = 2;
+  // The score window type requested, if applicable
+  optional ScoreWindowType score_window_type = 3;
+  // Next index = 4;
+}
+// Details about a GPlus upgrade action
+message PlayGamesGPlusUpgrade {
+  enum GPlusUpgradeStatus {
+    // Unknown state
+    UNKNOWN_GPLUS_UPGRADE = 0;
+    // User accepted the G+ upgrade
+    ACCEPT = 1;
+    // User cancelled G+ upgrade
+    CANCEL = 2;
+    // Next index: 3
+  }
+  // Status of GPlus upgrade screen
+  optional GPlusUpgradeStatus state = 1;
+  // Next index: 2
+}
+// Details about the sign in account
+message PlayGamesSignInAccount {
+  enum AccountStatus {
+    // Unknown account status
+    UNKNOWN_ACCOUNT_STATUS = 0;
+    // User created a new account
+    NEW = 1;
+    // Proceeded passed the sign-in without account selector because user only
+    // has one account
+    PROCEED_NO_ACCOUNT_SELECTOR = 2;
+    // Proceeded passed the sign-in with account selector because user has
+    // multiple accounts
+    PROCEED_WITH_ACCOUNT_SELECTOR = 3;
+    // User canceled account sign-in
+    CANCEL = 4;
+    // Next index: 5
+  }
+  // The status of the account sign-in
+  optional AccountStatus status = 1;
+  // Next index: 2
+}
+// Details of an action taken inside a game
+message PlayGamesInGameAction {
+  enum GameActionType {
+    // Unknown action
+    UNKNOWN_GAME_ACTION = 0;
+    // User viewed the achievement list
+    ACHIEVEMENT_LIST = 1;
+    // User viewed the leaderboard list
+    LEADERBOARD_LIST = 2;
+    // User viewed a leaderboard top score
+    LEADERBOARD_TOP_SCORES = 3;
+    // User viewed a leaderboard score window
+    LEADERBOARD_SCORE_WINDOW = 4;
+    // User viewed game settings
+    SETTINGS = 5;
+    // User signed out of a game
+    SIGN_OUT = 6;
+    // User viewed the select opponents UI
+    SELECT_OPPONENTS = 7;
+    // User viewed the player search UI
+    PLAYER_SEARCH = 8;
+    // User viewed the waiting room UI
+    WAITING_ROOM = 9;
+    // User viewed the multiplayer inbox UI
+    MULTIPLAYER_INBOX = 10;
+    // User viewed the send request UI
+    SEND_REQUEST = 11;
+    // User viewed the request inbox UI
+    REQUEST_INBOX = 12;
+    // Next index: 13
+  }
+  // The action type
+  optional GameActionType type = 1;
+  // Leaderboard action, populated if one of the leaderboard game actions
+  // were taken by the user
+  optional PlayGamesLeaderboardAction leaderboard = 2;
+  // Next index: 3
+}
+// Details of a sign-in action
+message PlayGamesSignInAction {
+  enum SignInActionType {
+    // Unknown action
+    UNKNOWN_SIGN_IN_ACTION = 0;
+    // Games service connection attempt
+    // Sent whenever a game attempts to connect to the games service.
+    CONNECTION_START = 1;
+    // Sign in required
+    // Sent when a game was sent the SIGN_IN_REQUIRED result.
+    SIGN_IN_REQUIRED = 2;
+    // Connection success
+    // Sent when a game successfully connects to the games service.
+    CONNECTION_SUCCESS = 3;
+    // Next index: 4
+  }
+  // The account selector screen
+  optional PlayGamesSignInAccount account = 1;
+  // The G+ upgrade screen
+  optional PlayGamesGPlusUpgrade gplus_upgrade = 2;
+  // The type of action this event represents
+  optional SignInActionType type = 3;
+  // Next index: 4
+}
+// Details of a circle-modification action
+message PlayGamesModifyCirclesAction {
+  enum CircleActionSource {
+    // Unknown circle source
+    UNKNOWN = 0;
+    // Participant list
+    PARTICIPANT_LIST = 1;
+    // Recently played players
+    RECENTLY_PLAYED_PLAYERS = 2;
+    // Player search
+    PLAYER_SEARCH = 3;
+    // Player detail
+    PLAYER_DETAIL = 4;
+    // "You may know" list (player screen)
+    YOU_MAY_KNOW_LIST_PLAYERS = 5;
+    // "You may know" list (homescreen)
+    YOU_MAY_KNOW_LIST_HOMESCREEN = 6;
+    // Next index: 7
+  }
+  // The source of the modification action
+  optional CircleActionSource source = 1;
+  // Whether or not the player was added to circles
+  optional bool added = 2;
+  // Next index: 3
+}
+// Details about the request
+message PlayGamesRequestInfo {
+  // True if the action indicates the start of the request, false if the action
+  // indicates the end of the request.  This field is necessary only when we
+  // care about the latency of this action.  In order to accurately calculate
+  // latency, also include the start_timestamp_millis field below.
+  optional bool is_start_action = 1;
+  // The 3P application id making the request
+  optional string application_id = 2;
+  // The start timestamp that should be logged if we care about latency of this
+  // action.  Should only be logged if is_start_action = false. This should
+  // correspond to the PlaylogLogProto timestamp_millis field so that we can
+  // later Dremel the start and stop log events.
+  optional int64 start_timestamp_millis = 3;
+  // The instance ID of the application making the request. On Android, this
+  // will be a package name. On iOS, this will be the bundle identifier.
+  optional string instance_id = 4;
+  // Version of the client SDK that sent this request.
+  optional string client_version = 5;
+  // Next index: 6;
+}
+// A Play Games log event
+message PlayGamesLogEvent {
+  // General info about the request.  Every action should log this field.
+  optional PlayGamesRequestInfo request_info = 1;
+  // A user sign-in action
+  optional PlayGamesSignInAction sign_in = 2;
+  // An action that occurs within a game
+  optional PlayGamesInGameAction in_game = 3;
+  // An action that occurs within the games destination app
+  optional PlayGamesDestinationAppAction dest_app = 4;
+  // DEPRECATED(11/07/2013): action only sent by old clients. Instead use
+  // generic_notification.
+  optional PlayGamesNotificationActionDeprecated notification = 5;
+  // Notification action used by all clients
+  optional PlayGamesGenericNotificationAction generic_notification = 6;
+  // An iOS device registration/unregistration action
+  optional PlayGamesIosDeviceAction ios_action = 7;
+  // Action logged when modifying the state of the user's circles
+  optional PlayGamesModifyCirclesAction modify_circles = 8;
+  // Next index: 9
+}

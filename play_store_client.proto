@@ -1,0 +1,1027 @@
+/ Play Store logging protos.  This is sent as a field within
+// clientanalytics.proto.
+
+syntax = "proto2";
+package wireless_android_play_playlog;
+option java_package = "com.google.wireless.android.play.playlog.proto";
+option java_outer_classname = "PlayStore";
+option optimize_for = LITE_RUNTIME;
+
+// Client-generated information that accompanies a PlayStoreUiElement.
+message PlayStoreUiElementInfo {
+  // For payment instrument related UI elements.
+  optional InstrumentInfo instrument_info = 1;
+  message InstrumentInfo {
+    // The instrument family as defined in InstrumentEnums.Family:
+    // wireless/android/finsky/proto/billing/device/common.proto
+    optional int32 instrument_family = 1;
+    // True if the payment instrument is marked as the default.
+    optional bool is_default = 2;
+  }
+  // Serialized finsky.Docid(e.g. "["MUSIC",2,2]"), for web front end only,
+  // that is associated with the node such as Page, DocList, or Document.
+  // This field is deprecated. Instead set the docid in server_logs_cookie.
+  optional string serial_docid = 2 [ deprecated = true ];
+  // Host name of server used for a WebViewChallenge.  Never the full URL.
+  optional string host = 3;
+  // The encoded docid for document specific UI elements that don't contain a
+  // server logs cookie. Only use this if it's impossible to use a server logs
+  // cookie.
+  //
+  // E.g. "inapp:potion:com.android.vending" or "book-012345678901".
+  //
+  // See java/com/google/wireless/android/finsky/util/DocidUtils.java for the
+  // encoding / decoding functions.
+  optional string document = 4;
+  // The Offer.Type for purchase related UI elements that don't contain a
+  // server logs cookie. Only use this if it's impossible to use a server logs
+  // cookie.
+  //
+  // Offer.Type defined here: wireless/android/finsky/proto/common.proto
+  optional int32 offer_type = 5;
+}
+// Something that can be displayed on a page and possibly clicked.
+// A DOM node, essentially, for interesting nodes.
+message PlayStoreUiElement {
+  // If you add a Type value, and you want elements of that type to be tracked
+  // as "clusters" in the playstats anaylitics pipeline, you *must* add
+  // [(is_cluster) = true] to the enum value definition.
+  // Next range available beyond: 1250
+  enum Type {
+    OTHER = 0;
+    // Top-level pages.
+    BROWSE_PAGE  = 1;
+    DETAILS_PAGE = 2;
+    SEARCH_PAGE  = 3;
+    // For someone else's people page
+    PEOPLE_PAGE= 4;
+    WISHLIST_PAGE = 5;
+    ANTENNA_PAGE = 6;
+    CREATOR_DETAILS_PAGE = 7;
+    FREE_SONG_OF_THE_DAY_PAGE = 8;
+    MY_APPS_PAGE = 9;
+    // For your own people page
+    MY_PEOPLE_PAGE = 10;
+    // Tag 11 available
+    SETTINGS_PAGE = 12;
+    AVAILABLE_PROMO_OFFER_ACTIVITY = 13;
+    // Links
+    CATEGORY_LINK = 100;  // Category links.
+    QUICK_LINK = 101;     // Links to other pages.
+    SEARCH_LINK = 102;
+    MY_APPS_LINK = 103;
+    MY_MUSIC_LINK = 104;
+    MY_MOVIES_AND_TV_LINK = 105;
+    MY_BOOKS_LINK = 106;
+    MY_MAGAZINES_LINK = 107;
+    MY_WISHLIST_LINK = 108;
+    REDEEM_LINK = 109;
+    ACCOUNTS_LINK = 110;
+    SETTINGS_LINK = 111;
+    HELP_LINK = 112;
+    BADGE_LINK = 113;
+    VISIT_DEV_SITE_LINK = 114;
+    SEND_DEV_EMAIL_LINK = 115;
+    DEVELOPER_PRIVACY_LINK = 116;
+    ARTIST_LINK = 117;
+    ARTIST_YOUTUBE_LINK = 118;
+    ARTIST_GOOGLEPLUS_LINK = 119;
+    PLAY_YOUTUBE_LINK = 120;
+    MY_NEWSSTAND_LINK = 121;
+    MY_MOVIES_LINK = 122;
+    MY_PEOPLE_PAGE_LINK = 123;
+    // Common UI elements.
+    PRICE_BUTTON = 200;
+    ACCEPT_AND_BUY_BUTTON = 201;
+    SHARE_BUTTON = 202;
+    // Button that takes you to the wishlist
+    WISHLIST_BUTTON = 203;
+    // Add an item to the wishlist
+    WISHLIST_ADD_ITEM_BUTTON = 204;
+    // Remove an item from the wishlist
+    WISHLIST_REMOVE_ITEM_BUTTON = 205;
+    // No longer sent from device starting from MintJulep.
+    // See tags 1200+ instead.
+    RATE_AND_REVIEW_BUTTON = 206;
+    FLAG_INAPPROPRIATE_BUTTON = 207;
+    PLUS_ONE_BUTTON = 208;
+    DETAILS_DOCUMENT = 209;
+    AUTO_UPDATE_STATE_BUTTON = 210;
+    SEASON_SELECTOR = 211;
+    // Dismiss a document (e.g. bad recommendation)
+    DISMISS_ITEM_BUTTON = 212;
+    LOADING_SPINNER = 213;
+    REFUND_BUTTON = 214;
+    UNINSTALL_BUTTON = 215;
+    DEACTIVATE_BUTTON = 216;
+    UPDATE_BUTTON = 217;
+    // This is any "open document" button, text is corpus-specific
+    // and may be "Open", "Play", "Listen", "Read", etc.
+    LAUNCH_BUTTON = 218;
+    CONTINUE_LAUNCH_BUTTON = 219;
+    ENABLE_BUTTON = 220;
+    INSTALL_BUTTON = 221;
+    TRY_BUTTON = 222;
+    FREE_BUTTON = 223;
+    DOWNLOAD_BUTTON = 224;
+    OPEN_FREE_BOOK_BUTTON = 225;
+    SUBSCRIBE_PRICE_BUTTON = 226;
+    UNSUBSCRIBE_BUTTON = 227;
+    RENT_SD_BUTTON = 228;
+    RENT_HD_BUTTON = 229;
+    RENT_FROM_BUTTON = 230;
+    BUY_SD_BUTTON = 231;
+    BUY_HD_BUTTON = 232;
+    BUY_FROM_BUTTON = 233;
+    PREORDER_BUTTON = 234;
+    PREORDER_CANCEL_BUTTON = 235;
+    // Used on the auto-update cleanup dialog when the user does not want
+    // to have their settings changed.
+    AUTO_UPDATE_CLEANUP_NOT_YET_BUTTON = 236;
+    // Used on the auto-update cleanup dialog when the user agrees to have
+    // all of their apps auto-updated.
+    AUTO_UPDATE_CLEANUP_OK_BUTTON = 237;
+    // A button that brings up an overflow menu (on a card)
+    OVERFLOW_MENU_BUTTON = 238;
+    // Buttons on details page.
+    INFO_BUTTON = 239;
+    SCREENSHOTS_BUTTON = 240;
+    TRAILER_BUTTON = 241;
+    // A specific active subscription, shown on a details page
+    ACTIVE_SUBSCRIPTION = 242;
+    // Confirm canceling a subscription
+    CANCEL_SUBSCRIPTION_YES = 243;
+    // Don't confirm canceling a subscription
+    CANCEL_SUBSCRIPTION_NO = 244;
+    // Confirm canceling a preorder
+    CANCEL_PREORDER_YES = 245;
+    // Don't confirm canceling a preorder
+    CANCEL_PREORDER_NO = 246;
+    // Clicked "continue" in GAIA recovery offer dialog
+    GAIA_RECOVERY_YES = 247;
+    // Exited GAIA recovery offer dialog
+    GAIA_RECOVERY_NO = 248;
+    // Container Filter selector (e.g. "For Tablets" / "All Apps")
+    CONTAINER_FILTER_SELECTOR = 249;
+    // OTA install dialog cancel / "No thanks" button
+    OTA_INSTALL_DIALOG_CANCEL_BUTTON = 250;
+    // OTA install dialog "Install" button
+    OTA_INSTALL_DIALOG_INSTALL_BUTTON = 251;
+    // Available promo offer
+    AVAILABLE_PROMO_OFFER_CHOSE = 252;
+    AVAILABLE_PROMO_OFFER_SKIP = 253;
+    // OK/Cancel buttons on Content Filter
+    CONTENT_FILTER_YES = 254;
+    CONTENT_FILTER_NO = 255;
+    // Details translation toggle
+    DETAILS_TRANSLATE_YES = 256;
+    DETAILS_TRANSLATE_NO = 257;
+    // PIN entry dialog
+    PIN_ENTRY_YES = 258;
+    PIN_ENTRY_NO = 259;
+    // 260-264 no longer sent from device starting with MintJulep. See tags
+    // 1200+ instead
+    RATE_REVIEW_YES = 260;
+    RATE_REVIEW_NO = 261;
+    RATE_REVIEW_CONFIRM_GPLUS_SIGNUP = 262;
+    RATE_REVIEW_CONFIRM_GPLUS_ACCEPTED = 263;
+    RATE_REVIEW_CONFIRM_GPLUS_NO = 264;
+    // Gaia authentication - succeed, fail, cancel
+    GAIA_AUTHENTICATION_YES = 265;
+    GAIA_AUTHENTICATION_NO = 266;
+    // WebView Challenge - succeed or fail. If a URL was clicked
+    // (typically containing the target pattern or the cancel pattern)
+    // then the host name part of the URL will be logged in the
+    // client cookie.
+    WEBVIEW_CHALLENGE_YES = 267;
+    WEBVIEW_CHALLENGE_NO = 268;
+    // Confirm Archive Docs dialog - OK or cancel
+    ARCHIVE_DOCS_YES = 269;
+    ARCHIVE_DOCS_NO = 270;
+    // Episode expansion toggle
+    EPISODE_EXPANSION_YES = 271;
+    EPISODE_EXPANSION_NO = 272;
+    SHARE_GPLUS = 273;
+    // Used when the user accepts the suggestion to install Play Games.
+    PLAY_GAMES_SUGGESTION_INSTALL_BUTTON = 274;
+    // Used when the user declines the suggestion to install Play Games.
+    PLAY_GAMES_SUGGESTION_NOT_NOW_BUTTON = 275;
+    UPDATE_ALL_BUTTON = 276;
+    // The user has switched the side drawer to display destinations
+    DRAWER_SWITCH_TO_DESTINATIONS = 277;
+    // The user has switched the side drawer to display accounts
+    DRAWER_SWITCH_TO_ACCOUNTS = 278;
+    // A clickable person avatar that leads that to that person's people page.
+    PERSON_AVATAR = 279;
+    // A circles button that invokes the circle picker.
+    CIRCLES_BUTTON = 280;
+    // A button that leads to a person's G+ profile in the G+ app
+    VIEW_GPLUS_PROFILE_BUTTON = 281;
+    // Dialogs and overlays.
+    PASSWORD_PROMPT_DIALOG = 300;
+    FLAG_ITEM_DIALOG = 301;
+    // Refers to the dialog that shows more reviews of a doc
+    REVIEWS_DIALOG = 302;
+    WARM_WELCOME_DIALOG = 303;
+    CANCEL_SUBSCRIPTION_DIALOG = 304;
+    CANCEL_PREORDER_DIALOG = 305;
+    AUTO_UPDATE_CLEANUP_DIALOG = 306;
+    GAIA_RECOVERY_DIALOG = 307;
+    // This dialog is shown when a limited user is blocked from client
+    ACCESS_RESTRICTED_DIALOG = 308;
+    OTA_INSTALL_DIALOG = 309;
+    CHOOSE_ACCOUNT_DIALOG = 310;
+    PIN_ENTRY_DIALOG = 311;
+    // 312-313 no longer sent from client starting in Mintjulep. See tags 1200+
+    // instead.
+    RATE_REVIEW_DIALOG = 312;
+    RATE_REVIEW_CONFIRM_GPLUS_DIALOG = 313;
+    GAIA_AUTHENTICATION_DIALOG = 314;
+    CONTENT_FILTER_DIALOG = 315;
+    WEBVIEW_CHALLENGE = 316;
+    ARCHIVE_DOCS_DIALOG = 317;
+    // This dialog is shown to suggest that the user install Play Games.
+    PLAY_GAMES_SUGGESTION_DIALOG = 318;
+    // Dialog that shows the list of people that +1'ed a doc
+    PLUS_ONE_DIALOG = 319;
+    // Cluster types
+    // The generic cluster UI element that has child documents.  Cluster
+    // elements will be accompanied by a DOC_LIST server logs cookie.
+    // TODO: add enum values to classify all visual cluster types we are
+    // interested in.
+    UNCLASSIFIED_CLUSTER = 400;
+    // A tab containing categories.  Probably won't have a server cookie.
+    CATEGORIES_TAB = 401;
+    // A tab containing promo displays.
+    PROMO_TAB = 402;
+    // A tab containing regular contents.
+    CONTENTS_TAB = 403;
+    // A tab containg subscriptions (My Apps)
+    MY_APPS_SUBSCRIPTIONS_TAB = 404;
+    // A tab containing installed apps (My Apps)
+    MY_APPS_INSTALLED_TAB = 405;
+    // A tab containing library apps (My Apps)
+    MY_APPS_LIBRARY_TAB = 406;
+    // A merchandising cluster
+    MERCHANDISING_CLUSTER = 407;
+    // A generic type for the list response for a given tab. This will be
+    // the only child node under a PROMO_TAB or a CONTENTS_TAB.
+    DFE_LIST_TAB = 408;
+    // A cluster that is represented as a merchandized banner.
+    MERCH_BANNER_CLUSTER = 409;
+    // A cluster of people you may know to add to your circles
+    SUGGESTED_PEOPLE_CLUSTER = 410;
+    // A cluster for a trusted source that you can follow
+    TRUSTED_SOURCE_CLUSTER  = 411;
+    // A cluster that allows the user to rate multiple items
+    MULTI_RATE_CLUSTER = 412;
+    // A cluster that provides suggestions after rating a items
+    RATE_AND_QUICK_SUGGESTION_CLUSTER = 413;
+    // Card types
+    // The generic card UI element (applies to all cards shown on the screen).
+    // Card elements will be accompanied by a DOCUMENT server logs cookie.
+    // #500 is deprecated, please use a specific CARD_VIEW_ type (See below)
+    UNCLASSIFIED_CARD = 500;
+    // An app displayed in a list in MyApps
+    MY_APPS_LIST_CARD = 501;
+    // A song displayed in a list of songs
+    SONG_SNIPPET_CARD = 502;
+    // An episode displayed in a list of episodes
+    EPISODE_SNIPPET_CARD = 503;
+    // Variations on the "play card" size/shape
+    CARD_VIEW_ARTIST = 504;
+    CARD_VIEW_LARGE = 505;
+    CARD_VIEW_LISTING_SMALL = 506;
+    CARD_VIEW_MEDIUM = 507;
+    CARD_VIEW_MEDIUM_PLUS = 508;
+    CARD_VIEW_MINI = 509;
+    CARD_VIEW_SINGLE = 510;
+    CARD_VIEW_SMALL = 511;
+    CARD_VIEW_EDITORIAL_APP = 512;
+    CARD_VIEW_EDITORIAL_NON_APP = 513;
+    // Card that allows for the rating of an item
+    CARD_VIEW_RATE = 514;
+    // Card displaying a person and allows for the adding of that person
+    CARD_VIEW_PERSON = 515;
+    // System UI elements
+    SYSTEM_BACK_BUTTON = 600;
+    SYSTEM_TAP_OUTSIDE = 601;
+    SYSTEM_UP_BUTTON = 602;
+    // Indicates that the parent UI element (typically a dialog, screen, or
+    // activity) has been closed, caused by a user action or automatically.
+    SYSTEM_CLOSED = 603;
+    // Purchasing 700 - 899
+    // Purchase dialog
+    PURCHASE_DIALOG = 700;
+    PURCHASE_CART_SCREEN = 710;
+    PURCHASE_CART_BUY_BUTTON = 711;
+    PURCHASE_CART_CONTINUE_BUTTON = 712;
+    PURCHASE_CART_EXPANSION_TOGGLE = 713;
+    PURCHASE_CART_PAYMENT_OPTIONS_LINK = 714;
+    PURCHASE_CART_EXPANDED_DETAILS = 715;
+    PURCHASE_AUTH_SCREEN = 750;
+    PURCHASE_AUTH_CONFIRM_BUTTON = 751;
+    PURCHASE_AUTH_HELP_TOGGLE = 752;
+    PURCHASE_AUTH_OPT_OUT_CHECKBOX = 753;
+    PURCHASE_ERROR_SCREEN = 770;
+    PURCHASE_ERROR_OK_BUTTON = 771;
+    PURCHASE_SUCCESS_SCREEN = 775;
+    // Disambiguation
+    PURCHASE_DISAMBIGUATION_DIALOG = 780;
+    PURCHASE_DISAMBIGUATION_SCREEN = 781;
+    PURCHASE_DISAMBIGUATION_ENTRY = 782;
+    // Apps permissions
+    PURCHASE_APPS_PERMISSIONS_DIALOG = 790;
+    PURCHASE_APPS_PERMISSIONS_SCREEN = 791;
+    PURCHASE_APPS_PERMISSIONS_ACCEPT_BUTTON = 792;
+    // Billing profile / instrument switching
+    PURCHASE_PROFILE_DIALOG = 800;
+    PURCHASE_PROFILE_SCREEN = 801;
+    PURCHASE_PROFILE_EXISTING_INSTRUMENT = 802;
+    PURCHASE_PROFILE_ACTION_ADD_CREDIT_CARD = 810;
+    PURCHASE_PROFILE_ACTION_ADD_CARRIER_BILLING = 811;
+    PURCHASE_PROFILE_ACTION_REDEEM_CODE = 812;
+    PURCHASE_PROFILE_ACTION_TOP_UP = 813;
+    // DCB purchase flow
+    PURCHASE_DCB_PASSWORD_DIALOG = 820;
+    PURCHASE_DCB_PASSWORD_DIALOG_OK_BUTTON = 821;
+    PURCHASE_DCB_PASSWORD_DIALOG_CANCEL_BUTTON = 822;
+    PURCHASE_DCB_TOS_DIALOG = 823;
+    PURCHASE_DCB_TOS_DIALOG_ACCEPT_BUTTON = 824;
+    PURCHASE_DCB_TOS_DIALOG_DECLINE_BUTTON = 825;
+    // Setup DCB
+    PURCHASE_DCB2_SETUP_DIALOG = 840;
+    PURCHASE_DCB3_SETUP_DIALOG = 841;
+    //   Dialog shown while performing account association.
+    PURCHASE_DCB_ASSOCIATION_DIALOG = 842;
+    //   Screen showing the user's address and the carrier TOS footer.
+    PURCHASE_DCB_SETUP_TOS_SCREEN = 843;
+    //   Button allowing the user to edit the displayed address.
+    PURCHASE_DCB_SETUP_EDIT_ADDRESS_BUTTON = 844;
+    //   Address edit form.
+    PURCHASE_DCB_SETUP_EDIT_ADDRESS_SCREEN = 845;
+    //   Positive button on the address screen.
+    PURCHASE_DCB_SETUP_EDIT_ADDRESS_OK_BUTTON = 846;
+    //   Negative button on the address screen.
+    PURCHASE_DCB_SETUP_EDIT_ADDRESS_CANCEL_BUTTON = 847;
+    //   Positive button on the DCB setup screen.
+    PURCHASE_DCB_SETUP_ACCEPT_BUTTON = 848;
+    //   Negative button on the DCB setup screen.
+    PURCHASE_DCB_SETUP_DECLINE_BUTTON = 849;
+    // Add credit card
+    //   Hosts a PURCHASE_CC_SETUP_SCREEN.
+    PURCHASE_CC_SETUP_DIALOG = 860;
+    PURCHASE_CC_SETUP_SCREEN = 861;
+    PURCHASE_CC_SETUP_OK_BUTTON = 862;
+    PURCHASE_CC_SETUP_CANCEL_BUTTON = 863;
+    //   Impression logged when displaying an error message to the user.
+    PURCHASE_CC_SETUP_ERROR_DIALOG = 864;
+    //   Impression logged when displaying an error message to the user,
+    //   together with the choice of canceling the CC screen or editing the
+    //   entered info and retry.
+    PURCHASE_CC_SETUP_ERROR_DIALOG_WITH_CHOICE = 865;
+    // Impression logged when errors in the form are highlighted.
+    PURCHASE_CC_SETUP_INPUT_ERRORS = 866;
+    // Redeem code
+    //   Hosts the redeem code screen.
+    //   Reserved another range from 1100-1199
+    PURCHASE_REDEEM_CODE_DIALOG = 880;
+    //   The screen where the user enters the gift card / promo code.
+    PURCHASE_REDEEM_CODE_SCREEN = 881;
+    //   "Redeem" button on PURCHASE_REDEEM_CODE_SCREEN.
+    PURCHASE_REDEEM_CODE_BUTTON = 882;
+    //   Screen displaying what the user will get when they continue redemption.
+    PURCHASE_REDEEM_CONFIRMATION_SCREEN = 883;
+    //   "Add to library" button on PURCHASE_REDEEM_CONFIRMATION_SCREEN.
+    PURCHASE_REDEEM_CONFIRMATION_BUTTON = 884;
+    //   Screen showing a success message.
+    PURCHASE_REDEEM_SUCCESS_SCREEN = 885;
+    //   "Watch" / "Install", ..., button on PURCHASE_REDEEM_SUCCESS_SCREEN.
+    PURCHASE_REDEEM_SUCCESS_BUTTON = 886;
+    //   Dialog asking for the user's billing address when redeeming a monetary
+    //   promo code.
+    PURCHASE_REDEEM_ADDRESS_DIALOG = 887;
+    //   The Input text box on the redeem dialog where user enters the gift
+    //   card / promo code.
+    PURCHASE_REDEEM_CODE_INPUT = 888;
+    //   "Cancel" button on PURCHASE_REDEEM_CODE_SCREEN.
+    PURCHASE_REDEEM_CODE_CANCEL_BUTTON = 889;
+    //   Country selector menu on address dialog for new wallet account
+    //   creation.
+    PURCHASE_REDEEM_CODE_COUNTRY_MENU = 1101;
+    //   Name input box on address dialog for new wallet account creation.
+    PURCHASE_REDEEM_CODE_NAME_INPUT = 1102;
+    //   Zip code input box on address dialog for new wallet account creation.
+    PURCHASE_REDEEM_CODE_ZIP_INPUT = 1103;
+    //   1100 id is available
+    // Setup Wizard
+    //   Asks the user to add a credit card.
+    SETUP_AVAILABLE_PROMO_OFFER_ACTIVITY = 890;
+    //   Hosts a PURCHASE_CC_SETUP_SCREEN.
+    SETUP_WIZARD_CC_ACTIVITY = 891;
+    // Notifications
+    //   Notification shown when there are new updates available. Shown only for
+    //   users with auto-update disabled.
+    NOTIFICATION_NEW_UPDATES = 900;
+    //   Notification shown when an app has just been succesfully installed.
+    NOTIFICATION_SUCCESSFULLY_INSTALLED = 901;
+    //   Notification shown when an app(s) just been successfully updated.
+    NOTIFICATION_SUCCESSFULLY_UPDATED = 902;
+    //   Notifcation shown when the user has outstanding updates and has not
+    //   received any new update notifications for a given time interval
+    //   (e.g. 3 days)
+    NOTIFICATION_OUTSTANDING_UPDATES = 903;
+    //   Notification shown when the user receives new updates that require
+    //   approval. Shown only for users with auto-update enabled.
+    NOTIFICATION_NEW_UPDATES_NEED_APPROVAL = 904;
+    // Prompt for FOP / Burnsie
+    //   The dialog shown asking the user to review their account.
+    PROMPT_FOR_FOP_DIALOG = 1000;
+    //   The main activity taking the user through FOP setup.
+    PROMPT_FOR_FOP_ACTIVITY = 1001;
+    //   The main screen on the activity with choices to set up a FOP.
+    PROMPT_FOR_FOP_SCREEN = 1002;
+    //   Message screen shown when the user already has a FOP.
+    PROMPT_FOR_FOP_EXISTING_FOP_SCREEN = 1003;
+    //   Message screen shown when /billingProfile failed.
+    PROMPT_FOR_FOP_ERROR_SCREEN = 1004;
+    //   Success screen shown when the user added a FOP.
+    PROMPT_FOR_FOP_SUCCESS_SCREEN = 1005;
+    //   Continue button at the bottom of the screen.
+    PROMPT_FOR_FOP_CONTINUE_BUTTON = 1006;
+    //   On PROMPT_FOR_FOP_SCREEN, a toggle that expands/collapses the "More"
+    //   section.
+    PROMPT_FOR_FOP_MORE_TOGGLER = 1007;
+    //   The "None" choice on the PROMPT_FOR_FOP_SCREEN. Visual representation
+    //   varies by UI mode controlled by experiment.
+    PROMPT_FOR_FOP_NONE_ENTRY = 1008;
+    //   "More details" button at the bottom right, leading to
+    //    PROMPT_FOR_FOP_MORE_DETAILS_DIALOG
+    PROMPT_FOR_FOP_MORE_DETAILS_BUTTON = 1009;
+    //    A dialog shown when the user clicked
+    //    PROMPT_FOR_FOP_MORE_DETAILS_BUTTON.
+    PROMPT_FOR_FOP_MORE_DETAILS_DIALOG = 1010;
+    // Ratings and reviews
+    //   Rate/review section on details page
+    RATE_REVIEW_SECTION = 1200;
+    //   Rating bar on details page that launches the review dialog for a new
+    //   review
+    RATE_REVIEW_SECTION_RATING_BAR = 1201;
+    //   Review edit button on details page that launches the review dialog to
+    //   edit a previous review
+    RATE_REVIEW_SECTION_EDIT_BUTTON = 1202;
+    //   Review dialog launched from the details page (Redesigned in MJ)
+    RATE_REVIEW_DIALOG_V2 = 1203;
+    //   Submit button in review dialog to submit a new review
+    RATE_REVIEW_DIALOG_SUBMIT_BUTTON = 1204;
+    //   Save button in review dialog to save edits to an existing review
+    RATE_REVIEW_DIALOG_SAVE_BUTTON = 1205;
+    //   Delete button in review dialog to delete an existing review
+    RATE_REVIEW_DIALOG_DELETE_BUTTON = 1206;
+    //   Cancel action (e.g. back button or tap outside dialog) in review dialog
+    RATE_REVIEW_DIALOG_CANCEL = 1207;
+    //   Rating bar on a card (e.g. Quick Suggestions cluster)
+    RATE_REVIEW_CARD_RATING_BAR = 1208;
+  }
+  optional Type type = 1 [default = OTHER];
+  // A serialized play_store_server.proto:PlaylogStoreNodeDescriptor proto.
+  // Note: It is serialized because forcing the Android client to parse it would
+  // lose proto fields that that client version doesn't know about.
+  optional bytes server_logs_cookie = 2;
+  // Client can annotate UI elements with arbitrary info.
+  optional PlayStoreUiElementInfo client_logs_cookie = 3;
+  repeated PlayStoreUiElement child = 4;
+}
+message PlayStoreImpressionEvent {
+  // The DOM tree of the displayed content.
+  optional PlayStoreUiElement tree = 1;
+  // Descriptor path to the node on the previous screen that caused this
+  // impression. Each element on the path must have zero children.
+  // UI elements are in reversed order, i.e. from leaf to root.
+  repeated PlayStoreUiElement referrer_path = 2;
+  // Id identifies a full playstore impression within a user session. Any
+  // impressions sharing the same id will be deduped in the post session
+  // analysis. If the id is not set, the impression is considered unique.
+  optional int64 id = 3;
+}
+message PlayStoreClickEvent {
+  // The full path to the clicked UI element on the screen it was displayed on.
+  // Each element on the path must have zero children.
+  // UI elements are in reversed order, i.e. from leaf to root.
+  repeated PlayStoreUiElement element_path = 1;
+}
+message PlayStoreSearchEvent {
+  // Query text for the search event.
+  optional string query = 1;
+  // Query URL for the search event
+  optional string query_url = 2;
+  // Referrer URL (if known, e.g. from a deeplink)
+  optional string referrer_url = 3;
+}
+// Deep link event is logged when the external deep link is resolved
+// successfully by the client. The resolved link types are based on the DFE
+// response defined in wireless/android/finsky/proto/dfe/resolve_link.proto,
+// except for LAUNCH_DEEP_LINK which is generated locally when a deep link
+// intent is received.
+message PlayStoreDeepLinkEvent {
+  enum ResolvedType {
+    OTHER = 0;
+    // Deep link resolved to a document details link.
+    DETAILS = 1;
+    // Deep link resolved to a browse link.
+    BROWSE = 2;
+    // Deep link resolved to a search link.
+    SEARCH = 3;
+    // Deep link resolved to a direct purchase.
+    DIRECT_PURCHASE = 4;
+    // Deep link resolved to Home home.
+    HOME_HOME = 5;
+    // Deep link resolved to Gift card redemption.
+    REDEEM_GIFTCARD = 6;
+    // Generated immediately by the intent handler activity.
+    // Additional fields package, min_version, new_enough, and can_resolve
+    // will be set for this type.
+    LAUNCH_DEEP_LINK = 7;
+  }
+  // The external url receive in the android intent that is sent to the DFE to
+  // resolve.
+  optional string external_url = 1;
+  // The resolved link type from DFE for the external_url.
+  optional ResolvedType resolved_type = 2 [default = OTHER];
+  // The package name (set for LAUNCH_DEEP_LINK)
+  optional string package_name = 3;
+  // The requested minimum version (set for LAUNCH_DEEP_LINK)
+  optional int32 min_version = 4;
+  // True if the existing version meets the min version requirement
+  // (set for LAUNCH_DEEP_LINK)
+  optional bool new_enough = 5;
+  // True if the url could be resolved (set for LAUNCH_DEEP_LINK)
+  optional bool can_resolve = 6;
+  // A serialized play_store_server.proto:PlaylogStoreNodeDescriptor proto.
+  // See PlayStoreUiElement.server_logs_cookie for details.
+  optional bytes server_logs_cookie = 7;
+}
+message PlayStoreBackgroundActionEvent {
+  enum Type {
+    // Housekeeping, etc.
+    OTHER = 0;
+    SESSION_INFO = 1;
+    NLP_REPAIR_STATUS = 2;
+    // Download, Install, and Restore-related events
+    DOWNLOAD_QUEUED = 100;
+    DOWNLOAD_START = 101;
+    DOWNLOAD_COMPLETE = 102;
+    DOWNLOAD_CANCEL = 103;
+    DOWNLOAD_ERROR = 104;
+    INSTALL_REQUEST = 105;
+    INSTALL_START = 106;
+    INSTALL_START_ENCRYPTED = 107;
+    INSTALL_APPLY_PATCH = 108;
+    INSTALL_ACTIVATE = 109;
+    INSTALL_FINISHED = 110;
+    INSTALL_ERROR = 111;
+    INSTALL_ABANDONED = 112;
+    RESTORE_SKIP = 113;
+    UNINSTALL = 114;
+    // Auto update is attempted for a user on auto update over wifi only.
+    // Data stored in wifi_auto_update_attempt.
+    WIFI_AUTO_UPDATE_ATTEMPT = 115;
+    // Auto-Acquire is being attempted as part of a "forcefood" condition.
+    // We log two events;  One is sent to the "source" (currently owning)
+    // account and one is sent to the "dest" (acquiring) account.  Both
+    // log messages will include the package name and old (installed) and
+    // new (offered) version codes.
+    AUTO_ACQUIRE_PACKAGE_SOURCE = 116;
+    AUTO_ACQUIRE_PACKAGE_DEST = 117;
+    // App restore begins with the fetch of data (list of apps) to be restored
+    // for a given account.  Log the completion of the fetch, error code, and
+    // number of attempts.  The error codes can be any of the codes defined at
+    // https://sites.google.com/a/google.com/universal-store/documentation
+    //     /android-client/download-error-codes
+    RESTORE_FETCH_APP_LIST = 118;
+    // Tickles
+    TICKLE_PURCHASE_DECLINED = 200;
+    TICKLE_PACKAGE_INSTALL = 201;
+    TICKLE_PACKAGE_REMOVE = 202;
+    // Purchase
+    //
+    // Note that network errors and unexpected server crashes will be reflected
+    // in 'exception_type'. Expected server errors (invalid auth tokens,
+    // declined purchases, etc.) will be reflected inside server_logs_cookie.
+    //   Free purchase (for free docs not requiring Checkout).
+    //
+    //   These events are logged when the document is added to the user's
+    //   library. This usually happens only once per document and user (unless
+    //   ownership is revoked).
+    //   Specifically, for free apps, these events are triggered only before the
+    //   very first install by a user, and only if the installation was
+    //   initiated from the device.
+    //
+    //     Sending request to /purchase
+    PURCHASE_FREE_ACQUIRE = 300;
+    //     Received response from /purchase
+    //     Includes server_logs_cookie
+    PURCHASE_FREE_ACQUIRED = 301;
+    //   Paid purchase (for paid docs and free docs requiring Checkout)
+    //
+    //   These events are logged as the user progresses through a paid purchase.
+    //   This usually happens only once per document and user (unless ownership
+    //   is revoked).
+    //   Specifically, for paid apps, these events are logged only before the
+    //   very first install by a user, and only if the purchase is being
+    //   performed on the device.
+    //
+    //     Sending request to /preparePurchase
+    PURCHASE_PREPARE = 302;
+    //     Received response from /preparePurchase
+    //     Includes server_logs_cookie
+    PURCHASE_PREPARED = 303;
+    //     Sending request to /commitPurchase
+    //     Includes server_logs_cookie
+    PURCHASE_COMMIT = 304;
+    //     Received response from /commitPurchase
+    //     Includes server_logs_cookie
+    PURCHASE_COMMITTED = 305;
+    //   Instrument setup
+    //
+    //   Note that 320-323 are logged from billing profile when the user
+    //   returned from a successful instrument flow. For the "true" background
+    //   events logged when the instrument is added (also during
+    //   Setup Wizard), see events starting at 330.
+    //     The user added a credit card.
+    PURCHASE_BILLING_PROFILE_CREDIT_CARD_ADDED = 320;
+    //     The user set up a DCB instrument.
+    PURCHASE_BILLING_PROFILE_CARRIER_BILLING_ADDED = 321;
+    //     The user redeemed a gift card / promo code.
+    PURCHASE_BILLING_PROFILE_CODE_REDEEMED = 322;
+    //     Play credit purchased (top-up flow finished).
+    PURCHASE_BILLING_PROFILE_PLAY_CREDIT_PURCHASED = 323;
+    //     Sending request to /updateInstrument.
+    PURCHASE_CC_ADDING = 330;
+    //     Received success response from /updateInstrument.
+    PURCHASE_CC_ADD_SUCCESS = 331;
+    //    Request to /updateInstrument failed.
+    //
+    //    error_code:
+    //      0: Unknown
+    //      1: Invalid auth token
+    //      2: Volley error during escrowing
+    //      3: Volley error during saving
+    //      4: Invalid input
+    //      5: Error message
+    //
+    PURCHASE_CC_ADD_ERROR = 332;
+    //     Sending request to /updateInstrument.
+    PURCHASE_DCB2_ADDING = 335;
+    //     Received success response from /updateInstrument.
+    PURCHASE_DCB2_ADD_SUCCESS = 336;
+    //    Request to /updateInstrument failed.
+    //
+    //    error_code:
+    //      0: Unknown
+    //      1: Volley error
+    //      2: Invalid input
+    //      3: Error message
+    PURCHASE_DCB2_ADD_ERROR = 337;
+    //     Sending request to /updateInstrument.
+    PURCHASE_DCB3_ADDING = 340;
+    //     Received success response from /updateInstrument.
+    PURCHASE_DCB3_ADD_SUCCESS = 341;
+    //    Request to /updateInstrument failed.
+    //
+    //    error_code:
+    //      0: Unknown
+    //      1: Volley error
+    //      2: Invalid input
+    //      3: Error message
+    PURCHASE_DCB3_ADD_ERROR = 342;
+    //   Prompt for FOP / Burnsie
+    //
+    //     The user added a credit card.
+    PURCHASE_PROMPT_FOR_FOP_CREDIT_CARD_ADDED = 350;
+    //     The user set up a DCB instrument.
+    PURCHASE_PROMPT_FOR_FOP_CARRIER_BILLING_ADDED = 351;
+    //     The user redeemed a gift card / promo code.
+    PURCHASE_PROMPT_FOR_FOP_CODE_REDEEMED = 352;
+    //     Play credit purchased (top-up flow finished).
+    //     This is entirely unexpected, as we would exit the flow if the user
+    //     already has an instrument, and top-up requires an instrument.
+    PURCHASE_PROMPT_FOR_FOP_PLAY_CREDIT_PURCHASED = 353;
+    //     The user picked the "None" choice, snoozing the "Prompt for FOP"
+    //     flow.
+    PURCHASE_PROMPT_FOR_FOP_SNOOZED = 354;
+    //     We entered the "Prompt for FOP" flow and then recognized the user
+    //     already has a FOP.
+    PURCHASE_PROMPT_FOR_FOP_ALREADY_SETUP = 355;
+    //     We failed to fetch /billingProfile.
+    PURCHASE_PROMPT_FOR_FOP_BILLING_PROFILE_ERROR = 356;
+    //   Settings changes
+    SETTINGS_PASSWORD_RESTRICT = 400;
+    SETTINGS_CONTENT_FILTER = 401;
+    SETTINGS_AUTO_UPDATE_GLOBAL = 402;
+    SETTINGS_AUTO_UPDATE_APP = 403;
+    // Auto-update migration code is running.
+    // No "before" or "after" setting values are written here.
+    // Reason string indicates "version" for pre-jellybean update;
+    // "cleanup" for user-initated cleanup.
+    SETTINGS_AUTO_UPDATE_MIGRATED = 404;
+    // #405 is retired (was SETTINGS_AUTO_UPDATE_DIALOG_ANSWERED)
+    // The user switched accounts. No before/after values.
+    SETTINGS_SWITCH_ACCOUNT = 406;
+    // Misc. background events that are the direct result of user action
+    // but are decoupled from the "click: that got there
+    // Result of redeeming a promo offer (AVAILABLE_PROMO_OFFER_ACTIVITY)
+    // If redeemed, operation_success will be set to 'true'
+    AVAILABLE_PROMO_OFFER_REDEEMED = 500;
+    // Result of entering a content PIN (PIN_ENTRY_DIALOG)
+    // If successful, operation_success will be set to 'true'
+    PIN_ENTRY_RESULT = 501;
+    // Result of GAIA authentication attempt (GAIA_AUTHENTICATION_DIALOG)
+    // If successful, operation_success will be set to 'true'
+    GAIA_AUTHENTICATION_RESULT = 502;
+    // Successful G+ signup. Operation_success will be set to 'true'.
+    GPLUS_SIGNED_UP = 503;
+    // A WebViewChallenge URL was insecure (not https: or data:)
+    // Hostname (not complete URI) will be in "host"
+    WEBVIEW_CHALLENGE_NON_HTTPS = 504;
+    // User clicked "update all" and we log one message per package
+    // (package name in "document" field)
+    UPDATE_ALL = 505;
+    // User archived documents, and we log one message per doc
+    // (package name in "document" field)
+    REMOVE_FROM_HISTORY = 506;
+    // Widget tracking (enabled, disabled, options, deleted)
+    // See widget_event_data for details.
+    WIDGET_EVENT = 507;
+    // Result of light challenge auth attempt (PURCHASE_AUTH_SCREEN)
+    // If successful, operation_success will be set to 'true'
+    PURCHASE_AUTH_RESULT = 508;
+    // This is used to collect statistics about how often we fetch a
+    // 2nd document (for social details) during views of an app details
+    // page.  The "document" field will indicate the package, and the
+    // "operation_success" field will be 'true' for double-fetch, 'false'
+    // for a normal (single-fetch) condition.
+    DETAILS_2ND_DOCUMENT_FETCH = 509;
+    // Search suggestions have been offered. This event will include
+    // a message in search_suggestion, which includes items such as the
+    // query and the client-observed latency.
+    SEARCH_SUGGESTIONS_OFFERED = 510;
+    // A search suggestion has been clicked. This event will include
+    // a message in search_suggestion, which includes items such as the
+    // query and the client-observed latency.
+    SEARCH_SUGGESTION_CLICKED = 511;
+    // An acquisition flow was initiated. This event is logged whenever
+    // the user acquires a free or paid item, or goes through an app
+    // installation flow.
+    //
+    //   document: ID of the document that is being acquired / installed.
+    //   offer_type: The offer to acquire. Only set if known upfront.
+    //   offer_checkout_flow_required: Whether the offer requires a Checkout
+    //       flow. Note that this flag being true doesn't mean that the user
+    //       actually went through a purchase screen. For example, users will
+    //       go through an installation flow without purchase screen when they
+    //       install a paid app they already own, which would still have
+    //       offer_checkout_flow_required=true.
+    // TODO(chstuder): Add flags for each screen shown during the flow.
+    ACQUISITION_FLOW_STARTED = 600;
+    // An acquisition flow was finished. This is logged when an acquisition flow
+    // marked via ACQUISITION_FLOW_INITIATED has finished.
+    //
+    // The following fields will be set:
+    //   document: ID of the document that was acquired / installed.
+    //   offer_type: Offer type that was acquired.
+    //   offer_checkout_flow_required: Whether the offer required a Checkout
+    //       flow. See ACQUISITION_FLOW_STARTED for details.
+    //   operation_success: 'true' if the acquisition was completed,
+    //       'false' otherwise.
+    ACQUISITION_FLOW_FINISHED = 601;
+  }
+  optional Type type = 1 [default = OTHER];
+  // Additional parameters used by some events
+  // Flattened Docid (e.g. package name) of document in the event
+  optional string document = 2;
+  // An internal (engineering/debug) annotation of the event.
+  optional string reason = 3;
+  // Error code (HTTP status & other client-internal codes) for error events
+  // For more details, see:
+  // https://sites.google.com/a/google.com/universal-store/documentation/android-client/download-error-codes
+  optional int32 error_code = 4;
+  // The name of the Java exception that was thrown.
+  // Used to communicate client exceptions, network errors and server 500s.
+  optional string exception_type = 5;
+  // The server_logs_cookie as received from the server
+  // See PlayStoreUiElement.server_logs_cookie for details.
+  optional bytes server_logs_cookie = 6;
+  // Purchase related
+  // The offer type purchased (as ordinal value of finsky.OfferType.Id), see
+  // google3/wireless/android/finsky/proto/common.proto.
+  // Might be redundant with data in server_logs_cookie, but we won't always
+  // have a token.
+  optional int32 offer_type = 7;
+  // For a settings change, an int capturing what the setting changed from.
+  // The interpretation of this integer will depend on the type.
+  optional int32 from_setting = 8;
+  // For a settings change, an int capturing what the setting changed to.
+  // The interpretation of this integer will depend on the type.
+  optional int32 to_setting = 9;
+  // When a session is initiated, upload all out-of-band session data about
+  // the client's current state.
+  optional PlayStoreSessionData session_info = 10;
+  // App data for app-related background events.
+  optional AppData app_data = 11;
+  // For DFE request background events, the server latency as reported via
+  // ResponseWrapper.server_metadata.latency_millis.
+  optional int64 server_latency_ms = 12;
+  // For network request background events, the client observed latency.
+  optional int64 client_latency_ms = 13;
+  // For type=NLP_REPAIR_STATUS, more details
+  optional NlpRepairStatus nlp_repair_status = 14;
+  // For success/fail reports (e.g. password auth check) a simple true/false
+  optional bool operation_success = 15;
+  // Host name of server used for a WebViewChallenge.  Never the full URL.
+  optional string host = 16;
+  // For type WIDGET_EVENT, data describing the event.
+  optional WidgetEventData widget_event_data = 17;
+  // For type WIFI_AUTO_UPDATE_ATTEMPT, data describing the event.
+  optional WifiAutoUpdateAttempt wifi_auto_update_attempt = 18;
+  // For events that involve retries, a place to note the number of attempts
+  optional int32 attempts = 19;
+  // For acquisition / purchase related operations, whether
+  // Offer.checkout_flow_required was 'true' or 'false'.
+  optional bool offer_checkout_flow_required = 20;
+  // For search suggestion events, additional data about the
+  // query, latency, etc.
+  optional SearchSuggestionReport search_suggestion_report = 21;
+}
+message PlayStoreLogEvent {
+  // At most one of the following fields should be filled in.
+  // Note: tag id 2 can be reused.
+  // A tree of UI elements displayed on the screen.
+  optional PlayStoreImpressionEvent impression = 1;
+  // An explicit action taken by the user (click, tap, or swipe).
+  optional PlayStoreClickEvent click = 3;
+  // A background action that is interesting enough to be logged, but is not a
+  // direct result of an impression or a click.
+  optional PlayStoreBackgroundActionEvent background_action = 4;
+  // A search action performed by the user.
+  optional PlayStoreSearchEvent search = 5;
+  // A deep link event that resolved successfully.
+  optional PlayStoreDeepLinkEvent deep_link = 6;
+}
+message PlayStoreSessionData {
+  // True if the global auto-update setting is enabled on the client.
+  optional bool global_auto_update_enabled = 1;
+  // True if the auto-update over wifi only setting is enabled on the client.
+  optional bool global_auto_update_over_wifi_only = 2;
+  // Number of times the user has been shown the auto-update migration dialog.
+  optional int32 auto_update_cleanup_dialog_num_times_shown = 3;
+  // The network type at the time this event was logged (as provided by
+  // the SDK). See Android ConnectivityManager.TYPE_* for values.
+  // http://developer.android.com/reference/android/net/ConnectivityManager.html
+  optional int32 network_type = 4;
+  // The network subtype at the time this event was logged (as provided by
+  // the SDK). See Android TelephonyManager.NETWORK_TYPE_* for values.
+  // http://developer.android.com/reference/android/telephony/TelephonyManager.html
+  optional int32 network_sub_type = 5;
+  // The number of active accounts on the device.
+  optional int32 num_accounts_on_device = 6;
+  // The number of apps that are installed on the device.
+  optional int32 num_installed_apps = 7;
+  // The number of installed apps that have auto-update enabled on the device.
+  optional int32 num_auto_updating_installed_apps = 8;
+  // The number of installed apps that have auto-update disabled on the device.
+  optional int32 num_installed_apps_not_auto_updating = 9;
+  // True if gaia password auth is opted out.
+  optional bool gaia_password_auth_opted_out = 10;
+  // The current content filter level
+  optional int32 content_filter_level = 11;
+  // True if the user has "allow unknown sources" checked
+  optional bool allow_unknown_sources = 12;
+  // "Prompt for FOP" (Burnsie) data
+  optional PromptForFopData prompt_for_fop_data = 13;
+}
+// This message is added to a PlayStoreBackgroundActionEvent for search
+// suggestions (displayed or clicked).
+message SearchSuggestionReport {
+  // The query as entered by the user.
+  optional string query = 1;
+  // The query as rewritten by the suggestion
+  optional string suggested_query = 2;
+  // The client-observed latency.
+  optional int64 client_latency_ms = 3;
+}
+// This message will be emitted (in a background event) by code that handles
+// Nlp repairs.
+message NlpRepairStatus {
+  enum RepairStatus {
+    UNKNOWN = 0;
+    // The NLP has been found and appears to be functional.
+    PROVIDER_FOUND = 1;
+    // The NLP is not working, but all other prerequisites are
+    // satisfied, and a fix should be applied
+    PROVIDER_NEEDS_REPAIR = 2;
+    // The NLP is not working, but we are in a holdoff state
+    // so no repair will be attempted.
+    PROVIDER_REPAIR_HOLDOFF = 3;
+    // The device is running the wrong SDK version
+    WRONG_SDK_VERSION = 4;
+    // The NLP package was not found
+    PACKAGE_NOT_FOUND = 5;
+    // The NLP package has unexpected package flags
+    WRONG_FLAGS = 6;
+    // The NLP package has the wrong version #
+    WRONG_VERSION = 7;
+    // The NLP package has the wrong signature
+    WRONG_SIGNATURE = 8;
+    // The NLP package is disabled
+    PACKAGE_DISABLED = 9;
+  }
+  optional RepairStatus repair_status = 1 [ default = UNKNOWN ];
+  // The package flags of the currently-installed NLP (if found)
+  optional int32 flags = 2;
+  // The version code of the currently-installed NLP (if found)
+  optional int32 version_code = 3;
+  // The signature hash of the currently-installed NLP (if incorrect)
+  optional string signature_hash = 4;
+  // Set to true if test-keys version was found (not set for user builds)
+  optional bool found_test_keys = 5;
+  // Set to true if we are blocked from retry until next boot
+  optional bool holdoff_until_boot = 6;
+  // Set to true if we are blocked from retry until data wipe
+  optional bool holdoff_until_wipe = 7;
+  // Set to true if we have successfully installed the fixer
+  optional bool holdoff_after_install = 8;
+  // The package-enabled bits for the currently-installed NLP
+  optional int32 enabled = 9;
+}
+message AppData {
+  // The app version of the event.
+  optional int32 version = 1;
+  // For installations, the version currently installed on the device.
+  //
+  // Presence of this field means that this event is about an app update.
+  optional int32 old_version = 2;
+  // True if the currently installed version is a system app.
+  optional bool system_app = 3;
+}
+// Data to help track usage and changes to widgets
+message WidgetEventData {
+  // The various widget classes (map to Java classes)
+  enum WidgetClassId {
+    UNKNOWN_WIDGET = 0;
+    MARKET_WIDGET = 1;
+    RECOMMENDED_WIDGET = 2;
+    NOWPLAYING_WIDGET = 3;
+  }
+  // Java class receiving the widget event
+  optional WidgetClassId class_id = 1;
+  // The intent action
+  enum IntentActionId {
+    UNKNOWN_ACTION = 0;
+    ENABLED = 1;
+    DISABLED = 2;
+    UPDATE_OPTIONS = 3;
+    DELETED = 4;
+  }
+  // The intent action received
+  optional IntentActionId intent_action_id = 2;
+  // Number of widgets
+  optional int32 num_widgets = 3;
+  // The remaining fields are sent only with APPWIDGET_UPDATE_OPTIONS
+  // Widget type (all, apps, books, movies, music, magazines)
+  // These id's will be the same as the values in Common.Backend
+  // Or -1 if the string type could not be matched
+  optional int32 backendId = 4;
+  // Min & Max dimensions
+  optional int32 min_width = 5;
+  optional int32 min_height = 6;
+  optional int32 max_width = 7;
+  optional int32 max_height = 8;
+}
+// Data describing a wifi auto update attempt.
+message WifiAutoUpdateAttempt {
+  // True if auto update succeeded. False if auto update failed because wifi
+  // connecitivty was not available.
+  optional bool auto_update_success = 1;
+  // The number of consecutive failed attempts that have occured since the
+  // first failed attempt. Is 1 on first fail.
+  optional int32 num_failed_attempts = 2;
+  // Time passed since first failed attempt. Is 0 on first fail.
+  optional int64 time_since_first_fail_ms = 3;
+  // Time interval of wifi checks
+  optional int64 wifi_check_interval_ms = 4;
+}
+// Stats about "Prompt for FOP" (Burnsie)
+message PromptForFopData {
+  // Whether the user is considered to have a FOP
+  // (as determined via DFE /checkInstrument)
+  optional bool has_fop = 1;
+  // Whether the user added a FOP via Burnsie flow.
+  optional bool fop_added = 2;
+  // Number of times the "primer" dialog has been shown.
+  optional int32 num_dialog_shown = 3;
+  // Number of times the actual "Complete your account" screen was shown.
+  optional int32 num_fop_selector_shown = 4;
+  // Number of times the user snoozed the Burnsie flow.
+  optional int32 num_snooze = 5;
+}

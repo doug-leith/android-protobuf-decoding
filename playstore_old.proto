@@ -1,0 +1,2016 @@
+// based on https://android.googlesource.com/platform/packages/experimental/+/13c69c6/PixelPerfect/imported_protos/src/wireless/android/play/playlog/proto/clientanalytics.proto, but that's v old
+
+syntax = "proto2";
+//import "/Users/doug/Dropbox/Capture Files/scripts/play_games_client.proto";
+//import "/Users/doug/Dropbox/Capture Files/scripts/play_store_client.proto";
+
+import "google/protobuf/any.proto";
+
+
+// Atributes specific to Android clients.
+//
+// Next tag: 17
+message AndroidClientInfo {
+  // "Gservices" android ID.  Considered PII.  Never logged in archival logs.
+  optional int64 android_id = 1;
+  // Pseudonymous, random id (sticky) per device.  Never logged in temp logs.
+  optional string logging_id = 2;
+  // This comes from android.os.Build.VERSION.SDK_INT.
+  optional int32 sdk_version = 3;
+  // Textual description of the client platform.  e.g., "Nexus 4".
+  // This comes from android.os.Build.MODEL.
+  optional string model = 4;
+  // The name of the overall product. e.g., "occam".
+  // This comes from android.os.Build.Product.
+  optional string product = 5;
+  // The name of the hardware (from the kernel command line or /proc).
+  // This comes from android.os.Build.Hardware.  e.g., "mako".
+  optional string hardware = 8;
+  // The name of the industrial design.  e.g., "mako".
+  // This comes from android.os.Build.Device.
+  optional string device = 9;
+  // This comes from android.os.Build.ID.  e.g., something like "JRN54F".
+  optional string os_build = 6;
+  // The client application version. The java int version in the android package
+  // converted to string.
+  optional string application_build = 7;
+  // The mobile country code / mobile network code (MCC/MNC).
+  // e.g., 310004 for Verizon USA.
+  optional string mcc_mnc = 10;
+  // The chosen locale from the client. e.g., "en_US", "ko_KR", "en_GB".
+  optional string locale = 11;
+  // The chosen country from the client. e.g., "US", "KR", "JP".
+  optional string country = 12;
+  // The manufacturer of the hardware.
+  // This comes from android.os.Build.MANUFACTURER
+  optional string manufacturer = 13;
+  // The brand the software is customized for, if any.  Often a carrier name.
+  // e.g. "google"
+  // from http://developer.android.com/reference/android/os/Build.html#BRAND
+  optional string brand = 14;
+  // The name of the underlying board
+  // e.g. "tuna"
+  // from http://developer.android.com/reference/android/os/Build.html#BOARD
+  optional string board = 15;
+  // Radio version as reported by device, if available at reporting time
+  // e.g. "I9250XXLJ1"
+  // from http://developer.android.com/reference/android/os/Build.html#getRadioVersion()
+  optional string radio_version = 16;
+  optional string fingerprint=17;
+  optional int64 secure_settings_android_id=18;
+}
+// Atributes specific to desktop clients.
+//
+// Next tag: 7
+message DesktopClientInfo {
+  // Sticky ID that should be considered PII.
+  optional string client_id = 1;
+  // Pseudonymous, random id (sticky) per device.  Never logged in temp logs.
+  optional string logging_id = 2;
+  // e.g., "mac", "windows", "linux"
+  optional string os = 3;
+  // e.g., "10.7", "Vista", "Win7"
+  optional string os_major_version = 4;
+  // e.g., "10.7.3", "Win7 SP1"
+  optional string os_full_version = 5;
+  // The client application version.
+  optional string application_build = 6;
+}
+// Attributes specific to iOS clients.
+//
+// Next tag: 6
+message IosClientInfo {
+  // Sticky ID that should be considered PII.
+  optional string client_id = 1;
+  // Pseudonymous, random id (sticky) per device.  Never logged in temp logs.
+  optional string logging_id = 2;
+  optional string os_major_version = 3;
+  optional string os_full_version = 4;
+  // The client application version.
+  optional string application_build = 5;
+}
+// Next tag: 5
+message ClientInfo {
+  // The type of client that made this request.
+  // Next enum tag: 5
+  enum ClientType {
+    UNKNOWN = 0;
+    JS = 1;
+    DESKTOP = 2;
+    IOS = 3;
+    ANDROID = 4;
+  }
+  optional ClientType client_type = 1 [default = UNKNOWN];
+  // Only one of the following *_client_info fields will exist in any request.
+  optional AndroidClientInfo android_client_info = 2;
+  optional DesktopClientInfo desktop_client_info = 3;
+  optional IosClientInfo ios_client_info = 4;
+}
+// The list of IDs of experiments that are currently on for this client. All
+// other experiments are off.
+//
+// Next tag: 2
+message ExperimentIdList {
+  // IDs are sorted and do not contain duplicates.
+  repeated string id = 1;
+}
+// First party app usage log event extension.
+// Used only when log_source = APP_USAGE_1P.
+//
+// Next tag: 18
+message AppUsage1pLogEvent {
+  enum AppType {
+    UNKNOWN = 0;
+    GOOGLE_SEARCH = 1;
+    GOOGLE_CALENDAR = 2;
+    GOOGLE_PLUS = 3;
+    GMAIL = 4;
+    GOOGLE_PLAY_STORE = 5;
+    GOOGLE_PLAY_MUSIC = 6;
+    GOOGLE_PLAY_BOOKS = 7;
+    GOOGLE_PLAY_VIDEO = 8;
+    GOOGLE_PLAY_MAGAZINES = 9;
+    GOOGLE_PLAY_GAMES = 10;
+    GMS_CORE = 11;
+    ANDROID_IDE = 12;
+    ANDROID_TV = 13;
+    LE = 14; // Location Engine within GMSCore, potentially with PII data
+    GOOGLE_MAPS = 15;
+    GOOGLE_CAMERA = 16;
+    YOUTUBE = 17;
+  }
+  optional AppType app_type = 1;
+  // Package name of the app (on Android).
+  optional string android_package_name = 2;
+  // Version of the app.
+  optional string version = 3;
+}
+// A LogRequest represents a batched collection of loggable events, each
+// event to be persited in a GWS log entry by the Playlog server.
+//
+// Next tag: 6
+message LogRequest {
+  // Next enum tag: 27
+  enum LogSource {
+    UNKNOWN = -1;
+    MARKET = 0;
+    MUSIC = 1;
+    BOOKS = 2;
+    VIDEO = 3;
+    MAGAZINES = 4;
+    GAMES = 5;
+    LB_A = 6;   // for collecting app usage stats (Lockbox project)
+    ANDROID_IDE = 7;  // Android IDE (go/android-diamond)
+    LB_P = 8;  // for collecting phone call events and stats (Lockbox project)
+    LB_S = 9;  // for collecting SMS events and stats (Lockbox project)
+    GMS_CORE = 10;  // Usage of GMS Core itself and its internal stats
+    CW=27;
+    UDR=30;
+    NEWSSTAND=63;
+    WORK_STORE_APP=261;
+    WESTINGHOUSE=471;
+    DAYDREAM_HOME=534;
+    ATV_LAUNCHER=903;
+    ULEX_GAMES=1000;
+    ULEX_GAMES_WEB=1629;
+    ULEX_IN_GAME_UI=1156;
+    ULEX_BOOKS=1001;
+    ULEX_MOVIES=1002;
+    ULEX_REPLAY_CATALOG=1038;
+    ULEX_BATTLESTAR=1330;
+    ULEX_OHANA=1397;
+    INCREMENTAL=1456;
+  }
+  // "Now", in milliseconds, according to the same clock that was used to set
+  // 'event_time_ms' values in the LogEvent protos below.
+  optional int64 request_time_ms = 4;
+  optional ClientInfo client_info = 1;
+  optional LogSource log_source = 2 [default = UNKNOWN];
+  repeated LogEvent log_event = 3;
+  // Can be used instead of 'log_event' in order to save battery in cases where
+  // LogEvent protos are already serialized, and deserializing is undesirable.
+  // If used, this is a collection of byte streams each produced using a
+  // CodedOutputStream.
+  optional bytes serialized_log_events = 5;
+  optional google.protobuf.Any play_logger_metrics=12;
+  optional int64 serverTimestamp=13;
+  optional string google_ad_id=14;
+  optional bool limit_ad_tracking=15;
+}
+// Next tag: 3
+message LogResponse {
+  // Client should wait for next_request_wait_millis before sending the next log
+  // request.
+  optional int64 next_request_wait_millis = 1 [default = -1];
+  // If present, this is the new set of enabled experiments for this client.
+  // Otherwise, the client should assume that there has been no change in the
+  // set of enabled experiments.
+  optional ExperimentIdList experiments = 2;
+}
+
+// Client-generated information that accompanies a PlayStoreUiElement.
+message PlayStoreUiElementInfo {
+  // For payment instrument related UI elements.
+  optional InstrumentInfo instrument_info = 1;
+  message InstrumentInfo {
+    // The instrument family as defined in InstrumentEnums.Family:
+    // wireless/android/finsky/proto/billing/device/common.proto
+    optional int32 instrument_family = 1;
+    // True if the payment instrument is marked as the default.
+    optional bool is_default = 2;
+  }
+  // Serialized finsky.Docid(e.g. "["MUSIC",2,2]"), for web front end only,
+  // that is associated with the node such as Page, DocList, or Document.
+  // This field is deprecated. Instead set the docid in server_logs_cookie.
+  optional string serial_docid = 2 [ deprecated = true ];
+  // Host name of server used for a WebViewChallenge.  Never the full URL.
+  optional string host = 3;
+  // The encoded docid for document specific UI elements that don't contain a
+  // server logs cookie. Only use this if it's impossible to use a server logs
+  // cookie.
+  //
+  // E.g. "inapp:potion:com.android.vending" or "book-012345678901".
+  //
+  // See java/com/google/wireless/android/finsky/util/DocidUtils.java for the
+  // encoding / decoding functions.
+  optional string document = 4;
+  // The Offer.Type for purchase related UI elements that don't contain a
+  // server logs cookie. Only use this if it's impossible to use a server logs
+  // cookie.
+  //
+  // Offer.Type defined here: wireless/android/finsky/proto/common.proto
+  optional int32 offer_type = 5;
+}
+// Something that can be displayed on a page and possibly clicked.
+// A DOM node, essentially, for interesting nodes.
+message PlayStoreUiElement {
+  // If you add a Type value, and you want elements of that type to be tracked
+  // as "clusters" in the playstats anaylitics pipeline, you *must* add
+  // [(is_cluster) = true] to the enum value definition.
+  // Next range available beyond: 1250
+  enum Type {
+    OTHER = 0;
+    // Top-level pages.
+    BROWSE_PAGE  = 1;
+    DETAILS_PAGE = 2;
+    SEARCH_PAGE  = 3;
+    // For someone else's people page
+    PEOPLE_PAGE= 4;
+    WISHLIST_PAGE = 5;
+    ANTENNA_PAGE = 6;
+    CREATOR_DETAILS_PAGE = 7;
+    FREE_SONG_OF_THE_DAY_PAGE = 8;
+    MY_APPS_PAGE = 9;
+    // For your own people page
+    MY_PEOPLE_PAGE = 10;
+    // Tag 11 available
+    SETTINGS_PAGE = 12;
+    AVAILABLE_PROMO_OFFER_ACTIVITY = 13;
+    // Links
+    CATEGORY_LINK = 100;  // Category links.
+    QUICK_LINK = 101;     // Links to other pages.
+    SEARCH_LINK = 102;
+    MY_APPS_LINK = 103;
+    MY_MUSIC_LINK = 104;
+    MY_MOVIES_AND_TV_LINK = 105;
+    MY_BOOKS_LINK = 106;
+    MY_MAGAZINES_LINK = 107;
+    MY_WISHLIST_LINK = 108;
+    REDEEM_LINK = 109;
+    ACCOUNTS_LINK = 110;
+    SETTINGS_LINK = 111;
+    HELP_LINK = 112;
+    BADGE_LINK = 113;
+    VISIT_DEV_SITE_LINK = 114;
+    SEND_DEV_EMAIL_LINK = 115;
+    DEVELOPER_PRIVACY_LINK = 116;
+    ARTIST_LINK = 117;
+    ARTIST_YOUTUBE_LINK = 118;
+    ARTIST_GOOGLEPLUS_LINK = 119;
+    PLAY_YOUTUBE_LINK = 120;
+    MY_NEWSSTAND_LINK = 121;
+    MY_MOVIES_LINK = 122;
+    MY_PEOPLE_PAGE_LINK = 123;
+    // Common UI elements.
+    PRICE_BUTTON = 200;
+    ACCEPT_AND_BUY_BUTTON = 201;
+    SHARE_BUTTON = 202;
+    // Button that takes you to the wishlist
+    WISHLIST_BUTTON = 203;
+    // Add an item to the wishlist
+    WISHLIST_ADD_ITEM_BUTTON = 204;
+    // Remove an item from the wishlist
+    WISHLIST_REMOVE_ITEM_BUTTON = 205;
+    // No longer sent from device starting from MintJulep.
+    // See tags 1200+ instead.
+    RATE_AND_REVIEW_BUTTON = 206;
+    FLAG_INAPPROPRIATE_BUTTON = 207;
+    PLUS_ONE_BUTTON = 208;
+    DETAILS_DOCUMENT = 209;
+    AUTO_UPDATE_STATE_BUTTON = 210;
+    SEASON_SELECTOR = 211;
+    // Dismiss a document (e.g. bad recommendation)
+    DISMISS_ITEM_BUTTON = 212;
+    LOADING_SPINNER = 213;
+    REFUND_BUTTON = 214;
+    UNINSTALL_BUTTON = 215;
+    DEACTIVATE_BUTTON = 216;
+    UPDATE_BUTTON = 217;
+    // This is any "open document" button, text is corpus-specific
+    // and may be "Open", "Play", "Listen", "Read", etc.
+    LAUNCH_BUTTON = 218;
+    CONTINUE_LAUNCH_BUTTON = 219;
+    ENABLE_BUTTON = 220;
+    INSTALL_BUTTON = 221;
+    TRY_BUTTON = 222;
+    FREE_BUTTON = 223;
+    DOWNLOAD_BUTTON = 224;
+    OPEN_FREE_BOOK_BUTTON = 225;
+    SUBSCRIBE_PRICE_BUTTON = 226;
+    UNSUBSCRIBE_BUTTON = 227;
+    RENT_SD_BUTTON = 228;
+    RENT_HD_BUTTON = 229;
+    RENT_FROM_BUTTON = 230;
+    BUY_SD_BUTTON = 231;
+    BUY_HD_BUTTON = 232;
+    BUY_FROM_BUTTON = 233;
+    PREORDER_BUTTON = 234;
+    PREORDER_CANCEL_BUTTON = 235;
+    // Used on the auto-update cleanup dialog when the user does not want
+    // to have their settings changed.
+    AUTO_UPDATE_CLEANUP_NOT_YET_BUTTON = 236;
+    // Used on the auto-update cleanup dialog when the user agrees to have
+    // all of their apps auto-updated.
+    AUTO_UPDATE_CLEANUP_OK_BUTTON = 237;
+    // A button that brings up an overflow menu (on a card)
+    OVERFLOW_MENU_BUTTON = 238;
+    // Buttons on details page.
+    INFO_BUTTON = 239;
+    SCREENSHOTS_BUTTON = 240;
+    TRAILER_BUTTON = 241;
+    // A specific active subscription, shown on a details page
+    ACTIVE_SUBSCRIPTION = 242;
+    // Confirm canceling a subscription
+    CANCEL_SUBSCRIPTION_YES = 243;
+    // Don't confirm canceling a subscription
+    CANCEL_SUBSCRIPTION_NO = 244;
+    // Confirm canceling a preorder
+    CANCEL_PREORDER_YES = 245;
+    // Don't confirm canceling a preorder
+    CANCEL_PREORDER_NO = 246;
+    // Clicked "continue" in GAIA recovery offer dialog
+    GAIA_RECOVERY_YES = 247;
+    // Exited GAIA recovery offer dialog
+    GAIA_RECOVERY_NO = 248;
+    // Container Filter selector (e.g. "For Tablets" / "All Apps")
+    CONTAINER_FILTER_SELECTOR = 249;
+    // OTA install dialog cancel / "No thanks" button
+    OTA_INSTALL_DIALOG_CANCEL_BUTTON = 250;
+    // OTA install dialog "Install" button
+    OTA_INSTALL_DIALOG_INSTALL_BUTTON = 251;
+    // Available promo offer
+    AVAILABLE_PROMO_OFFER_CHOSE = 252;
+    AVAILABLE_PROMO_OFFER_SKIP = 253;
+    // OK/Cancel buttons on Content Filter
+    CONTENT_FILTER_YES = 254;
+    CONTENT_FILTER_NO = 255;
+    // Details translation toggle
+    DETAILS_TRANSLATE_YES = 256;
+    DETAILS_TRANSLATE_NO = 257;
+    // PIN entry dialog
+    PIN_ENTRY_YES = 258;
+    PIN_ENTRY_NO = 259;
+    // 260-264 no longer sent from device starting with MintJulep. See tags
+    // 1200+ instead
+    RATE_REVIEW_YES = 260;
+    RATE_REVIEW_NO = 261;
+    RATE_REVIEW_CONFIRM_GPLUS_SIGNUP = 262;
+    RATE_REVIEW_CONFIRM_GPLUS_ACCEPTED = 263;
+    RATE_REVIEW_CONFIRM_GPLUS_NO = 264;
+    // Gaia authentication - succeed, fail, cancel
+    GAIA_AUTHENTICATION_YES = 265;
+    GAIA_AUTHENTICATION_NO = 266;
+    // WebView Challenge - succeed or fail. If a URL was clicked
+    // (typically containing the target pattern or the cancel pattern)
+    // then the host name part of the URL will be logged in the
+    // client cookie.
+    WEBVIEW_CHALLENGE_YES = 267;
+    WEBVIEW_CHALLENGE_NO = 268;
+    // Confirm Archive Docs dialog - OK or cancel
+    ARCHIVE_DOCS_YES = 269;
+    ARCHIVE_DOCS_NO = 270;
+    // Episode expansion toggle
+    EPISODE_EXPANSION_YES = 271;
+    EPISODE_EXPANSION_NO = 272;
+    SHARE_GPLUS = 273;
+    // Used when the user accepts the suggestion to install Play Games.
+    PLAY_GAMES_SUGGESTION_INSTALL_BUTTON = 274;
+    // Used when the user declines the suggestion to install Play Games.
+    PLAY_GAMES_SUGGESTION_NOT_NOW_BUTTON = 275;
+    UPDATE_ALL_BUTTON = 276;
+    // The user has switched the side drawer to display destinations
+    DRAWER_SWITCH_TO_DESTINATIONS = 277;
+    // The user has switched the side drawer to display accounts
+    DRAWER_SWITCH_TO_ACCOUNTS = 278;
+    // A clickable person avatar that leads that to that person's people page.
+    PERSON_AVATAR = 279;
+    // A circles button that invokes the circle picker.
+    CIRCLES_BUTTON = 280;
+    // A button that leads to a person's G+ profile in the G+ app
+    VIEW_GPLUS_PROFILE_BUTTON = 281;
+    // Dialogs and overlays.
+    PASSWORD_PROMPT_DIALOG = 300;
+    FLAG_ITEM_DIALOG = 301;
+    // Refers to the dialog that shows more reviews of a doc
+    REVIEWS_DIALOG = 302;
+    WARM_WELCOME_DIALOG = 303;
+    CANCEL_SUBSCRIPTION_DIALOG = 304;
+    CANCEL_PREORDER_DIALOG = 305;
+    AUTO_UPDATE_CLEANUP_DIALOG = 306;
+    GAIA_RECOVERY_DIALOG = 307;
+    // This dialog is shown when a limited user is blocked from client
+    ACCESS_RESTRICTED_DIALOG = 308;
+    OTA_INSTALL_DIALOG = 309;
+    CHOOSE_ACCOUNT_DIALOG = 310;
+    PIN_ENTRY_DIALOG = 311;
+    // 312-313 no longer sent from client starting in Mintjulep. See tags 1200+
+    // instead.
+    RATE_REVIEW_DIALOG = 312;
+    RATE_REVIEW_CONFIRM_GPLUS_DIALOG = 313;
+    GAIA_AUTHENTICATION_DIALOG = 314;
+    CONTENT_FILTER_DIALOG = 315;
+    WEBVIEW_CHALLENGE = 316;
+    ARCHIVE_DOCS_DIALOG = 317;
+    // This dialog is shown to suggest that the user install Play Games.
+    PLAY_GAMES_SUGGESTION_DIALOG = 318;
+    // Dialog that shows the list of people that +1'ed a doc
+    PLUS_ONE_DIALOG = 319;
+    // Cluster types
+    // The generic cluster UI element that has child documents.  Cluster
+    // elements will be accompanied by a DOC_LIST server logs cookie.
+    // TODO: add enum values to classify all visual cluster types we are
+    // interested in.
+    UNCLASSIFIED_CLUSTER = 400;
+    // A tab containing categories.  Probably won't have a server cookie.
+    CATEGORIES_TAB = 401;
+    // A tab containing promo displays.
+    PROMO_TAB = 402;
+    // A tab containing regular contents.
+    CONTENTS_TAB = 403;
+    // A tab containg subscriptions (My Apps)
+    MY_APPS_SUBSCRIPTIONS_TAB = 404;
+    // A tab containing installed apps (My Apps)
+    MY_APPS_INSTALLED_TAB = 405;
+    // A tab containing library apps (My Apps)
+    MY_APPS_LIBRARY_TAB = 406;
+    // A merchandising cluster
+    MERCHANDISING_CLUSTER = 407;
+    // A generic type for the list response for a given tab. This will be
+    // the only child node under a PROMO_TAB or a CONTENTS_TAB.
+    DFE_LIST_TAB = 408;
+    // A cluster that is represented as a merchandized banner.
+    MERCH_BANNER_CLUSTER = 409;
+    // A cluster of people you may know to add to your circles
+    SUGGESTED_PEOPLE_CLUSTER = 410;
+    // A cluster for a trusted source that you can follow
+    TRUSTED_SOURCE_CLUSTER  = 411;
+    // A cluster that allows the user to rate multiple items
+    MULTI_RATE_CLUSTER = 412;
+    // A cluster that provides suggestions after rating a items
+    RATE_AND_QUICK_SUGGESTION_CLUSTER = 413;
+    // Card types
+    // The generic card UI element (applies to all cards shown on the screen).
+    // Card elements will be accompanied by a DOCUMENT server logs cookie.
+    // #500 is deprecated, please use a specific CARD_VIEW_ type (See below)
+    UNCLASSIFIED_CARD = 500;
+    // An app displayed in a list in MyApps
+    MY_APPS_LIST_CARD = 501;
+    // A song displayed in a list of songs
+    SONG_SNIPPET_CARD = 502;
+    // An episode displayed in a list of episodes
+    EPISODE_SNIPPET_CARD = 503;
+    // Variations on the "play card" size/shape
+    CARD_VIEW_ARTIST = 504;
+    CARD_VIEW_LARGE = 505;
+    CARD_VIEW_LISTING_SMALL = 506;
+    CARD_VIEW_MEDIUM = 507;
+    CARD_VIEW_MEDIUM_PLUS = 508;
+    CARD_VIEW_MINI = 509;
+    CARD_VIEW_SINGLE = 510;
+    CARD_VIEW_SMALL = 511;
+    CARD_VIEW_EDITORIAL_APP = 512;
+    CARD_VIEW_EDITORIAL_NON_APP = 513;
+    // Card that allows for the rating of an item
+    CARD_VIEW_RATE = 514;
+    // Card displaying a person and allows for the adding of that person
+    CARD_VIEW_PERSON = 515;
+    // System UI elements
+    SYSTEM_BACK_BUTTON = 600;
+    SYSTEM_TAP_OUTSIDE = 601;
+    SYSTEM_UP_BUTTON = 602;
+    // Indicates that the parent UI element (typically a dialog, screen, or
+    // activity) has been closed, caused by a user action or automatically.
+    SYSTEM_CLOSED = 603;
+    // Purchasing 700 - 899
+    // Purchase dialog
+    PURCHASE_DIALOG = 700;
+    PURCHASE_CART_SCREEN = 710;
+    PURCHASE_CART_BUY_BUTTON = 711;
+    PURCHASE_CART_CONTINUE_BUTTON = 712;
+    PURCHASE_CART_EXPANSION_TOGGLE = 713;
+    PURCHASE_CART_PAYMENT_OPTIONS_LINK = 714;
+    PURCHASE_CART_EXPANDED_DETAILS = 715;
+    PURCHASE_AUTH_SCREEN = 750;
+    PURCHASE_AUTH_CONFIRM_BUTTON = 751;
+    PURCHASE_AUTH_HELP_TOGGLE = 752;
+    PURCHASE_AUTH_OPT_OUT_CHECKBOX = 753;
+    PURCHASE_ERROR_SCREEN = 770;
+    PURCHASE_ERROR_OK_BUTTON = 771;
+    PURCHASE_SUCCESS_SCREEN = 775;
+    // Disambiguation
+    PURCHASE_DISAMBIGUATION_DIALOG = 780;
+    PURCHASE_DISAMBIGUATION_SCREEN = 781;
+    PURCHASE_DISAMBIGUATION_ENTRY = 782;
+    // Apps permissions
+    PURCHASE_APPS_PERMISSIONS_DIALOG = 790;
+    PURCHASE_APPS_PERMISSIONS_SCREEN = 791;
+    PURCHASE_APPS_PERMISSIONS_ACCEPT_BUTTON = 792;
+    // Billing profile / instrument switching
+    PURCHASE_PROFILE_DIALOG = 800;
+    PURCHASE_PROFILE_SCREEN = 801;
+    PURCHASE_PROFILE_EXISTING_INSTRUMENT = 802;
+    PURCHASE_PROFILE_ACTION_ADD_CREDIT_CARD = 810;
+    PURCHASE_PROFILE_ACTION_ADD_CARRIER_BILLING = 811;
+    PURCHASE_PROFILE_ACTION_REDEEM_CODE = 812;
+    PURCHASE_PROFILE_ACTION_TOP_UP = 813;
+    // DCB purchase flow
+    PURCHASE_DCB_PASSWORD_DIALOG = 820;
+    PURCHASE_DCB_PASSWORD_DIALOG_OK_BUTTON = 821;
+    PURCHASE_DCB_PASSWORD_DIALOG_CANCEL_BUTTON = 822;
+    PURCHASE_DCB_TOS_DIALOG = 823;
+    PURCHASE_DCB_TOS_DIALOG_ACCEPT_BUTTON = 824;
+    PURCHASE_DCB_TOS_DIALOG_DECLINE_BUTTON = 825;
+    // Setup DCB
+    PURCHASE_DCB2_SETUP_DIALOG = 840;
+    PURCHASE_DCB3_SETUP_DIALOG = 841;
+    //   Dialog shown while performing account association.
+    PURCHASE_DCB_ASSOCIATION_DIALOG = 842;
+    //   Screen showing the user's address and the carrier TOS footer.
+    PURCHASE_DCB_SETUP_TOS_SCREEN = 843;
+    //   Button allowing the user to edit the displayed address.
+    PURCHASE_DCB_SETUP_EDIT_ADDRESS_BUTTON = 844;
+    //   Address edit form.
+    PURCHASE_DCB_SETUP_EDIT_ADDRESS_SCREEN = 845;
+    //   Positive button on the address screen.
+    PURCHASE_DCB_SETUP_EDIT_ADDRESS_OK_BUTTON = 846;
+    //   Negative button on the address screen.
+    PURCHASE_DCB_SETUP_EDIT_ADDRESS_CANCEL_BUTTON = 847;
+    //   Positive button on the DCB setup screen.
+    PURCHASE_DCB_SETUP_ACCEPT_BUTTON = 848;
+    //   Negative button on the DCB setup screen.
+    PURCHASE_DCB_SETUP_DECLINE_BUTTON = 849;
+    // Add credit card
+    //   Hosts a PURCHASE_CC_SETUP_SCREEN.
+    PURCHASE_CC_SETUP_DIALOG = 860;
+    PURCHASE_CC_SETUP_SCREEN = 861;
+    PURCHASE_CC_SETUP_OK_BUTTON = 862;
+    PURCHASE_CC_SETUP_CANCEL_BUTTON = 863;
+    //   Impression logged when displaying an error message to the user.
+    PURCHASE_CC_SETUP_ERROR_DIALOG = 864;
+    //   Impression logged when displaying an error message to the user,
+    //   together with the choice of canceling the CC screen or editing the
+    //   entered info and retry.
+    PURCHASE_CC_SETUP_ERROR_DIALOG_WITH_CHOICE = 865;
+    // Impression logged when errors in the form are highlighted.
+    PURCHASE_CC_SETUP_INPUT_ERRORS = 866;
+    // Redeem code
+    //   Hosts the redeem code screen.
+    //   Reserved another range from 1100-1199
+    PURCHASE_REDEEM_CODE_DIALOG = 880;
+    //   The screen where the user enters the gift card / promo code.
+    PURCHASE_REDEEM_CODE_SCREEN = 881;
+    //   "Redeem" button on PURCHASE_REDEEM_CODE_SCREEN.
+    PURCHASE_REDEEM_CODE_BUTTON = 882;
+    //   Screen displaying what the user will get when they continue redemption.
+    PURCHASE_REDEEM_CONFIRMATION_SCREEN = 883;
+    //   "Add to library" button on PURCHASE_REDEEM_CONFIRMATION_SCREEN.
+    PURCHASE_REDEEM_CONFIRMATION_BUTTON = 884;
+    //   Screen showing a success message.
+    PURCHASE_REDEEM_SUCCESS_SCREEN = 885;
+    //   "Watch" / "Install", ..., button on PURCHASE_REDEEM_SUCCESS_SCREEN.
+    PURCHASE_REDEEM_SUCCESS_BUTTON = 886;
+    //   Dialog asking for the user's billing address when redeeming a monetary
+    //   promo code.
+    PURCHASE_REDEEM_ADDRESS_DIALOG = 887;
+    //   The Input text box on the redeem dialog where user enters the gift
+    //   card / promo code.
+    PURCHASE_REDEEM_CODE_INPUT = 888;
+    //   "Cancel" button on PURCHASE_REDEEM_CODE_SCREEN.
+    PURCHASE_REDEEM_CODE_CANCEL_BUTTON = 889;
+    //   Country selector menu on address dialog for new wallet account
+    //   creation.
+    PURCHASE_REDEEM_CODE_COUNTRY_MENU = 1101;
+    //   Name input box on address dialog for new wallet account creation.
+    PURCHASE_REDEEM_CODE_NAME_INPUT = 1102;
+    //   Zip code input box on address dialog for new wallet account creation.
+    PURCHASE_REDEEM_CODE_ZIP_INPUT = 1103;
+    //   1100 id is available
+    // Setup Wizard
+    //   Asks the user to add a credit card.
+    SETUP_AVAILABLE_PROMO_OFFER_ACTIVITY = 890;
+    //   Hosts a PURCHASE_CC_SETUP_SCREEN.
+    SETUP_WIZARD_CC_ACTIVITY = 891;
+    // Notifications
+    //   Notification shown when there are new updates available. Shown only for
+    //   users with auto-update disabled.
+    NOTIFICATION_NEW_UPDATES = 900;
+    //   Notification shown when an app has just been succesfully installed.
+    NOTIFICATION_SUCCESSFULLY_INSTALLED = 901;
+    //   Notification shown when an app(s) just been successfully updated.
+    NOTIFICATION_SUCCESSFULLY_UPDATED = 902;
+    //   Notifcation shown when the user has outstanding updates and has not
+    //   received any new update notifications for a given time interval
+    //   (e.g. 3 days)
+    NOTIFICATION_OUTSTANDING_UPDATES = 903;
+    //   Notification shown when the user receives new updates that require
+    //   approval. Shown only for users with auto-update enabled.
+    NOTIFICATION_NEW_UPDATES_NEED_APPROVAL = 904;
+    // Prompt for FOP / Burnsie
+    //   The dialog shown asking the user to review their account.
+    PROMPT_FOR_FOP_DIALOG = 1000;
+    //   The main activity taking the user through FOP setup.
+    PROMPT_FOR_FOP_ACTIVITY = 1001;
+    //   The main screen on the activity with choices to set up a FOP.
+    PROMPT_FOR_FOP_SCREEN = 1002;
+    //   Message screen shown when the user already has a FOP.
+    PROMPT_FOR_FOP_EXISTING_FOP_SCREEN = 1003;
+    //   Message screen shown when /billingProfile failed.
+    PROMPT_FOR_FOP_ERROR_SCREEN = 1004;
+    //   Success screen shown when the user added a FOP.
+    PROMPT_FOR_FOP_SUCCESS_SCREEN = 1005;
+    //   Continue button at the bottom of the screen.
+    PROMPT_FOR_FOP_CONTINUE_BUTTON = 1006;
+    //   On PROMPT_FOR_FOP_SCREEN, a toggle that expands/collapses the "More"
+    //   section.
+    PROMPT_FOR_FOP_MORE_TOGGLER = 1007;
+    //   The "None" choice on the PROMPT_FOR_FOP_SCREEN. Visual representation
+    //   varies by UI mode controlled by experiment.
+    PROMPT_FOR_FOP_NONE_ENTRY = 1008;
+    //   "More details" button at the bottom right, leading to
+    //    PROMPT_FOR_FOP_MORE_DETAILS_DIALOG
+    PROMPT_FOR_FOP_MORE_DETAILS_BUTTON = 1009;
+    //    A dialog shown when the user clicked
+    //    PROMPT_FOR_FOP_MORE_DETAILS_BUTTON.
+    PROMPT_FOR_FOP_MORE_DETAILS_DIALOG = 1010;
+    // Ratings and reviews
+    //   Rate/review section on details page
+    RATE_REVIEW_SECTION = 1200;
+    //   Rating bar on details page that launches the review dialog for a new
+    //   review
+    RATE_REVIEW_SECTION_RATING_BAR = 1201;
+    //   Review edit button on details page that launches the review dialog to
+    //   edit a previous review
+    RATE_REVIEW_SECTION_EDIT_BUTTON = 1202;
+    //   Review dialog launched from the details page (Redesigned in MJ)
+    RATE_REVIEW_DIALOG_V2 = 1203;
+    //   Submit button in review dialog to submit a new review
+    RATE_REVIEW_DIALOG_SUBMIT_BUTTON = 1204;
+    //   Save button in review dialog to save edits to an existing review
+    RATE_REVIEW_DIALOG_SAVE_BUTTON = 1205;
+    //   Delete button in review dialog to delete an existing review
+    RATE_REVIEW_DIALOG_DELETE_BUTTON = 1206;
+    //   Cancel action (e.g. back button or tap outside dialog) in review dialog
+    RATE_REVIEW_DIALOG_CANCEL = 1207;
+    //   Rating bar on a card (e.g. Quick Suggestions cluster)
+    RATE_REVIEW_CARD_RATING_BAR = 1208;
+  }
+  optional Type type = 1 [default = OTHER];
+  // A serialized play_store_server.proto:PlaylogStoreNodeDescriptor proto.
+  // Note: It is serialized because forcing the Android client to parse it would
+  // lose proto fields that that client version doesn't know about.
+  optional bytes server_logs_cookie = 2;
+  // Client can annotate UI elements with arbitrary info.
+  optional PlayStoreUiElementInfo client_logs_cookie = 3;
+  repeated PlayStoreUiElement child = 4;
+}
+message PlayStoreImpressionEvent {
+  // The DOM tree of the displayed content.
+  optional PlayStoreUiElement tree = 1;
+  // Descriptor path to the node on the previous screen that caused this
+  // impression. Each element on the path must have zero children.
+  // UI elements are in reversed order, i.e. from leaf to root.
+  repeated PlayStoreUiElement referrer_path = 2;
+  // Id identifies a full playstore impression within a user session. Any
+  // impressions sharing the same id will be deduped in the post session
+  // analysis. If the id is not set, the impression is considered unique.
+  optional int64 id = 3;
+}
+message PlayStoreClickEvent {
+  // The full path to the clicked UI element on the screen it was displayed on.
+  // Each element on the path must have zero children.
+  // UI elements are in reversed order, i.e. from leaf to root.
+  repeated PlayStoreUiElement element_path = 1;
+}
+message PlayStoreSearchEvent {
+  // Query text for the search event.
+  optional string query = 1;
+  // Query URL for the search event
+  optional string query_url = 2;
+  // Referrer URL (if known, e.g. from a deeplink)
+  optional string referrer_url = 3;
+}
+// Deep link event is logged when the external deep link is resolved
+// successfully by the client. The resolved link types are based on the DFE
+// response defined in wireless/android/finsky/proto/dfe/resolve_link.proto,
+// except for LAUNCH_DEEP_LINK which is generated locally when a deep link
+// intent is received.
+message PlayStoreDeepLinkEvent {
+  enum ResolvedType {
+    OTHER = 0;
+    // Deep link resolved to a document details link.
+    DETAILS = 1;
+    // Deep link resolved to a browse link.
+    BROWSE = 2;
+    // Deep link resolved to a search link.
+    SEARCH = 3;
+    // Deep link resolved to a direct purchase.
+    DIRECT_PURCHASE = 4;
+    // Deep link resolved to Home home.
+    HOME_HOME = 5;
+    // Deep link resolved to Gift card redemption.
+    REDEEM_GIFTCARD = 6;
+    // Generated immediately by the intent handler activity.
+    // Additional fields package, min_version, new_enough, and can_resolve
+    // will be set for this type.
+    LAUNCH_DEEP_LINK = 7;
+  }
+  // The external url receive in the android intent that is sent to the DFE to
+  // resolve.
+  optional string external_url = 1;
+  // The resolved link type from DFE for the external_url.
+  optional ResolvedType resolved_type = 2 [default = OTHER];
+  // The package name (set for LAUNCH_DEEP_LINK)
+  optional string package_name = 3;
+  // The requested minimum version (set for LAUNCH_DEEP_LINK)
+  optional int32 min_version = 4;
+  // True if the existing version meets the min version requirement
+  // (set for LAUNCH_DEEP_LINK)
+  optional bool new_enough = 5;
+  // True if the url could be resolved (set for LAUNCH_DEEP_LINK)
+  optional bool can_resolve = 6;
+  // A serialized play_store_server.proto:PlaylogStoreNodeDescriptor proto.
+  // See PlayStoreUiElement.server_logs_cookie for details.
+  optional bytes server_logs_cookie = 7;
+}
+message PlayStoreBackgroundActionEvent {
+  enum Type {  // PlayStoreBackgroundActionEventEnum akjd (there are hundreds more enums listed there)
+    // Housekeeping, etc.
+    OTHER = 0;
+    SESSION_INFO = 1;
+    NLP_REPAIR_STATUS = 2;
+    // DL
+    SESSION_END=3;
+    LOG_DEVICE_FEATURES=4;
+    RPC_REPORT=5;
+    ADID_REPORT=6;
+    CRASH=7;
+    END_USER_LATENCY_REPORT=8;
+    SYSTEM_HEALTH_METRIC_REPORT=9;
+    FILEBYFILE_COMPATIBILITY_CHECK=10;
+    EXPERIMENT_CHECK=11;
+    EXPERIMENT_ACTIVE=12;
+    CRASH_CAUGHT_AND_IGNORED=13;
+    VOLLEY_MAIN_CACHE_CLEARED=14;
+    TUBESKY_CRASH_LEGACY_FEEDBACK_DROPPED=15;
+    RESOURCE_EXTRACTION_COMPLETE=16;
+    RESOURCE_EXTRACTION_BLOCKED=17;
+    JANK_REPORT=18;
+    ENTRY_POINT=19;
+    SUPPORTED_ABIS_MISMATCH_USE_SYSTEM_PROPERTIES=20;
+    FAILED_WARMUP_USER_MANAGER_AT_APP_STARTUP=21;
+    VOLLEY_MAIN_CACHE_RETAINED=22;
+    ENTRY_POINT_DEBUG=23;
+    PROCESS_STARTED=24;
+    // Download, Install, and Restore-related events
+    DOWNLOAD_QUEUED = 100;
+    DOWNLOAD_START = 101;
+    DOWNLOAD_COMPLETE = 102;
+    DOWNLOAD_CANCEL = 103;
+    DOWNLOAD_ERROR = 104;
+    INSTALL_REQUEST = 105;
+    INSTALL_START = 106;
+    INSTALL_START_ENCRYPTED = 107;
+    INSTALL_APPLY_PATCH = 108;
+    INSTALL_ACTIVATE = 109;
+    INSTALL_FINISHED = 110;
+    INSTALL_ERROR = 111;
+    INSTALL_ABANDONED = 112;
+    RESTORE_SKIP = 113;
+    UNINSTALL = 114;
+    // Auto update is attempted for a user on auto update over wifi only.
+    // Data stored in wifi_auto_update_attempt.
+    WIFI_AUTO_UPDATE_ATTEMPT = 115;
+    // Auto-Acquire is being attempted as part of a "forcefood" condition.
+    // We log two events;  One is sent to the "source" (currently owning)
+    // account and one is sent to the "dest" (acquiring) account.  Both
+    // log messages will include the package name and old (installed) and
+    // new (offered) version codes.
+    AUTO_ACQUIRE_PACKAGE_SOURCE = 116;
+    AUTO_ACQUIRE_PACKAGE_DEST = 117;
+    // App restore begins with the fetch of data (list of apps) to be restored
+    // for a given account.  Log the completion of the fetch, error code, and
+    // number of attempts.  The error codes can be any of the codes defined at
+    // https://sites.google.com/a/google.com/universal-store/documentation
+    //     /android-client/download-error-codes
+    RESTORE_FETCH_APP_LIST = 118;
+    //DL
+    SELF_UPDATE_CHECK=119;
+    DEVICE_CONFIGURATION_UPLOAD=120;
+    AUTO_UPDATE_FOREGROUND_PACKAGE=121;
+    INSTALL_APPLY_GZIP_PATCH=122;
+    INSTALL_APPLY_GZIP_APK=123;
+    INSTALL_COPY_FROM_EXTERNAL=124;
+    BACKUP_DEVICE_FETCH_RESPONSE=125;
+    SETUP_WIZARD_FINAL_HOLD_TIMEOUT=126;
+    INSTALL_COPY_DOWNLOAD=127;
+    INSTALLED_PACKAGE_FIRST_LAUNCH=128;
+    AUTO_UPDATE_DEFERRED=129;
+    VPA_REQUEST=130;
+    AUTO_UPDATE=131;
+    WEAR_DAILY_HYGIENE=132;
+    SYSTEM_ALERT_WINDOW_POLICY_2=133;
+    SYSTEM_ALERT_WINDOW_POLICY_3=134;
+    UNINSTALL_WIZARD_GET_PACKAGE_SIZE_INFO_OUTCOME=135;
+    DOWNLOAD_SIZE_PREDICTION=136;
+    ZAPP_MODULE_DELIVERY=137;
+    DOWNLOAD_CONNECTIVITY_CHANGE=138;
+    MODULE_DOWNLOAD_QUEUED=139;
+    MODULE_DOWNLOAD_START=140;
+    MODULE_DOWNLOAD_COMPLETE=141;
+    MODULE_DOWNLOAD_CANCEL=142;
+    MODULE_DOWNLOAD_ERROR=143;
+    MODULE_INSTALL_START=144;
+    MODULE_INSTALL_FINISHED=145;
+    MODULE_INSTALL_ERROR=146;
+    PARTNER_SETUP_APP_INSTALL_TRACK=147;
+    SYSTEM_ALERT_WINDOW_POLICY_4=148;
+    INSTALL_SKIP_DOWNLOAD=149;
+    UNINSTALL_WIZARD_UNINSTALLATIONS_STARTED=150;
+    DAILY_HYGIENE_START=151;
+    DAILY_HYGIENE_FINISH=152;
+    SELF_UPDATE_CHECK_SKIPPED=153;
+    GET_USAGE_STATS_OUTCOME=154;
+    CLEAR_CACHE_FINISHED=155;
+    INSTALL_CANCELED=156;
+    INSTALL_POSTPONED=157;
+    INSTALL_ARTIFACT_DEPLOYED=158;
+    INSTALL_PACKAGE_ADDED=159;
+    AUTO_UPDATE_START=160;
+    INSTALL_POSTPONED_WAITING_FOR_NETWORK=161;
+    CONTENT_SYNC=162;
+    DOWNLOAD_PROGRESS=163;
+    UNINSTALL_WIZARD_GET_DOCS_RESPONSE=164;
+    VPA_SKIP_OPTIONAL_PACKAGE=165;
+    APP_FRESHNESS=166;
+    CHECKIN_CONSISTENCY_TOKEN_FETCH=167;
+    AUTO_UPDATE_SCHEDULED=168;
+    AUTO_UPDATE_JOB_SCHEDULER_CONDITIONS_MET=169;
+    AUTO_UPDATE_ALL_CONDITIONS_MET=170;
+    INSTALL_ON_LOW_STORAGE=171;
+    OS_LICENSE_UPDATE_FAILURE=172;
+    MODULE_EXPIRED_CLEANUP=173;
+    MODULE_DECOMPRESSION=174;
+    CLEANUP_WIZARD_UNINSTALLATIONS_STARTED=175;
+    ZAPP_DOWNLOADER_FETCHED_FROM_PHONESKY=176;
+    ZAPP_DOWNLOADER_FETCH_FROM_CLIENT_LIBRARY=177;
+    ZAPP_MODULE_PATCHING=178;
+
+    // Tickles
+    TICKLE_PURCHASE_DECLINED = 200;
+    TICKLE_PACKAGE_INSTALL = 201;
+    TICKLE_PACKAGE_REMOVE = 202;
+
+    INSTALLER_SESSION_ENDED=255;
+
+    // Purchase
+    //
+    // Note that network errors and unexpected server crashes will be reflected
+    // in 'exception_type'. Expected server errors (invalid auth tokens,
+    // declined purchases, etc.) will be reflected inside server_logs_cookie.
+    //   Free purchase (for free docs not requiring Checkout).
+    //
+    //   These events are logged when the document is added to the user's
+    //   library. This usually happens only once per document and user (unless
+    //   ownership is revoked).
+    //   Specifically, for free apps, these events are triggered only before the
+    //   very first install by a user, and only if the installation was
+    //   initiated from the device.
+    //
+    //     Sending request to /purchase
+    PURCHASE_FREE_ACQUIRE = 300;
+    //     Received response from /purchase
+    //     Includes server_logs_cookie
+    PURCHASE_FREE_ACQUIRED = 301;
+    //   Paid purchase (for paid docs and free docs requiring Checkout)
+    //
+    //   These events are logged as the user progresses through a paid purchase.
+    //   This usually happens only once per document and user (unless ownership
+    //   is revoked).
+    //   Specifically, for paid apps, these events are logged only before the
+    //   very first install by a user, and only if the purchase is being
+    //   performed on the device.
+    //
+    //     Sending request to /preparePurchase
+    PURCHASE_PREPARE = 302;
+    //     Received response from /preparePurchase
+    //     Includes server_logs_cookie
+    PURCHASE_PREPARED = 303;
+    //     Sending request to /commitPurchase
+    //     Includes server_logs_cookie
+    PURCHASE_COMMIT = 304;
+    //     Received response from /commitPurchase
+    //     Includes server_logs_cookie
+    PURCHASE_COMMITTED = 305;
+    //   Instrument setup
+    //
+    //   Note that 320-323 are logged from billing profile when the user
+    //   returned from a successful instrument flow. For the "true" background
+    //   events logged when the instrument is added (also during
+    //   Setup Wizard), see events starting at 330.
+    //     The user added a credit card.
+    PURCHASE_BILLING_PROFILE_CREDIT_CARD_ADDED = 320;
+    //     The user set up a DCB instrument.
+    PURCHASE_BILLING_PROFILE_CARRIER_BILLING_ADDED = 321;
+    //     The user redeemed a gift card / promo code.
+    PURCHASE_BILLING_PROFILE_CODE_REDEEMED = 322;
+    //     Play credit purchased (top-up flow finished).
+    PURCHASE_BILLING_PROFILE_PLAY_CREDIT_PURCHASED = 323;
+    //     Sending request to /updateInstrument.
+    PURCHASE_CC_ADDING = 330;
+    //     Received success response from /updateInstrument.
+    PURCHASE_CC_ADD_SUCCESS = 331;
+    //    Request to /updateInstrument failed.
+    //
+    //    error_code:
+    //      0: Unknown
+    //      1: Invalid auth token
+    //      2: Volley error during escrowing
+    //      3: Volley error during saving
+    //      4: Invalid input
+    //      5: Error message
+    //
+    PURCHASE_CC_ADD_ERROR = 332;
+    //     Sending request to /updateInstrument.
+    PURCHASE_DCB2_ADDING = 335;
+    //     Received success response from /updateInstrument.
+    PURCHASE_DCB2_ADD_SUCCESS = 336;
+    //    Request to /updateInstrument failed.
+    //
+    //    error_code:
+    //      0: Unknown
+    //      1: Volley error
+    //      2: Invalid input
+    //      3: Error message
+    PURCHASE_DCB2_ADD_ERROR = 337;
+    //     Sending request to /updateInstrument.
+    PURCHASE_DCB3_ADDING = 340;
+    //     Received success response from /updateInstrument.
+    PURCHASE_DCB3_ADD_SUCCESS = 341;
+    //    Request to /updateInstrument failed.
+    //
+    //    error_code:
+    //      0: Unknown
+    //      1: Volley error
+    //      2: Invalid input
+    //      3: Error message
+    PURCHASE_DCB3_ADD_ERROR = 342;
+    //   Prompt for FOP / Burnsie
+    //
+    //     The user added a credit card.
+    PURCHASE_PROMPT_FOR_FOP_CREDIT_CARD_ADDED = 350;
+    //     The user set up a DCB instrument.
+    PURCHASE_PROMPT_FOR_FOP_CARRIER_BILLING_ADDED = 351;
+    //     The user redeemed a gift card / promo code.
+    PURCHASE_PROMPT_FOR_FOP_CODE_REDEEMED = 352;
+    //     Play credit purchased (top-up flow finished).
+    //     This is entirely unexpected, as we would exit the flow if the user
+    //     already has an instrument, and top-up requires an instrument.
+    PURCHASE_PROMPT_FOR_FOP_PLAY_CREDIT_PURCHASED = 353;
+    //     The user picked the "None" choice, snoozing the "Prompt for FOP"
+    //     flow.
+    PURCHASE_PROMPT_FOR_FOP_SNOOZED = 354;
+    //     We entered the "Prompt for FOP" flow and then recognized the user
+    //     already has a FOP.
+    PURCHASE_PROMPT_FOR_FOP_ALREADY_SETUP = 355;
+    //     We failed to fetch /billingProfile.
+    PURCHASE_PROMPT_FOR_FOP_BILLING_PROFILE_ERROR = 356;
+
+    //DL
+    PURCHASE_PROMPT_FOR_FOP_NOT_SHOWN=358;
+    PURCHASE_PROMPT_FOR_FOP_GENERIC_INSTRUMENT_ADDED=359;
+    BILLING_SERVICE_RESPONSE=375;
+    INSTANT_FOP_OPTIONS_USER_HAS_FOP=390;
+    INSTANT_FOP_OPTIONS_MATCHED=391;
+    INSTANT_FOP_OPTIONS_UNAVAILABLE_FOP_SELECTED=392;
+    INSTANT_FOP_OPTIONS_BLOCKED=393;
+    INSTANT_FOP_OPTIONS_LOADED=394;
+
+    //   Settings changes
+    SETTINGS_PASSWORD_RESTRICT = 400;
+    SETTINGS_CONTENT_FILTER = 401;
+    SETTINGS_AUTO_UPDATE_GLOBAL = 402;
+    SETTINGS_AUTO_UPDATE_APP = 403;
+    // Auto-update migration code is running.
+    // No "before" or "after" setting values are written here.
+    // Reason string indicates "version" for pre-jellybean update;
+    // "cleanup" for user-initated cleanup.
+    SETTINGS_AUTO_UPDATE_MIGRATED = 404;
+    // #405 is retired (was SETTINGS_AUTO_UPDATE_DIALOG_ANSWERED)
+    // The user switched accounts. No before/after values.
+    SETTINGS_SWITCH_ACCOUNT = 406;
+    //DL
+    SETTINGS_LOCATION_BASED_SUGGESTIONS=407;
+    SETTINGS_FINGERPRINT_AUTH=408;
+    SETTINGS_GMAIL_ITINERARIES_BASED_SUGGESTIONS=409;
+    SETTINGS_FAMILY_FUTURE_SHARING_APPS=410;
+    SETTINGS_FAMILY_FUTURE_SHARING_MOVIES=411;
+    SETTINGS_FAMILY_FUTURE_SHARING_BOOKS=412;
+    SETTINGS_FAMILY_BULK_SHARE_PREVIOUS_APPS=413;
+    SETTINGS_FAMILY_BULK_SHARE_PREVIOUS_MOVIES=414;
+    SETTINGS_FAMILY_BULK_SHARE_PREVIOUS_BOOKS=415;
+    SETTINGS_FAMILY_MEMBER_PURCHASE_APPROVALS_CHANGED=416;
+    SETTINGS_FAMILY_MEMBER_PARENTAL_CONTROLS_CHANGED=417;
+    SETTINGS_UPDATES_AVAILABLE_NOTIFICATION=418;
+    SETTINGS_UPDATES_COMPLETED_NOTIFICATION=419;
+    SETTINGS_CRM_NOTIFICATION=420;
+    SETTINGS_LAUNCHER_ICON_COUNTER=421;
+    SETTINGS_ANDROID_SYSTEM_NOTIFICATION=422;
+    SETTINGS_UNAUTH_AUTO_UPDATE_GLOBAL=423;
+    SETTINGS_VIDEO_AUTO_PLAY_SETTING_UPDATE=424;
+    SETTINGS_FAMILY_FOP_CHALLENGE_COMPLETED=425;
+    SETTINGS_FAMILY_FOP_CHALLENGE_STARTED=426;
+    SETTINGS_PURCHASE_AUTH=427;
+    SETTINGS_DEVICE_SEARCH_HISTORY_CLEARED=428;
+    SETTINGS_ALL_PURCHASE_AUTH_SETTINGS_CLEARED=429;
+
+    // Misc. background events that are the direct result of user action
+    // but are decoupled from the "click: that got there
+    // Result of redeeming a promo offer (AVAILABLE_PROMO_OFFER_ACTIVITY)
+    // If redeemed, operation_success will be set to 'true'
+    AVAILABLE_PROMO_OFFER_REDEEMED = 500;
+    // Result of entering a content PIN (PIN_ENTRY_DIALOG)
+    // If successful, operation_success will be set to 'true'
+    PIN_ENTRY_RESULT = 501;
+    // Result of GAIA authentication attempt (GAIA_AUTHENTICATION_DIALOG)
+    // If successful, operation_success will be set to 'true'
+    GAIA_AUTHENTICATION_RESULT = 502;
+    // Successful G+ signup. Operation_success will be set to 'true'.
+    GPLUS_SIGNED_UP = 503;
+    // A WebViewChallenge URL was insecure (not https: or data:)
+    // Hostname (not complete URI) will be in "host"
+    WEBVIEW_CHALLENGE_NON_HTTPS = 504;
+    // User clicked "update all" and we log one message per package
+    // (package name in "document" field)
+    UPDATE_ALL = 505;
+    // User archived documents, and we log one message per doc
+    // (package name in "document" field)
+    REMOVE_FROM_HISTORY = 506;
+    // Widget tracking (enabled, disabled, options, deleted)
+    // See widget_event_data for details.
+    WIDGET_EVENT = 507;
+    // Result of light challenge auth attempt (PURCHASE_AUTH_SCREEN)
+    // If successful, operation_success will be set to 'true'
+    PURCHASE_AUTH_RESULT = 508;
+    // This is used to collect statistics about how often we fetch a
+    // 2nd document (for social details) during views of an app details
+    // page.  The "document" field will indicate the package, and the
+    // "operation_success" field will be 'true' for double-fetch, 'false'
+    // for a normal (single-fetch) condition.
+    DETAILS_2ND_DOCUMENT_FETCH = 509;
+    // Search suggestions have been offered. This event will include
+    // a message in search_suggestion, which includes items such as the
+    // query and the client-observed latency.
+    SEARCH_SUGGESTIONS_OFFERED = 510;
+    // A search suggestion has been clicked. This event will include
+    // a message in search_suggestion, which includes items such as the
+    // query and the client-observed latency.
+    SEARCH_SUGGESTION_CLICKED = 511;
+    SEARCH_RESULTS_RESPONSE = 523;
+    PLAYSHIELD_SIGNALS=538;
+    DEVICE_VERIFICATION_FAILED=541;
+    DEVICE_VERIFICATION_COMPLETED=542;
+    SEARCH_TRIGGERED=550;
+    DEVICE_REVERIFICATION_REQUESTED=552;
+    IMAGE_LOAD_REPORT=554;
+    GET_INSTALL_REFERRER_DELIVERED=561;
+    SEARCH_SUGGESTIONS_SHOWN=577;
+    SEARCH_SUGGESTIONS_SESSION_START=587;
+    SEARCH_SUGGESTIONS_SESSION_END=588;
+    APP_LAUNCHED=598;
+
+    // An acquisition flow was initiated. This event is logged whenever
+    // the user acquires a free or paid item, or goes through an app
+    // installation flow.
+    //
+    //   document: ID of the document that is being acquired / installed.
+    //   offer_type: The offer to acquire. Only set if known upfront.
+    //   offer_checkout_flow_required: Whether the offer requires a Checkout
+    //       flow. Note that this flag being true doesn't mean that the user
+    //       actually went through a purchase screen. For example, users will
+    //       go through an installation flow without purchase screen when they
+    //       install a paid app they already own, which would still have
+    //       offer_checkout_flow_required=true.
+    // TODO(chstuder): Add flags for each screen shown during the flow.
+    ACQUISITION_FLOW_STARTED = 600;
+    // An acquisition flow was finished. This is logged when an acquisition flow
+    // marked via ACQUISITION_FLOW_INITIATED has finished.
+    //
+    // The following fields will be set:
+    //   document: ID of the document that was acquired / installed.
+    //   offer_type: Offer type that was acquired.
+    //   offer_checkout_flow_required: Whether the offer required a Checkout
+    //       flow. See ACQUISITION_FLOW_STARTED for details.
+    //   operation_success: 'true' if the acquisition was completed,
+    //       'false' otherwise.
+    ACQUISITION_FLOW_FINISHED = 601;
+    ACQUISITION_CHECK_IAB_PROMO_RESPONSE=620;
+    IAB_GET_SKU_DETAILS_RESPONSE=622;
+    IAB_GET_BUY_INTENT_RESPONSE=623;
+    IAB_GET_PURCHASES_RESPONSE=624;
+    IAB_CONSUME_PURCHASE_RESPONSE=625;
+
+    REAUTH_SETTINGS_FROM_DEVICE=900;
+    REAUTH_SETTINGS_AUTH_TOKEN_FETCH=901;
+    REAUTH_SETTINGS_FROM_SERVER_REQUEST=902;
+    REAUTH_SETTINGS_FROM_SERVER_RESPONSE=903;
+
+    RADS_SCION_PAYLOAD_REFERESH=1116;
+    REPORT_STORE_FRONT_PURCHASE_TO_FIREBASE_ANALYTICS=1117;
+    REPORT_FREE_APP_ACQUIRE_TO_FIREBASE_ANALYTICS=1118;
+
+    APPLICATION_ON_CREATE_START=1700;
+    APPLICATION_ON_CREATE_COMPLETE=1701;
+    MAIN_ACTIVITY_ON_START=1702;
+    PAGE_LOAD_START=1703;
+    PAGE_LOAD_END=1704;
+    PAGE_LOAD_ERROR=1705;
+    PAGE_LOAD_INTERRUPTED=1706;
+    MAIN_ACTIVITY_ON_CREATE=1707;
+    MAIN_ACTIVITY_ON_READY=1708;
+    PAGE_LOAD_FIRST_RPC_INITIATED=1718;
+    PAGE_LOAD_LAST_RPC_COMPLETED=1719;
+    MAIN_ACTIVITY_ON_STOP=1720;
+    PAGE_LOAD_FIRST_ON_SCREEN_IMAGE_RENDERED=1747;
+    PAGE_LOAD_LAST_ON_SCREEN_IMAGE_RENDERED=1748;
+
+    RESTORE_START=1900;
+    RESTORE_FINISH=1901;
+    RESTORE_FLOW_START_TYPE=1908;
+    RESTORE_FLOW_FINISH_TYPE=1909;
+    POST_SETUP_APP_USAGE_REPORT=1911;
+    SETUP_WAITING_FOR_WIFI=1914;
+    SETUP_CONTINUE_ON_WIFI=1915;
+    SETUP_FLOW_START=1932;
+    SETUP_FLOW_UPDATE=1933;
+    SETUP_FLOW_FINISH=1934;
+
+    DOWNLOAD_APPS_NETWORK_SETTING_DAILY_REPORT=2001;
+    WAIT_FOR_WIFI_SUCCESSFUL_APP_INSTALL_REPORT=2005;
+    VERIFY_APPS_INSTALL_RECEIVE_VERIFICATION_REQUEST=2620;
+    VERIFY_APPS_BEGIN_INSTALL_VERIFICATION=2621;
+    VERIFY_APPS_VERIFY_INSTALL=2623;
+
+    ANDROID_NOTIFICATION_SETTINGS=3054;
+    LANGUAGE_CHANGE_BULKDETAILS_SUCCESS=3366;
+    LANGUAGE_CHANGE_BULKDETAILS_TIMEOUT=3367;
+    SPLIT_INSTALL_API_CLEANER_START=3378;
+    SPLIT_INSTALL_API_CLEANER_END=3379;
+    SPLIT_INSTALL_API_CLEANER_DATA=3380;
+    DEFERRED_LANGUAGE_CHANGE_ATTEMPT=3387;
+    DEFERRED_LANGUAGE_CHANGE_FINISH=3388;
+    DEV_TRIGGERED_UPDATE_HYGIENE_START=3553;
+    DEV_TRIGGERED_UPDATE_HYGIENE_END=3554;
+    DEV_TRIGGERED_UPDATE_CLEANUP_DONE=3555;
+    INSTANT_APPS_ACCOUNT_SWITCHED_UPDATING_ACCOUNT=3801;
+    INSTANT_APPS_ACCOUNT_SWITCHED_ACTION_REQUIRED=3807;
+    INSTANT_APPS_ACCOUNT_SWITCHED_OPERATION_GET_OPT_IN_INFO=3850;
+
+    DNS_PREFETCH_FAILURE=4000;
+    APP_UPDATED=4359;
+    PHONESKY_DATA_USAGE_INFO=4600;
+    CACHE_PERFORMANCE_SUMMARY=4950;
+
+    ASSET_MODULE_API_CLEANER_START=5118;
+    ASSET_MODULE_API_CLEANER_END=5119;
+    DEVICE_CONNECTIVITY_PROFILE_REFRESHED_AND_FILLED=5200;
+    ASSET_MODULE_API_CLEANER_DATA=5121;
+    NOTIFICATION_CLICKABILITY_STATS_REPORT=5315;
+    CASHMERE_REPORT=5380;
+    CASHMERE_FUNNEL_FAILURE=5381;
+    CASHMERE_FUNNEL_SUCCESS=5382;
+    SELF_UPDATE_DS_DOWNLOAD_CLEANUP=5485;
+
+    PREWARM_SERVICE_CALLED=5630;
+    PREWARM_SERVICE_PREFETCH_SUCCEEDED=5631;
+
+    APP_USAGE_STATS_DATA_UPDATED=6223;
+    INCREMENTAL_FEATURES_KERNEL_V2=6704;
+    ENTERPRISE_DEVICE_REPORT_STATES_NOT_UPLOADED=6921;
+    ENTERPRISE_DEVICE_REPORT_INFO=6922;
+
+  }
+  optional Type backgroundEvent = 1 [default = OTHER];
+  // Additional parameters used by some events
+  // Flattened Docid (e.g. package name) of document in the event
+  optional string document = 2;
+  // An internal (engineering/debug) annotation of the event.
+  optional string reason = 3;
+  // Error code (HTTP status & other client-internal codes) for error events
+  // For more details, see:
+  // https://sites.google.com/a/google.com/universal-store/documentation/android-client/download-error-codes
+  optional int32 error_code = 4;
+  // The name of the Java exception that was thrown.
+  // Used to communicate client exceptions, network errors and server 500s.
+  optional string exception_type = 5;
+  // The server_logs_cookie as received from the server
+  // See PlayStoreUiElement.server_logs_cookie for details.
+  optional bytes server_logs_cookie = 6;
+  // Purchase related
+  // The offer type purchased (as ordinal value of finsky.OfferType.Id), see
+  // google3/wireless/android/finsky/proto/common.proto.
+  // Might be redundant with data in server_logs_cookie, but we won't always
+  // have a token.
+  optional int32 offer_type = 7;
+  // For a settings change, an int capturing what the setting changed from.
+  // The interpretation of this integer will depend on the type.
+  optional int32 from_setting = 8;
+  // For a settings change, an int capturing what the setting changed to.
+  // The interpretation of this integer will depend on the type.
+  optional int32 to_setting = 9;
+  // When a session is initiated, upload all out-of-band session data about
+  // the client's current state.
+  optional PlayStoreSessionData session_info = 10;
+  // App data for app-related background events.
+  optional AppData app_data = 11;
+  // For DFE request background events, the server latency as reported via
+  // ResponseWrapper.server_metadata.latency_millis.
+  optional int64 server_latency_ms = 12;
+  // For network request background events, the client observed latency.
+  optional int64 client_latency_ms = 13;
+  // For type=NLP_REPAIR_STATUS, more details
+  optional NlpRepairStatus nlp_repair_status = 14;
+  // For success/fail reports (e.g. password auth check) a simple true/false
+  optional bool operation_success = 15;
+  // Host name of server used for a WebViewChallenge.  Never the full URL.
+  optional string host = 16;
+  // For type WIDGET_EVENT, data describing the event.
+  optional WidgetEventData widget_event_data = 17;
+  // For type WIFI_AUTO_UPDATE_ATTEMPT, data describing the event.
+  optional WifiAutoUpdateAttempt wifi_auto_update_attempt = 18;
+  // For events that involve retries, a place to note the number of attempts
+  optional int32 attempts = 19;
+  // For acquisition / purchase related operations, whether
+  // Offer.checkout_flow_required was 'true' or 'false'.
+  optional bool offer_checkout_flow_required = 20;
+  // For search suggestion events, additional data about the
+  // query, latency, etc.
+  optional SearchSuggestionReport search_suggestion_report = 21;
+}
+
+message PlayStoreSessionData {
+  // True if the global auto-update setting is enabled on the client.
+  optional bool global_auto_update_enabled = 1;
+  // True if the auto-update over wifi only setting is enabled on the client.
+  optional bool global_auto_update_over_wifi_only = 2;
+  // Number of times the user has been shown the auto-update migration dialog.
+  optional int32 auto_update_cleanup_dialog_num_times_shown = 3;
+  // The network type at the time this event was logged (as provided by
+  // the SDK). See Android ConnectivityManager.TYPE_* for values.
+  // http://developer.android.com/reference/android/net/ConnectivityManager.html
+  optional int32 network_type = 4;
+  // The network subtype at the time this event was logged (as provided by
+  // the SDK). See Android TelephonyManager.NETWORK_TYPE_* for values.
+  // http://developer.android.com/reference/android/telephony/TelephonyManager.html
+  optional int32 network_sub_type = 5;
+  // The number of active accounts on the device.
+  optional int32 num_accounts_on_device = 6;
+  // The number of apps that are installed on the device.
+  optional int32 num_installed_apps = 7;
+  // The number of installed apps that have auto-update enabled on the device.
+  optional int32 num_auto_updating_installed_apps = 8;
+  // The number of installed apps that have auto-update disabled on the device.
+  optional int32 num_installed_apps_not_auto_updating = 9;
+  // True if gaia password auth is opted out.
+  optional bool gaia_password_auth_opted_out = 10;
+  // The current content filter level
+  optional int32 content_filter_level = 11;
+  // True if the user has "allow unknown sources" checked
+  optional bool allow_unknown_sources = 12;
+  // "Prompt for FOP" (Burnsie) data
+  optional PromptForFopData prompt_for_fop_data = 13;
+}
+// This message is added to a PlayStoreBackgroundActionEvent for search
+// suggestions (displayed or clicked).
+message SearchSuggestionReport {
+  // The query as entered by the user.
+  optional string query = 1;
+  // The query as rewritten by the suggestion
+  optional string suggested_query = 2;
+  // The client-observed latency.
+  optional int64 client_latency_ms = 3;
+}
+// This message will be emitted (in a background event) by code that handles
+// Nlp repairs.
+message NlpRepairStatus {
+  enum RepairStatus {
+    UNKNOWN = 0;
+    // The NLP has been found and appears to be functional.
+    PROVIDER_FOUND = 1;
+    // The NLP is not working, but all other prerequisites are
+    // satisfied, and a fix should be applied
+    PROVIDER_NEEDS_REPAIR = 2;
+    // The NLP is not working, but we are in a holdoff state
+    // so no repair will be attempted.
+    PROVIDER_REPAIR_HOLDOFF = 3;
+    // The device is running the wrong SDK version
+    WRONG_SDK_VERSION = 4;
+    // The NLP package was not found
+    PACKAGE_NOT_FOUND = 5;
+    // The NLP package has unexpected package flags
+    WRONG_FLAGS = 6;
+    // The NLP package has the wrong version #
+    WRONG_VERSION = 7;
+    // The NLP package has the wrong signature
+    WRONG_SIGNATURE = 8;
+    // The NLP package is disabled
+    PACKAGE_DISABLED = 9;
+  }
+  optional RepairStatus repair_status = 1 [ default = UNKNOWN ];
+  // The package flags of the currently-installed NLP (if found)
+  optional int32 flags = 2;
+  // The version code of the currently-installed NLP (if found)
+  optional int32 version_code = 3;
+  // The signature hash of the currently-installed NLP (if incorrect)
+  optional string signature_hash = 4;
+  // Set to true if test-keys version was found (not set for user builds)
+  optional bool found_test_keys = 5;
+  // Set to true if we are blocked from retry until next boot
+  optional bool holdoff_until_boot = 6;
+  // Set to true if we are blocked from retry until data wipe
+  optional bool holdoff_until_wipe = 7;
+  // Set to true if we have successfully installed the fixer
+  optional bool holdoff_after_install = 8;
+  // The package-enabled bits for the currently-installed NLP
+  optional int32 enabled = 9;
+}
+message AppData {
+  // The app version of the event.
+  optional int32 version = 1;
+  // For installations, the version currently installed on the device.
+  //
+  // Presence of this field means that this event is about an app update.
+  optional int32 old_version = 2;
+  // True if the currently installed version is a system app.
+  optional bool system_app = 3;
+}
+// Data to help track usage and changes to widgets
+message WidgetEventData {
+  // The various widget classes (map to Java classes)
+  enum WidgetClassId {
+    UNKNOWN_WIDGET = 0;
+    MARKET_WIDGET = 1;
+    RECOMMENDED_WIDGET = 2;
+    NOWPLAYING_WIDGET = 3;
+  }
+  // Java class receiving the widget event
+  optional WidgetClassId class_id = 1;
+  // The intent action
+  enum IntentActionId {
+    UNKNOWN_ACTION = 0;
+    ENABLED = 1;
+    DISABLED = 2;
+    UPDATE_OPTIONS = 3;
+    DELETED = 4;
+  }
+  // The intent action received
+  optional IntentActionId intent_action_id = 2;
+  // Number of widgets
+  optional int32 num_widgets = 3;
+  // The remaining fields are sent only with APPWIDGET_UPDATE_OPTIONS
+  // Widget type (all, apps, books, movies, music, magazines)
+  // These id's will be the same as the values in Common.Backend
+  // Or -1 if the string type could not be matched
+  optional int32 backendId = 4;
+  // Min & Max dimensions
+  optional int32 min_width = 5;
+  optional int32 min_height = 6;
+  optional int32 max_width = 7;
+  optional int32 max_height = 8;
+}
+// Data describing a wifi auto update attempt.
+message WifiAutoUpdateAttempt {
+  // True if auto update succeeded. False if auto update failed because wifi
+  // connecitivty was not available.
+  optional bool auto_update_success = 1;
+  // The number of consecutive failed attempts that have occured since the
+  // first failed attempt. Is 1 on first fail.
+  optional int32 num_failed_attempts = 2;
+  // Time passed since first failed attempt. Is 0 on first fail.
+  optional int64 time_since_first_fail_ms = 3;
+  // Time interval of wifi checks
+  optional int64 wifi_check_interval_ms = 4;
+}
+// Stats about "Prompt for FOP" (Burnsie)
+message PromptForFopData {
+  // Whether the user is considered to have a FOP
+  // (as determined via DFE /checkInstrument)
+  optional bool has_fop = 1;
+  // Whether the user added a FOP via Burnsie flow.
+  optional bool fop_added = 2;
+  // Number of times the "primer" dialog has been shown.
+  optional int32 num_dialog_shown = 3;
+  // Number of times the actual "Complete your account" screen was shown.
+  optional int32 num_fop_selector_shown = 4;
+  // Number of times the user snoozed the Burnsie flow.
+  optional int32 num_snooze = 5;
+}
+
+// DEPRECATED(11/07/2013): sent by old clients. Use GenericNotificationAction
+// Details about a user-visible notification sent from old clients
+message PlayGamesNotificationActionDeprecated {
+  enum NotificationActionType {
+    // The notification was received on the device.
+    RECEIVED = 1;
+    // The notification was displayed to the user.
+    DISPLAYED = 2;
+    // The user saw the notification and dismissed it.
+    DISMISSED = 3;
+    // The user interacted with the notification and opened it.
+    OPENED = 4;
+    // The system chose to revoke this notification without the user seeing it.
+    // This could be because of action on another device, time limit, etc.
+    CANCELED = 5;
+    // This notification was consumed by another client before being displayed
+    // to the user.
+    CONSUMED = 6;
+    // Next index: 7;
+  }
+  // The type of action this log event represents.
+  optional NotificationActionType action_type = 1;
+  // The IDs of the notifications this action is for, if any.
+  repeated string notification_id = 2;
+  // How many notifications are being displayed to the user.
+  optional int32 displayed_count = 3;
+  // Next index: 4;
+}
+// Details about the user-visible android notification
+message PlayGamesAndroidNotificationAction {
+  enum NotificationActionType {
+    // The notification type was unknown
+    UNKNOWN = 0;
+    // The notification was received on the device.
+    RECEIVED = 1;
+    // The notification was displayed to the user.
+    DISPLAYED = 2;
+    // The user saw the notification and dismissed it.
+    DISMISSED = 3;
+    // The user interacted with the notification and opened it.
+    OPENED = 4;
+    // The system chose to revoke this notification without the user seeing it.
+    // This could be because of action on another device, time limit, etc.
+    CANCELED = 5;
+    // This notification was consumed by another client before being displayed
+    // to the user.
+    CONSUMED = 6;
+    // Next index: 7;
+  }
+  // The type of action this log event represents.
+  optional NotificationActionType action_type = 1;
+  // The IDs of the notifications this action is for, if any.
+  repeated string notification_id = 2;
+  // How many notifications are being displayed to the user.
+  optional int32 displayed_count = 3;
+  // Next index: 4;
+}
+// Details about the iOS notification
+message PlayGamesIosNotificationAction {
+  // The action the notification
+  enum NotificationActionType {
+    // The notification type was unknown
+    UNKNOWN = 0;
+    // The notification was received on the device.
+    APP_CONSUMED = 1;
+    // Next index: 2;
+  }
+  // The type of action this log event represents.
+  optional NotificationActionType action_type = 1;
+  // Next index: 2;
+}
+// Details about a user-visible notification
+message PlayGamesGenericNotificationAction {
+  // The type of notification action this was
+  enum NotificationPlatform {
+    UNKNOWN = 0;
+    // The notification was on an android device
+    ANDROID = 1;
+    // The notification was on an iOS device
+    IOS = 2;
+    // Next index: 3;
+  }
+  // Which type of notification this was
+  optional NotificationPlatform action_type = 1;
+  // Only one of the fields below will be populated
+  // The Android notification details
+  optional PlayGamesAndroidNotificationAction android_action = 2;
+  // The iOS notification details
+  optional PlayGamesIosNotificationAction ios_action = 3;
+  // Next index: 4;
+}
+// Details about an iOS device registration
+message PlayGamesIosDeviceRegister {
+  // 32 byte APNS device token assigned by apple.
+  optional bytes apns_device_token = 1;
+  // The iOS sdk version that sent the registration
+  optional string sdk_version = 2;
+  // The language of the device
+  optional string language = 3;
+  // Next index: 4
+}
+// Details about an iOS device unregistration
+message PlayGamesIosDeviceUnregister {
+  // 32 byte APNS device token assigned by apple.
+  optional bytes apns_device_token = 1;
+  // Next index: 2
+}
+// Details about an iOS specific type of message
+message PlayGamesIosDeviceAction {
+  // The type of iOS action
+  enum IosDeviceActionType {
+    UNKNOWN = 0;
+    // The device token was registered
+    REGISTER_DEVICE = 1;
+    // The device token was unregistered
+    UNREGISTER_DEVICE = 2;
+    // Next index: 3
+  }
+  // What type of token registration was this and
+  optional IosDeviceActionType action_type = 1;
+  // Only one of these fields will be filled depending on action_type
+  // The details of registration
+  optional PlayGamesIosDeviceRegister register_action = 2;
+  // The details of the unregistration
+  optional PlayGamesIosDeviceUnregister unregister_action = 3;
+  // Next index: 4;
+}
+// Details about the game tab in the destination app
+message PlayGamesDestinationAppGameTabInfo {
+  // The application collection being viewed
+  enum ApplicationCollection {
+    UNKNOWN_COLLECTION = 0;
+    FEATURED = 1;
+    MULTIPLAYER = 2;
+    PLAYED = 3;
+    RECOMMENDED = 4;
+    DOWNLOADED = 5;
+    ALL_GAMES = 6;
+    HIDDEN_GAMES = 7;
+    INSTALLED = 8;
+    // Next index = 9
+  }
+  // The collection type being displayed
+  optional ApplicationCollection collection = 1;
+  // True if user is viewing the top of the list, false if user has scrolled
+  // down
+  optional bool top_of_list = 2;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 3;
+  // Next index: 4
+}
+// Details about a game purchase from the destination app
+message PlayGamesDestinationAppGamePurchase {
+  // The price displayed to the user; null or 0 means free
+  optional int64 price_micros = 1;
+  // The purchase was successfully completed.  (This only matters when
+  // is_start_action = false.)
+  optional bool has_completed_purchase = 2;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 3;
+  // How far down in search / recommendations this game was displayed.
+  optional uint32 ranking_position = 4;
+  // Next index: 5
+}
+// Details about a game in the destination app
+message PlayGamesDestinationAppGameAction {
+  // Which section the user is viewing on the game detail page
+  enum GameDetailSection {
+    // UNKNOWN
+    UNKNOWN_SECTION = 0;
+    // About game
+    ABOUT = 1;
+    // The achievements for the game
+    ACHIEVEMENT_LIST = 2;
+    // The leaderboards for the game
+    LEADERBOARD_LIST = 3;
+    // Friends who also play this game
+    FRIEND_LIST = 4;
+    // Next index: 5
+  }
+  // The app id of the game
+  optional string application_id = 1;
+  // The section the user is viewing
+  optional GameDetailSection section = 2;
+  // User launched the game from the dest app
+  optional bool launched_game = 3;
+  // Leaderboard actions if the player chose a specific leaderboard
+  optional PlayGamesLeaderboardAction leaderboard = 4;
+  // User clicked to purchase game from the dest app
+  optional PlayGamesDestinationAppGamePurchase game_purchase = 5;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 6;
+  // How far down in search / recommendations this game was displayed.
+  optional uint32 ranking_position = 7;
+  // Next index: 8
+}
+// Details about the game tab in the destination app
+message PlayGamesDestinationAppPlayerTabInfo {
+  // The application collection being viewed
+  enum PlayerCollection {
+    // Unknown default actions
+    UNKNOWN_COLLECTION = 0;
+    // List of everyone in your circles
+    ALL = 1;
+    // List of people in your circles who have recently played games
+    MOST_RECENT = 2;
+    // List of people you may know
+    YOU_MAY_KNOW = 3;
+    // Next index: 4
+  }
+  // The collection type being displayed
+  optional PlayerCollection collection = 1;
+  // True if user is viewing the top of the list, false if user has scrolled
+  // down
+  optional bool top_of_list = 2;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 3;
+  // Next index: 4
+}
+// Details about a player in the destination app
+message PlayGamesDestinationAppPlayerAction {
+  // Which section the user is viewing on the player detail page
+  enum PlayerDetailSection {
+    // UNKNOWN
+    UNKNOWN_SECTION = 0;
+    // List of recently played games
+    RECENTLY_PLAYED = 1;
+    // Next index: 2
+  }
+  // The section the user is viewing
+  optional PlayerDetailSection section = 1;
+  // Tracking id for actions taken based on search / recommendations
+  optional string discovery_tid = 2;
+  // How far down in search / recommendations this game was displayed.
+  optional uint32 ranking_position = 3;
+  // Next index: 4
+}
+// Details about an action taken in the Settings page
+message PlayGamesDestinationAppSettingsAction {
+  // True if the user switched accounts
+  optional bool switched_account = 1;
+  // True if the user enabled notifications, false if the user disabled
+  // notifications
+  optional bool mobile_notifications_enabled = 2;
+  // True if the user enabled email notifications, false if the user
+  // disabled email notifications
+  optional bool email_notifications_enabled = 3;
+  // True if the user enabled social sharing, false if the user
+  // disabled social sharing
+  optional bool social_sharing_enabled = 4;
+  // The app id that the user chose to unmute notifications
+  repeated string unmuted_notifications_app_id = 5;
+  // Next index: 6
+}
+// Details about a destination app action
+message PlayGamesDestinationAppAction {
+  // The page in the destination app that the user clicked on
+  enum DestinationAppPageType {
+    // Unknown page
+    UNKNOWN_PAGE_TYPE = 0;
+    // The splash screen
+    SPLASH_SCREEN = 1;
+    // The list of games
+    GAME_TAB = 2;
+    // The list of players/friends
+    PLAYER_TAB = 3;
+    // The list of matches
+    MATCH_TAB = 4;
+    // The detail page for a game
+    GAME_DETAIL = 5;
+    // The detail page for a player
+    PLAYER_DETAIL = 6;
+    // The settings page
+    SETTINGS = 7;
+    // Launched the play store
+    PLAY_STORE = 8;
+    // Next index: 9
+  }
+  // The page the user wants to view
+  optional DestinationAppPageType page_type = 1;
+  // Details about the game tab if page_type == GAMES_TAB
+  optional PlayGamesDestinationAppGameTabInfo game_tab_info = 2;
+  // Details about an action to a specific game
+  optional PlayGamesDestinationAppGameAction game_action = 3;
+  // Details about actions inside the settings page
+  optional PlayGamesDestinationAppSettingsAction settings_action = 4;
+  // Details about the player tab if page_type == PLAYER_TAB
+  optional PlayGamesDestinationAppPlayerTabInfo player_tab_info = 5;
+  // Details about an action to a specific player
+  optional PlayGamesDestinationAppPlayerAction player_action = 6;
+  // Next index: 7
+}
+// Details about a leaderboard list view, top scores, or score window action
+message PlayGamesLeaderboardAction {
+  enum LeaderboardType {
+    // Unknown leaderboard type
+    UNKNOWN_LEADERBOARD_TYPE = 0;
+    // Public leaderboard
+    PUBLIC = 1;
+    // Social leaderboard
+    SOCIAL = 2;
+    // Next index = 3;
+  }
+  enum ScoreWindowType {
+    // Unknown score window type
+    UNKNOWN_SCORE_WINDOW = 0;
+    // The "daily" score window
+    DAILY = 1;
+    // The "weekly" score window
+    WEEKLY = 2;
+    // The "all time" score window
+    ALL_TIME = 3;
+    // Next index = 4;
+  }
+  // The leaderboard id this action is requesting
+  optional string leaderboard_id = 1;
+  // The type of the leaderboard
+  optional LeaderboardType leaderboard_type = 2;
+  // The score window type requested, if applicable
+  optional ScoreWindowType score_window_type = 3;
+  // Next index = 4;
+}
+// Details about a GPlus upgrade action
+message PlayGamesGPlusUpgrade {
+  enum GPlusUpgradeStatus {
+    // Unknown state
+    UNKNOWN_GPLUS_UPGRADE = 0;
+    // User accepted the G+ upgrade
+    ACCEPT = 1;
+    // User cancelled G+ upgrade
+    CANCEL = 2;
+    // Next index: 3
+  }
+  // Status of GPlus upgrade screen
+  optional GPlusUpgradeStatus state = 1;
+  // Next index: 2
+}
+// Details about the sign in account
+message PlayGamesSignInAccount {
+  enum AccountStatus {
+    // Unknown account status
+    UNKNOWN_ACCOUNT_STATUS = 0;
+    // User created a new account
+    NEW = 1;
+    // Proceeded passed the sign-in without account selector because user only
+    // has one account
+    PROCEED_NO_ACCOUNT_SELECTOR = 2;
+    // Proceeded passed the sign-in with account selector because user has
+    // multiple accounts
+    PROCEED_WITH_ACCOUNT_SELECTOR = 3;
+    // User canceled account sign-in
+    CANCEL = 4;
+    // Next index: 5
+  }
+  // The status of the account sign-in
+  optional AccountStatus status = 1;
+  // Next index: 2
+}
+// Details of an action taken inside a game
+message PlayGamesInGameAction {
+  enum GameActionType {
+    // Unknown action
+    UNKNOWN_GAME_ACTION = 0;
+    // User viewed the achievement list
+    ACHIEVEMENT_LIST = 1;
+    // User viewed the leaderboard list
+    LEADERBOARD_LIST = 2;
+    // User viewed a leaderboard top score
+    LEADERBOARD_TOP_SCORES = 3;
+    // User viewed a leaderboard score window
+    LEADERBOARD_SCORE_WINDOW = 4;
+    // User viewed game settings
+    SETTINGS = 5;
+    // User signed out of a game
+    SIGN_OUT = 6;
+    // User viewed the select opponents UI
+    SELECT_OPPONENTS = 7;
+    // User viewed the player search UI
+    PLAYER_SEARCH = 8;
+    // User viewed the waiting room UI
+    WAITING_ROOM = 9;
+    // User viewed the multiplayer inbox UI
+    MULTIPLAYER_INBOX = 10;
+    // User viewed the send request UI
+    SEND_REQUEST = 11;
+    // User viewed the request inbox UI
+    REQUEST_INBOX = 12;
+    // Next index: 13
+  }
+  // The action type
+  optional GameActionType type = 1;
+  // Leaderboard action, populated if one of the leaderboard game actions
+  // were taken by the user
+  optional PlayGamesLeaderboardAction leaderboard = 2;
+  // Next index: 3
+}
+// Details of a sign-in action
+message PlayGamesSignInAction {
+  enum SignInActionType {
+    // Unknown action
+    UNKNOWN_SIGN_IN_ACTION = 0;
+    // Games service connection attempt
+    // Sent whenever a game attempts to connect to the games service.
+    CONNECTION_START = 1;
+    // Sign in required
+    // Sent when a game was sent the SIGN_IN_REQUIRED result.
+    SIGN_IN_REQUIRED = 2;
+    // Connection success
+    // Sent when a game successfully connects to the games service.
+    CONNECTION_SUCCESS = 3;
+    // Next index: 4
+  }
+  // The account selector screen
+  optional PlayGamesSignInAccount account = 1;
+  // The G+ upgrade screen
+  optional PlayGamesGPlusUpgrade gplus_upgrade = 2;
+  // The type of action this event represents
+  optional SignInActionType type = 3;
+  // Next index: 4
+}
+// Details of a circle-modification action
+message PlayGamesModifyCirclesAction {
+  enum CircleActionSource {
+    // Unknown circle source
+    UNKNOWN = 0;
+    // Participant list
+    PARTICIPANT_LIST = 1;
+    // Recently played players
+    RECENTLY_PLAYED_PLAYERS = 2;
+    // Player search
+    PLAYER_SEARCH = 3;
+    // Player detail
+    PLAYER_DETAIL = 4;
+    // "You may know" list (player screen)
+    YOU_MAY_KNOW_LIST_PLAYERS = 5;
+    // "You may know" list (homescreen)
+    YOU_MAY_KNOW_LIST_HOMESCREEN = 6;
+    // Next index: 7
+  }
+  // The source of the modification action
+  optional CircleActionSource source = 1;
+  // Whether or not the player was added to circles
+  optional bool added = 2;
+  // Next index: 3
+}
+// Details about the request
+message PlayGamesRequestInfo {
+  // True if the action indicates the start of the request, false if the action
+  // indicates the end of the request.  This field is necessary only when we
+  // care about the latency of this action.  In order to accurately calculate
+  // latency, also include the start_timestamp_millis field below.
+  optional bool is_start_action = 1;
+  // The 3P application id making the request
+  optional string application_id = 2;
+  // The start timestamp that should be logged if we care about latency of this
+  // action.  Should only be logged if is_start_action = false. This should
+  // correspond to the PlaylogLogProto timestamp_millis field so that we can
+  // later Dremel the start and stop log events.
+  optional int64 start_timestamp_millis = 3;
+  // The instance ID of the application making the request. On Android, this
+  // will be a package name. On iOS, this will be the bundle identifier.
+  optional string instance_id = 4;
+  // Version of the client SDK that sent this request.
+  optional string client_version = 5;
+  // Next index: 6;
+}
+// A Play Games log event
+message PlayGamesLogEvent {
+  // General info about the request.  Every action should log this field.
+  optional PlayGamesRequestInfo request_info = 1;
+  // A user sign-in action
+  optional PlayGamesSignInAction sign_in = 2;
+  // An action that occurs within a game
+  optional PlayGamesInGameAction in_game = 3;
+  // An action that occurs within the games destination app
+  optional PlayGamesDestinationAppAction dest_app = 4;
+  // DEPRECATED(11/07/2013): action only sent by old clients. Instead use
+  // generic_notification.
+  optional PlayGamesNotificationActionDeprecated notification = 5;
+  // Notification action used by all clients
+  optional PlayGamesGenericNotificationAction generic_notification = 6;
+  // An iOS device registration/unregistration action
+  optional PlayGamesIosDeviceAction ios_action = 7;
+  // Action logged when modifying the state of the user's circles
+  optional PlayGamesModifyCirclesAction modify_circles = 8;
+  // Next index: 9
+}
+
+message PostSetupAppUsageReport { // akkh
+  optional int64 timeWindowMs=1;
+  optional int64 foregroundUsageTimeMs=2;
+  optional int32 numberOfApps=3; 
+}
+
+accountName(), j, foreGroundUsageTimeMs, numAppsUsed
+
+message PlayStoreLogEvent { // akjq MarketEventProto
+  // At most one of the following fields should be filled in.
+  // A tree of UI elements displayed on the screen.
+  optional PlayStoreImpressionEvent impression = 1;
+  // An explicit action taken by the user (click, tap, or swipe).
+  optional PlayStoreClickEvent click = 3;
+  // A background action that is interesting enough to be logged, but is not a
+  // direct result of an impression or a click.
+  optional PlayStoreBackgroundActionEvent background_action = 4;
+  // A search action performed by the user.
+  optional PlayStoreSearchEvent search = 5;
+  // A deep link event that resolved successfully.
+  optional PlayStoreDeepLinkEvent deep_link = 6;
+  optional int32 typeOfEventCounter=9;
+  optional int64 eventID=10;
+  optional int64 lastEventID=11;
+  optional bytes serverLogsCookie=14;
+  //optional SequenceEvent sequenceEvent=17;
+  optional PostSetupAppUsageReport postSetupAppUsageReport=112;
+}
+
+// Semi-arbitrary key-value pairs describing the event. Common entries
+// will be extracted into strongly typed fields in the GWS log records.
+message LogEventKeyValues {
+  optional string key = 1;
+  optional string value = 2;
+}
+// The set of currently active experiments for a given LogEvent.
+//
+// Next tag: 4
+message ActiveExperiments {
+  // The list of IDs of client-behavior-altering experiments that are on.
+  repeated string client_altering_experiment = 1;
+  // The list of IDs of other experiments that are on. The client must not
+  // change its hehavior in response to these experiments.
+  repeated string other_experiment = 2;
+  // The list of GWS experiments that are on. These are not targeted by Playlog.
+  repeated int32 gws_experiment = 3;
+}
+// Next tag: 11
+message LogEvent {
+  // Epoch time in milliseconds.
+  optional int64 event_time_ms = 1;
+  // For Market/Store event:
+  // type "1" = impression event
+  // type "3" = UI event, including click event
+  // type "4" = background event
+  // type "6" = deep link event
+  // type "9" = counter events
+  // type "10" = sequence event
+  // type "11" = visual elements event
+  optional string type_of_event = 2;
+  // These might contain PII and will not be stored for more than 8 days.
+  // If possible, please create a named field in the protos below instead.
+  repeated LogEventKeyValues value = 3;
+  // A source specific extension (typically a serialized proto). The type of
+  // this data is determined by the log_source of the enclosing LogRequest.
+  optional bytes source_extension = 6;
+  // The set of currently active experiments. If missing, then the server will
+  // assume that experiment on/off status has not changed since the previous
+  // LogEvent message in the same LogRequest proto. If missing in the very first
+  // LogEvent of a LogRequest, then the server will assume that all experiments
+  // are off.
+  optional ActiveExperiments active_experiments = 7;
+  // A JsProto version of source_extension, using array serialization format.
+  optional bytes source_extension_js = 8;
+  // DL
+  optional int64 rawTZOffset=15;
+  optional string testID=17;
+  message ClientInfoProto {
+    optional AndroidClientInfo androidClientInfo=2;
+  }
+  optional ClientInfoProto clientInfo=18;
+  message PlaystoreSettings { //akcy
+    optional int32 orientation=1;
+    optional bool isInteractive=2;
+    optional bool isForeground=3;
+    optional string GoogleAdId=5;
+    optional bool limit_ad_tracking=6;
+  }
+  optional PlaystoreSettings playstoreSettings=19; 
+  optional int64 currentServerTimeMillis=21;
+}
