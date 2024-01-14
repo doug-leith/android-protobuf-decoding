@@ -31,8 +31,10 @@ message LocRequest { // cjji
 		}
 		message GpsInfo { //cjhs
 			message LatLong { // cjhn
-				optional fixed32 lat=1; // round(lat*1e7);
-				optional fixed32 long=2; // round(long*1e7);
+				//optional fixed32 lat=1; // round(lat*1e7);
+				//optional fixed32 long=2; // round(long*1e7);
+				required fixed32 lat=1; // round(lat*1e7);
+				required fixed32 long=2; // round(lat*1e7);
 			}
 			optional LatLong latLong=1;
 			optional int32 accuracy=3;

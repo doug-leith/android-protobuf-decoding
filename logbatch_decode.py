@@ -254,10 +254,13 @@ def grep_westworld(bytes):
                 return
             for c in makeIter(w.configMetricsReportList):
                 # do a first walk through to get strings and calc their hashes
-                strhashes={}
+                strhashes = {}
+                bootTimeNanos = -1
                 for r in makeIter(c.reports):
                     if r.current_report_elapsed_nanos:
                         print("+++WESTWORLD_TIME",r.current_report_elapsed_nanos,r.current_report_wall_clock_nanos)
+                        bootTimeNanos = (r.current_report_wall_clock_nanos - r.current_report_elapsed_nanos)
+                        print("+++bootTimeNanos=",bootTimeNanos)
                     if r.strings:
                         for s in makeIter(r.strings):
                             try:
@@ -268,6 +271,8 @@ def grep_westworld(bytes):
                             except Exception as e:
                                 print("SMHasher failed:")
                                 print(repr(e))
+                if bootTimeNanos<0:
+                    print("ERROR: bootTimeNanos not set by WESTWORLD!")
                 # now walk through the events
                 for r in makeIter(c.reports):
                     if r.metrics:
@@ -276,10 +281,11 @@ def grep_westworld(bytes):
                             if m.event_metrics and m.event_metrics.data:
                                 try:
                                     for aa in makeIter(m.event_metrics.data):
+                                        # updated 5/1/24 to print wall clock nanos.  DL
                                         if aa.aggregated_atom_info:
-                                            printAtom(aa.aggregated_atom_info.elapsed_timestamp_nanos, aa.aggregated_atom_info.atom, None, westworld)
+                                            printAtom(aa.aggregated_atom_info.elapsed_timestamp_nanos[0]+bootTimeNanos, aa.aggregated_atom_info.atom, None, westworld)
                                         elif aa.atom:
-                                            printAtom(aa.elapsed_timestamp_nanos, aa.atom, None, westworld)
+                                            printAtom(aa.elapsed_timestamp_nanos[0]+bootTimeNanos, aa.atom, None, westworld)
                                 except Exception as e:
                                     print("event metrics failed:"); print(repr(e))
                                     print("---"); print(aa); print("---")
@@ -294,12 +300,13 @@ def grep_westworld(bytes):
                                                         strhash = strhashes[strhash]  # map hash back to string
                                         if aa.bucket_info:
                                             for b in makeIter(aa.bucket_info):
+                                                # updated 5/1/24 to print wall clock nanos.  DL
                                                 if b.aggregated_atom_info:
                                                     for c in makeIter(b.aggregated_atom_info):
-                                                        printAtom(c.elapsed_timestamp_nanos, c.atom, strhash, westworld)
+                                                        printAtom(c.elapsed_timestamp_nanos[0]+bootTimeNanos, c.atom, strhash, westworld)
                                                 elif b.atom:
                                                     for c in makeIter(b.atom):
-                                                        printAtom(b.elapsed_timestamp_nanos, c, strhash, westworld)
+                                                        printAtom(b.elapsed_timestamp_nanos[0]+bootTimeNanos, c, strhash, westworld)
                                 except Exception as e:
                                     print("gauge metrics failed:"); print(repr(e))
                                     print("---"); print(aa); print("---")

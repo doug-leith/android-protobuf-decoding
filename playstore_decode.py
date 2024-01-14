@@ -56,7 +56,8 @@ def decode_playstoreevent(buf, verbose=False,debug=False):
                     elif (logSourceName == "WESTINGHOUSE"):  
                         ext = subprocess.check_output("protoc --decode=\"WestinghouseEvent\" -I='"+mypath+"' playstore.proto  </tmp/ext_bytes", shell=True, stderr=subprocess.STDOUT, text=True)
                 except Exception as e:
-                    print(e)
+                    if debug:
+                        print(e)
                     ext = decode_pb(logevent.source_extension)
             else:
                 ext = decode_pb(logevent.source_extension)
