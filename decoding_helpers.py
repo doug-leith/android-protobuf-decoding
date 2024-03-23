@@ -16,14 +16,19 @@ import struct
 import re
 import h2
 import warnings
+import firebase_logbatch_pb2
+import locm_pb2
+import datetime
+from mitmproxy.utils import strutils
 # suppress protobuf deprecation warnings, at least for now
 warnings.filterwarnings("ignore")
 
 # add folder where this script is to python search path (so can find helpers)
 mypath = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(mypath)
-import firebase_logbatch_pb2
-import locm_pb2
+
+#print(sys.version)
+#print(text_format.__file__)
 
 
 def printBinaryString(string):
@@ -530,10 +535,10 @@ def decode_locm(bytes, verbose=False, debug=False):
         return "Failed"
 
 kollektomat_count=0
-def decode_kollektomat(bytes, verbose=False,debug=False):
+def decode_kollektomat(bytes, verbose=False,debug=True):
     try:
         #f = open('/tmp/locm_bytes', 'wb')
-        if debug:
+        if True:
             global kollektomat_count
             fname='/tmp/kollektomat_bytes_'+str(kollektomat_count)
             kollektomat_count = kollektomat_count + 1
@@ -570,9 +575,6 @@ def decode_kollektomat(bytes, verbose=False,debug=False):
                             print(int(wifi.macAddress),int(wifi.rssi),' ', end='', file=f)
                         print(file=f)
                         f.close()
-
-
-
         #print(decoded)
         return(decoded)
     except subprocess.CalledProcessError as e:
@@ -753,17 +755,7 @@ def bytes_to_escaped_str(
 
 class PrintTrace:
 
-    response_content_sum = 0
-    request_content_sum = 0
-    request_dict_sum = {}
     start_timestamp = -1
-
-    # def __init__(self):
-    #    self.f = open("tmp.mitm", "wb")
-    #    self.w = io.FlowWriter(self.f)
-
-    # def done(self):
-    #    self.f.close()
 
     # federated learning uses http2 with prior info, which is not supported by mitmproxy, so we need to handle
     # http2 stream processing ourselves.
@@ -818,26 +810,42 @@ class PrintTrace:
         print('----------------')
 
     def tcp_message(self, flow: tcp.TCPFlow):
-        # assume for now that a raw tcp connection is a federated learning exchange
-        # TO DO: add some checking so that fall back to something reasonable if in fact its something else
-        # i.e. add check that its http2 and that :path header is federatedml-pa
-        self.handle_fl(flow)
+        assumeFL = True
+        if assumeFL:
+            # assume a raw tcp connection is a federated learning exchange
+            # TO DO: add some checking so that fall back to something reasonable if in fact its something else
+            # i.e. add check that its http2 and that :path header is federatedml-pa
+            self.handle_fl(flow)
+        else:
+            # just dump the raw data
+            message = flow.messages[-1]
+            if message.from_client:
+                arrow=" -> "
+            else:
+                arrow=" <- "
+            print(flow.client_conn.peername[0]+":"+str(flow.client_conn.peername[1])+arrow+flow.server_conn.peername[0]+":"+str(flow.server_conn.peername[1]))
+            print("content=",strutils.bytes_to_escaped_str(message.content))
 
     def response(self, flow:http.HTTPFlow):
-        print("\ntimestamp %s"%(flow.request.timestamp_start))
+        print("\ntimestamp %s (%s)"%(flow.request.timestamp_start,datetime.datetime.fromtimestamp(flow.request.timestamp_start)))
         print("%s %s" % (flow.request.method, flow.request.pretty_url))
+        googleOnly = True
+        if googleOnly:
+            # bail if not a google related connection
+            url = flow.request.pretty_url
+            if not('goog' in url or 'doubleclick' in url or 'app-measurement' in url or 'firebase' in url or 'appspot' in url):
+                return
         req = flow.request.path.split("?")
         req = req[0]
-        if req not in self.request_dict_sum:
-            self.request_dict_sum[req] = 0
+        request_content_sum = 0
         for q in flow.request.query:
-            self.request_content_sum += len(flow.request.query[q])
-            self.request_dict_sum[req] += len(flow.request.query[q])
+            request_content_sum += len(flow.request.query[q])
         headers=[]
         for hh in flow.request.headers:
             h={'name':hh, 'value':flow.request.headers[hh]}
             headers.append(h)
             print(h['name'], ':', h['value'])
+            request_content_sum += len(h['value'])
             if h['name'].lower() == "x-goog-spatula":
                 decodeXGoogXSpatula(h['value'])
             elif h['name'].lower() in ["x-dfe-phenotype", "x-ps-rh"]:
@@ -865,6 +873,7 @@ class PrintTrace:
         mimeType = ""
         if flow.request.method == "POST":
             postData = flow.request.content
+            request_content_sum += len(postData)
             if 'Content-Type' in flow.response.headers:
                 mimeType = flow.response.headers['Content-Type'] 
             elif 'content-type' in flow.response.headers:
@@ -885,6 +894,7 @@ class PrintTrace:
             responseData = None
 
         printPostBody(flow.request.pretty_url, mimeType, postData, responseData=responseData, responseCookies=responseCookies) 
+        print('+++REQUEST ', flow.request.pretty_url, request_content_sum, flow.request.timestamp_start)
  
 
 #tell mitmproxy to use PrintTrace() class as an addon, this way we can use "-s decoding_helpers.py" as mitmdump option and things just work
