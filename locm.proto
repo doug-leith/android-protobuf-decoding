@@ -20,7 +20,9 @@ message LocRequest { // cjji
 				optional int32 Mnc=3;
 				optional int32 Mcc=4;
 				optional int32 signalStrength=5;
+				//optional int32 Age = 6; #CT
 				optional int32 signalStrength_TimingAdvance=7;
+				//optional int32 PrimaryScramblingCode = 8; #CT
 				optional int32 radioType=10;
 				optional int32 ltePhysicalCellID=11;
 				optional int32 lteTrackingAreaCode=12;
@@ -37,11 +39,28 @@ message LocRequest { // cjji
 				required fixed32 long=2; // round(lat*1e7);
 			}
 			optional LatLong latLong=1;
+			//optional int32 Source = 2; #CT
 			optional int32 accuracy=3;
+			//optional int32 Confidence = 4; #CT
+			//optional int32 Feature = 5; #CT
 			optional int64 gpsTime=6;
-			optional int32 gpsProviderEnum=8;
+			//optional int32 gpsProviderEnum=8;
+			message LocTypeMsg {
+				 optional int32 GPS = 1;
+				 optional int32 MapCenter = 2;
+				 optional int32 Centroid = 3;
+				 optional int32 TowerLocation = 4;
+			}
+			//optional LocTypeMsg LocType = 8; #CT
 			optional int32 altitude=10;
 			optional int32 bearing=13;
+			message GpsProfileMsg{
+				 optional int32 GpsFixType = 1;
+				 optional double PDOP = 2;
+				 optional double HDOP = 3;
+				 optional double VDOP = 4;
+			}
+			//optional GpsProfileMsg GpsProfile = 14; #CT
 			optional float speed=16;
 			optional bool batteryCharging=17;
 		}

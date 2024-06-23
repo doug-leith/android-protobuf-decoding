@@ -1,5 +1,6 @@
 // based on https://android.googlesource.com/platform/packages/experimental/+/13c69c6/PixelPerfect/imported_protos/src/wireless/android/play/playlog/proto/clientanalytics.proto, but that's v old
 // and https://jar-download.com/artifacts/com.android.tools.analytics-library/protos/25.2.0/source-code/com/google/wireless/android/play/playlog/proto/ClientAnalytics.java
+// and https://github.com/mmcloughlin/finsky/tree/master/protobuf
 
 syntax = "proto2";
 import "google/protobuf/any.proto";

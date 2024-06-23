@@ -79,6 +79,7 @@ def printPostBody(url, mimeType, postData, responseData="", responseCookies=""):
     if url == 'https://www.google.com/loc/m/api':
         decode_gRPC(postData,decode_locm)
     elif url == "https://android-context-data.googleapis.com/google.internal.android.location.kollektomat.v1.KollektomatService/Offer":
+        #print("calling decode_gRPC(postData,decode_kollektomat)")
         decode_gRPC(postData,decode_kollektomat)
     elif 'app-measurement.com/a' in url:
         print(decode_firebase_analytics(postData))
@@ -125,6 +126,7 @@ def printPostBody(url, mimeType, postData, responseData="", responseCookies=""):
     elif mimeType in ['application/x-protobuf', 'application/x-protobuffer', 'application/x-brotli', 'application/octet-stream','application/x-gzip','application/protobuf']:
         try_decode_pb_array("POST Body", postData, decode_pb)
     elif mimeType == 'application/grpc':
+        #print("calling decode_gRPC(postData, decode_pb)")
         decode_gRPC(postData, decode_pb)
     elif mimeType == 'application/json':
         print(postData.decode('utf8'))
@@ -310,7 +312,7 @@ def decode_gRPC(data, decoder):
             print(repr(e))
             print("Invalid gRPC message: ",(data,))
             return
-        try_decode_pb_array("POST Body", message, decoder)
+        try_decode_pb_array("POST Body (gRPC)", message, decoder)
         data = data[5+length:]
 
 #def decode_gRPC(postData, decoder):
@@ -439,6 +441,7 @@ def decode_playstore_response(bytes, verbose=True, debug=False):
             fname=f.name
         f.write(bytes)
         f.close()
+        # finsky_protobuf's are from // and https://github.com/mmcloughlin/finsky/tree/master/protobuf
         decoded = subprocess.check_output("protoc --decode=\"Response.ResponseWrapper\" -I='"+mypath+"/finsky_protobuf' response.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
         # print(str)
         return(decoded)
@@ -535,7 +538,8 @@ def decode_locm(bytes, verbose=False, debug=False):
         return "Failed"
 
 kollektomat_count=0
-def decode_kollektomat(bytes, verbose=False,debug=True):
+def decode_kollektomat(bytes, verbose=True, debug=True):
+    #print("decode_kollektomat")
     try:
         #f = open('/tmp/locm_bytes', 'wb')
         if True:
@@ -548,7 +552,9 @@ def decode_kollektomat(bytes, verbose=False,debug=True):
             fname=f.name
         f.write(bytes)
         f.close()
+        #print(fname)
         decoded = subprocess.check_output("protoc --decode=\"KollektomatRequest\" -I='"+mypath+"' locm.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        #print(decoded)
         if True:
             # save location data
             kollektomat = locm_pb2.KollektomatRequest()
@@ -575,10 +581,9 @@ def decode_kollektomat(bytes, verbose=False,debug=True):
                             print(int(wifi.macAddress),int(wifi.rssi),' ', end='', file=f)
                         print(file=f)
                         f.close()
-        #print(decoded)
         return(decoded)
     except subprocess.CalledProcessError as e:
-        if verbose:
+        if True:
             print(e.output)
             print(e)
         return "Failed"
