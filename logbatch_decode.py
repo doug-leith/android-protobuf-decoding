@@ -183,6 +183,11 @@ def printAtomInfo(t, a, strhash, westworld):
         elif fieldIsSet(a.app_start_occurred):
             l=a.app_start_occurred
             print("+++WESTWORLD_APPSTART", t, l.type, l.calling_pkg_name, strhash, l.activity_name_hash, l.reason)
+        # added app_usage_event_occurred 25/6/24
+        elif fieldIsSet(a.app_usage_event_occurred):
+            l=a.app_usage_event_occurred
+            # MOVE_TO_FOREGROUND = 1; MOVE_TO_BACKGROUND = 2;
+            print("+++WESTWORLD_APPUSAGE", t, l.event_type, strhash)
         elif fieldIsSet(a.setting_snapshot):
             l=a.setting_snapshot
             print("+++WESTWORLD_SETTINGSNAPSHOT", t, strhash, l.type, l.bool_value, l.int_value, l.float_value, l.str_value)
@@ -281,11 +286,14 @@ def grep_westworld(bytes):
                             if m.event_metrics and m.event_metrics.data:
                                 try:
                                     for aa in makeIter(m.event_metrics.data):
-                                        # updated 5/1/24 to print wall clock nanos.  DL
                                         if aa.aggregated_atom_info:
-                                            printAtom(aa.aggregated_atom_info.elapsed_timestamp_nanos[0]+bootTimeNanos, aa.aggregated_atom_info.atom, None, westworld)
+                                            # updated 25/6/24 to show all elapsed times not just the first one
+                                            for elapsed_time in aa.aggregated_atom_info.elapsed_timestamp_nanos:
+                                                # updated 5/1/24 to print wall clock nanos.  DL
+                                                printAtom(elapsed_time+bootTimeNanos, aa.aggregated_atom_info.atom, None, westworld)
                                         elif aa.atom:
-                                            printAtom(aa.elapsed_timestamp_nanos[0]+bootTimeNanos, aa.atom, None, westworld)
+                                            for elapsed_time in aa.aggregated_atom_info.elapsed_timestamp_nanos:
+                                                printAtom(elapsed_time+bootTimeNanos, aa.atom, None, westworld)
                                 except Exception as e:
                                     print("event metrics failed:"); print(repr(e))
                                     print("---"); print(aa); print("---")
@@ -303,10 +311,13 @@ def grep_westworld(bytes):
                                                 # updated 5/1/24 to print wall clock nanos.  DL
                                                 if b.aggregated_atom_info:
                                                     for c in makeIter(b.aggregated_atom_info):
-                                                        printAtom(c.elapsed_timestamp_nanos[0]+bootTimeNanos, c.atom, strhash, westworld)
+                                                        # updated 25/6/24 to show all elapsed times not just the first one
+                                                        for elapsed_time in c.elapsed_timestamp_nanos:
+                                                            printAtom(elapsed_time+bootTimeNanos, c.atom, strhash, westworld)
                                                 elif b.atom:
                                                     for c in makeIter(b.atom):
-                                                        printAtom(b.elapsed_timestamp_nanos[0]+bootTimeNanos, c, strhash, westworld)
+                                                        for elapsed_time in b.elapsed_timestamp_nanos:
+                                                            printAtom(elapsed_time+bootTimeNanos, c, strhash, westworld)
                                 except Exception as e:
                                     print("gauge metrics failed:"); print(repr(e))
                                     print("---"); print(aa); print("---")

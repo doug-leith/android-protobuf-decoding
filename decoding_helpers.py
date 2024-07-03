@@ -20,6 +20,7 @@ import firebase_logbatch_pb2
 import locm_pb2
 import datetime
 from mitmproxy.utils import strutils
+from mitmproxy import ctx
 # suppress protobuf deprecation warnings, at least for now
 warnings.filterwarnings("ignore")
 
@@ -73,7 +74,7 @@ def GetHumanReadable(size, precision=2):
         size = size/1024.0  # apply the division
     return "%.*f%s"%(precision, size, suffixes[suffixIndex])
 
-def printPostBody(url, mimeType, postData, responseData="", responseCookies=""):
+def printPostBody(url, mimeType, postData, responseData="", responseCookies="", responseHeaders="", verboseResponse=True):
 
     # decode known google formats
     if url == 'https://www.google.com/loc/m/api':
@@ -146,6 +147,9 @@ def printPostBody(url, mimeType, postData, responseData="", responseCookies=""):
     if len(responseCookies) > 0:
         print("Response cookies:")
         print(responseCookies)
+    if len(responseHeaders) > 0:
+        print("Response headers:")
+        print(responseHeaders)        
     if 'android.googleapis.com/auth' in url:
         print("Response data from android.googleapis.com/auth:")
         try:
@@ -186,6 +190,16 @@ def printPostBody(url, mimeType, postData, responseData="", responseCookies=""):
         else:
             print("Response data from "+url+":")
             print(res)
+    elif url in ['https://play.googleapis.com/log/batch', 'https://play.googleapis.com/vn/log/batch']:
+        if len(responseData) > 0:
+            print("Response from "+url+":")
+            print(decode_pb(responseData)) 
+    elif verboseResponse:
+        # print out all responses
+        if (responseData is not None) and (len(responseData) > 0):
+            print("Response from "+url+":")
+            print(responseData) 
+ 
     
 
 def decode_pb(bb, verbose=False, debug=False):
@@ -831,8 +845,32 @@ class PrintTrace:
             print(flow.client_conn.peername[0]+":"+str(flow.client_conn.peername[1])+arrow+flow.server_conn.peername[0]+":"+str(flow.server_conn.peername[1]))
             print("content=",strutils.bytes_to_escaped_str(message.content))
 
+    def load(self, loader):
+        # add new command line options for start and end time of dump
+        loader.add_option(
+            name="expt_starttime",
+            typespec=int,
+            default=-1,
+            help="Add a start timestamp, ignore earlier connections")
+        loader.add_option(
+            name="expt_endtime",
+            typespec=int,
+            default=-1,
+            help="Add a end timestamp, ignore later connections")
+
     def response(self, flow:http.HTTPFlow):
-        print("\ntimestamp %s (%s)"%(flow.request.timestamp_start,datetime.datetime.fromtimestamp(flow.request.timestamp_start)))
+        
+        # check command line options for start and end time of dump
+        if ctx.options.expt_starttime and ctx.options.expt_starttime>0:
+            #print("start",flow.request.timestamp_start,ctx.options.expt_starttime)
+            if flow.request.timestamp_start < ctx.options.expt_starttime:
+                return
+        if ctx.options.expt_endtime and ctx.options.expt_endtime>0:
+            #print("end",flow.request.timestamp_start,ctx.options.expt_endtime)
+            if flow.request.timestamp_start > ctx.options.expt_endtime:
+                return
+
+        print("\ntimestamp %s (%s UTC)"%(flow.request.timestamp_start, datetime.datetime.fromtimestamp(flow.request.timestamp_start,datetime.timezone.utc)))
         print("%s %s" % (flow.request.method, flow.request.pretty_url))
         googleOnly = True
         if googleOnly:
@@ -887,18 +925,19 @@ class PrintTrace:
         responseCookies = ""
         for hh in flow.response.headers:
             h={'name':hh, 'value':flow.response.headers[hh]}
-            if h['name'] == 'cookie':
+            if 'cookie' in h['name'] or 'Cookie' in h['name']:
                 responseCookies = responseCookies+h['name']+": " + h['value']+"\n"
         for hh in flow.request.headers:
-            if 'set-cookie' in h['name']:
+            # shouldn't happen
+            if 'set-cookie' in h['name'] or 'Set-Cookie' in h['name']:
                 h={'name':hh, 'value':flow.request.headers[hh]}
-                responseCookies = responseCookies+h['name']+": " + h['value']+"\n"
+                responseCookies = responseCookies+h['name']+"(request!): " + h['value']+"\n"
         if flow.response.content is not None and len(flow.response.content) > 0:
             responseData = flow.response.content
         else:
             responseData = None
 
-        printPostBody(flow.request.pretty_url, mimeType, postData, responseData=responseData, responseCookies=responseCookies) 
+        printPostBody(flow.request.pretty_url, mimeType, postData, responseData=responseData, responseCookies=responseCookies, responseHeaders=flow.response.headers) 
         print('+++REQUEST ', flow.request.pretty_url, request_content_sum, flow.request.timestamp_start)
  
 
