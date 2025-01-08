@@ -21,6 +21,8 @@ import locm_pb2
 import datetime
 from mitmproxy.utils import strutils
 from mitmproxy import ctx
+import cbor2 
+
 # suppress protobuf deprecation warnings, at least for now
 warnings.filterwarnings("ignore")
 
@@ -74,132 +76,221 @@ def GetHumanReadable(size, precision=2):
         size = size/1024.0  # apply the division
     return "%.*f%s"%(precision, size, suffixes[suffixIndex])
 
-def printPostBody(url, mimeType, postData, responseData="", responseCookies="", responseHeaders="", verboseResponse=True):
+def stringContains(string, snippets):
+    for s in snippets:
+        if s in string:
+            return True
+    return False
 
-    # decode known google formats
-    if url == 'https://www.google.com/loc/m/api':
-        decode_gRPC(postData,decode_locm)
-    elif url == "https://android-context-data.googleapis.com/google.internal.android.location.kollektomat.v1.KollektomatService/Offer":
-        #print("calling decode_gRPC(postData,decode_kollektomat)")
-        decode_gRPC(postData,decode_kollektomat)
-    elif 'app-measurement.com/a' in url:
-        print(decode_firebase_analytics(postData))
-    elif url in ['https://android.clients.google.com/checkin', 'https://android.googleapis.com/checkin']:
-        print(decode_checkin(postData))
-    elif url in ['https://play.googleapis.com/log/batch', 'https://play.googleapis.com/vn/log/batch']:
-        print(decode_log_batch(postData))
-    elif "experimentsandconfigs/v1/getExperimentsAndConfigs" in url:
-        decodeHeterodyneRequest(postData)
-    elif "android.googleapis.com/auth/devicekey" in url:
-        print(decode_deviceKeyRequest(postData))
-    elif "play.googleapis.com/play/log" in url:
-        if len(postData) > 0:
-            print(decode_playstore(postData))
-            #print("<skipping data>")
-    elif "firebaselogging-pa.googleapis.com/v1/firelog/legacy/batchlog" in url:
-        print(postData)
-        try:
-            data = json.loads(postData)
-            print("\nLOGEVENTS FROM JSON (decoded):")
-            count = 1
-            for log in data['logRequest']:
-                tag=""
-                if log['logSourceName']:
-                    tag=log['logSourceName']
-                for e in log['logEvent']:
-                    buf = base64.b64decode(e['sourceExtension'])
-                    try:
-                        if tag == "FIREPERF":
-                            print(tag+" log event "+str(count)+":")
-                            print(decode_firebase_logbatch(buf))
-                        else:
-                            try_decode_pb_array(tag+" log event "+str(count), buf, decode_pb)
-                    except Exception as ee:
-                        print("Firelog decoding failed:")
-                        print(repr(ee))
-                        try_decode_pb_array(tag+" log event "+str(count), buf, decode_pb)
-                print()
-                count = count+1
-        except Exception as e:
-            print("JSON decoding failed:")
-            print(repr())
-    ### decode using MIMO headers
-    elif mimeType in ['application/x-protobuf', 'application/x-protobuffer', 'application/x-brotli', 'application/octet-stream','application/x-gzip','application/protobuf']:
-        try_decode_pb_array("POST Body", postData, decode_pb)
+def printUsingMimeType(payload,mimeType,tag="POST Body"):
+    #print("mimetype:",mimeType)
+    if len(payload)==0 or payload==None:
+        return
+    if mimeType in ['application/x-protobuf', 'application/x-protobuffer', 'application/x-brotli', 
+                    'application/octet-stream','application/x-gzip','application/protobuf',
+                     'application/vnd.google.octet-stream-compressible'
+                    ]:
+        res = try_decode_pb_array(tag+" ("+mimeType+" decoded)", payload, decode_pb)
+        if "Dumping binary data" in res:
+            # didn't decode as a protobuf, try gRPC
+            res2 = decode_gRPC(payload, decode_pb, tag+" ("+mimeType+" decoded as gRPC)")
+            if "Invalid gRPC message" in res2:
+                print(payload)
+            else:
+                print(res2)
+        else:
+            print(res)
     elif mimeType == 'application/grpc':
-        #print("calling decode_gRPC(postData, decode_pb)")
-        decode_gRPC(postData, decode_pb)
-    elif mimeType == 'application/json':
-        print(postData.decode('utf8'))
+        print(decode_gRPC(payload, decode_pb, tag+" ("+mimeType+" decoded)"))
+    elif 'application/json' in mimeType: 
+        print(tag+" ("+mimeType+"):")
+        print(payload.decode('utf8'))
+    elif mimeType == 'application/cbor':
+        print(tag+" ("+mimeType+" decoded):")
+        print(cbor2.loads(payload))
+    elif mimeType == 'text/plain; charset=utf-8':
+        print(tag+" ("+mimeType+"):")
+        try:
+            print(payload.decode('utf8'))
+        except:
+            print(payload)
     elif mimeType == 'application/x-www-form-urlencoded':
         try:
-            print(urllib.parse.unquote(postData.decode('utf8')))
+            print(tag+" ("+mimeType+" decoded):")
+            print(urllib.parse.unquote(payload.decode('utf8')))
         except:
-            print(postData)
-    #elif mimeType == 'application/x-brotli':
-    #    print(brotli.decompress(postData).decode('utf8'))
-    elif len(postData) > 0:
-        #print(entry['request']['postData'])
-        printBinaryString(postData)
+            print(tag+":")
+            print(payload)
+    elif mimeType == 'application/x-brotli':
+        # Microsoft schema only
+        print(tag+" ("+mimeType+" decoded):")
+        print(brotli.decompress(postData).decode('utf8'))
+    else:
+        print(tag+" ("+mimeType+"):")
+        print(payload)
 
-    ############################
+def printHeaders(flowheaders, type=""):
+    cookies = ""
+    for hh in flowheaders:
+        h={'name':hh, 'value':flowheaders[hh]}
+        if 'cookie' in h['name'] or 'Cookie' in h['name'] or 'set-cookie' in h['name'] or 'Set-Cookie' in h['name']:
+            cookies = cookies+h['name']+": " + h['value']+"\n"
+    if len(cookies)>0:
+        print(type+" cookies:")
+        print(cookies)
+
+    request_content_sum =0 
+    print(type+" headers:")
+    for hh in flowheaders:
+        h={'name':hh, 'value':flowheaders[hh]}
+        print(h['name'], ':', h['value'])
+        request_content_sum += len(h['value'])
+        if h['name'].lower() == "x-goog-spatula":
+            print(decodeXGoogXSpatula(h['value']))
+        elif h['name'].lower() in ["x-dfe-phenotype", "x-ps-rh",]:
+            # TO DO: sometimes the unzipped here fails, which seems odd.
+            res = decodeBase64ZippedProto(h['value'])
+            if res != "Failed":
+                print("Decoded "+h['name']+" header:\n", res)
+        elif h['name'].lower() in ["x-dfe-encoded-targets", "x-gmm-client-bin", "x-geo-bin"]:
+            val = h['value'] + '=='
+            try:
+                buf = decodeBase64(val)
+                print("Decoded "+h['name']+" header:\n", decode_pb(buf))
+            except:
+                pass
+        elif h['name'].lower() == "x-firebase-client":
+            val = h['value']
+            try:
+                buf = base64.urlsafe_b64decode(val+base64padding(val))
+                unzipped = zlib.decompress(buf, 32 + zlib.MAX_WBITS)
+                print("Decoded x-firebase-client header:\n", unzipped)
+            except Exception as e:
+                pass
+                #print(e)
+        elif h['name'].lower() == "authorization":
+            val = h['value']
+            parts=val.split(' ')
+            if len(parts)==2 and parts[0] == "Bearer" and parts[1][0:7]=="ya29.m.":
+                print(decodeAuthBearerHeader(parts[1]))
+
+    return request_content_sum
+
+def printRequest(url, request):
+
+    request_content_sum=0
+    if len(request.headers) > 0:
+        # print headers
+        request_content_sum += printHeaders(request.headers, "Request")   
+
+    req = request.path.split("?")
+    req = req[0]
+    for q in request.query:
+        request_content_sum += len(request.query[q])
+        # decode query parameters
+        if q == "bpb" and "/maps/vt/proto" in url:
+            #google maps
+            try:
+                val=request.query[q]
+                # need to use urlsafe of base64 variant here
+                buf = base64.urlsafe_b64decode(val)
+                print("Decoded "+q+" query parameter:\n", decode_pb(buf,verbose=True,debug=False))
+            except Exception as e:
+                print(e)
+
+    # handlers for known google post data formats
+    request_decoders={
+    '/loc/m/api': decode_locm,
+    'KollektomatService/Offer': decode_kollektomat,
+    'app-measurement.com/a': decode_firebase_analytics,
+    'android.clients.google.com/checkin': decode_checkin,
+    'android.googleapis.com/checkin': decode_checkin,
+    '/log/batch': decode_log_batch,
+    'experimentsandconfigs/v1/getExperimentsAndConfigs': decodeHeterodyneRequest,
+    'android.googleapis.com/auth/devicekey': decode_deviceKeyRequest,
+    'play.googleapis.com/play/log':decode_playstore,
+    'firebaselogging-pa.googleapis.com/v1/firelog/legacy/batchlog':decode_firebase_logbatch,
+    'remoteprovisioning.googleapis.com/v1/:fetchEekChain' : decode_cbor,
+    'remoteprovisioning.googleapis.com/v1/:signCertificates' : decode_cbor,
+    }
+
+    postData = ""
+    requestMimeType = ""
+    if request.method == "POST":
+        postData = request.content
+        request_content_sum += len(postData)
+        if 'Content-Type' in request.headers:
+            requestMimeType = request.headers['Content-Type'] 
+        elif 'content-type' in request.headers:
+            requestMimeType = request.headers['content-type']
+
+    if (postData is not None) and (len(postData) > 0):
+        # decode known google formats
+        decoded=False
+        for snippet in request_decoders:
+            if snippet in url:
+                print("POST Body (decoded):")
+                print(request_decoders[snippet](postData))
+                decoded=True
+                break
+        if not decoded:
+            printUsingMimeType(postData,requestMimeType)
+
+    return request_content_sum
+
+def printResponse(url, response, verboseResponse=False):
+
     # take a look at the content of the response ...
-    if len(responseCookies) > 0:
-        print("Response cookies:")
-        print(responseCookies)
-    if len(responseHeaders) > 0:
-        print("Response headers:")
-        print(responseHeaders)        
-    if 'android.googleapis.com/auth' in url:
-        print("Response data from android.googleapis.com/auth:")
-        try:
-            for line in responseData.splitlines():
-                printBinaryString(line)
-        except:
-            printBinaryString(responseData)
-    elif 'mail.google.com/mail/ads/main' in url:
-        try_decode_pb_array("Response data from mail.google.com/mail/ads/main", responseData, decode_pb)
-    elif "experimentsandconfigs/v1/getExperimentsAndConfigs" in url:
-        if len(responseData) > 0:
-            decodeHeterodyneResponse(responseData)
-    elif url in ['https://android.clients.google.com/checkin','https://android.googleapis.com/checkin']:
-        res = decode_checkin_response(responseData)
-        if res == "Failed":
-            try_decode_pb_array("Response data from android.clients.google.com/checkin", responseData, decode_pb)
-        else:
-            print("Response data from android.clients.google.com/checkin:")
-            print(res)
-    elif "firebase" in url or "firebase" in url:
-        #f responseData and len(responseData)>0:
-        #   try_decode_pb_array("Response data from "+url, responseData, decode_pb) 
-        print("Response from "+url+":")
-        print(responseData)  
-    elif "app-measurement.com/config/app/" in url: 
-        print("Response from "+url+":")
-        try:
-            print(decode_pb(responseData))
-        except:
-            print(responseData)
-    elif "app-measurement" in url: 
-        print("Response from "+url+":")
-        print(responseData)  
-    elif "play-fe.googleapis.com" in url: 
-        res = decode_playstore_response(responseData)
-        if res == "Failed":
-            try_decode_pb_array("Response from "+url, responseData, decode_pb)
-        else:
-            print("Response data from "+url+":")
-            print(res)
-    elif url in ['https://play.googleapis.com/log/batch', 'https://play.googleapis.com/vn/log/batch']:
-        if len(responseData) > 0:
-            print("Response from "+url+":")
-            print(decode_pb(responseData)) 
-    elif verboseResponse:
-        # print out all responses
-        if (responseData is not None) and (len(responseData) > 0):
-            print("Response from "+url+":")
-            print(responseData) 
- 
+
+    if len(response. headers) > 0:
+        # print headers
+        printHeaders(response.headers, "Response")   
+
+    # handlers for known google formats
+    response_decoders={
+    'experimentsandconfigs/v1/getExperimentsAndConfigs': decodeHeterodyneResponse,
+    'android.clients.google.com/checkin': decode_checkin_response,
+    'android.googleapis.com/checkin': decode_checkin_response,
+    'play-fe.googleapis.com': decode_playstore_response,
+    #'android.clients.google.com/fdfe': decode_playstore_response,
+    '/log/batch':decode_pb,
+    'remoteprovisioning.googleapis.com/v1/:fetchEekChain': decode_eek,
+    'remoteprovisioning.googleapis.com/v1/:signCertificates' : decode_signedcerts,
+    'android.googleapis.com/auth/devicekey': decode_deviceKeyResponse,
+    }
+
+    responseMimeType=None
+    if ('Content-Type' in response.headers):
+        responseMimeType=response.headers['Content-Type']
+    elif ('content-type' in response.headers):
+        responseMimeType=response.headers['content-type'] 
+
+    if response.content is not None and len(response.content) > 0:
+        responseData = response.content
+    else:
+        responseData = None
+
+    if (responseData is not None) and (len(responseData) > 0):
+        # decode known google formats
+        decoded=False
+        for snippet in response_decoders:
+            if snippet in url:
+                print("Response data (decoded):")
+                print(response_decoders[snippet](responseData))
+                decoded=True
+                break
+        if not decoded:
+            if verboseResponse or stringContains(url,["android.googleapis.com/auth/devicekey",'android.googleapis.com/auth',
+                'androidantiabuse/v1/x/create','devicecertificates','remoteprovisioning','mail.google.com/mail/ads/main',
+                "firebase",'app-measurement.com/config/app/','/log/batch', '/loc/m/api', 'KollektomatService/Offer',
+                'android.clients.google.com/fdfe','accounts.google.com']):
+                    printUsingMimeType(responseData,responseMimeType,"Response data")
+            elif len(responseData) <= 1000:
+                printUsingMimeType(responseData,responseMimeType,"Response data")
+            else:
+                print("Response data (truncated):")
+                print(responseData[:1000])
+
     
 
 def decode_pb(bb, verbose=False, debug=False):
@@ -219,9 +310,11 @@ def decode_pb(bb, verbose=False, debug=False):
                                        shell=True, stderr=subprocess.STDOUT, text=True)
         return res
     except subprocess.CalledProcessError as e:  
+        res=""
         if verbose:
-            print(e.output)
-            print(e)
+            res=str(e.output)+"\n"
+            res=res+str(e)+"\n"
+            return "Failed to parse input\n"+res
         return "Failed"
 
 def try_decode_pb_array(name, buf, decoder, verbose=True, debug=False):
@@ -230,10 +323,11 @@ def try_decode_pb_array(name, buf, decoder, verbose=True, debug=False):
         return
     res = decoder(buf, verbose=False, debug=debug)  # just a canary, likely will fail so silence error reporting
     #print("first try: "+res)
-    if res == "Failed" or res is None:
-        decode_pb_array(name, buf, decoder, verbose=verbose, debug=debug)
+    if res is None or res == "Failed" or "Failed to parse input" in res:
+        res = decode_pb_array(name, buf, decoder, verbose=verbose, debug=debug)
     elif name is not None:
-        print(name+":{\n"+textwrap.indent(res, '   ')+"}")
+        res = name+":{\n"+textwrap.indent(res, '   ')+"}"
+    return(res)
 
 
 def decode_pb_array(name, buf, decoder, verbose=False, debug=False):
@@ -242,14 +336,15 @@ def decode_pb_array(name, buf, decoder, verbose=False, debug=False):
     orig = buf
     pos = 0
     count = 1
+    res=""
     while (pos < len(buf)):
         try:
             msg_len, new_pos = _DecodeVarint32(buf[pos:len(buf)], 0)
         except:
             # pretty bad if this happens, just dump out the binary and exit
-            print("Problem decoding Varint32 in protobuf array.  Raw POST data is:")
-            printBinaryString(orig)
-            return
+            #print()"Problem decoding Varint32 in protobuf array.  Raw POST data is:")
+            #printBinaryString(orig)
+            return("Problem decoding Varint32 in protobuf array.  Raw POST data is:\n"+str(orig))
         #if msg_len <= 0:  # shouldn't happen
         #    raise Exception("decode_pb_array(): msg_len <= 0 ("+str(msg_len)+")")
         #if new_pos <= 0:  # shouldn't happen
@@ -266,26 +361,27 @@ def decode_pb_array(name, buf, decoder, verbose=False, debug=False):
             f = open('/tmp/event_debug_bytes', 'wb')
             f.write(next_bytes)
             f.close()
-        res = decoder(next_bytes, verbose=False, debug=debug)
+        temp_res = decoder(next_bytes, verbose=False, debug=debug)
         #print(res)
-        if (res == "Failed" or res is None): 
+        if ((temp_res == "Failed") or ("Failed to parse input" in temp_res) or (temp_res is None)): 
             # protobuf decoding failed, fall back to printing binary
-            print("Problem decoding protobuf, trying raw decode:", pos, pos+msg_len, len(buf))
-            res = decode_pb(next_bytes, verbose=verbose, debug=debug)  # try raw decoding of protobuf, maybe schema mismatch
-            if (res == "Failed"):
-                print("Dumping binary data:")
-                print(str(orig))  # dump out raw data
+            res = res+"Problem decoding protobuf, trying raw decode: %d %d %d\n"%(pos, pos+msg_len, len(buf))
+            temp_res = decode_pb(next_bytes, verbose=verbose, debug=debug)  # try raw decoding of protobuf, maybe schema mismatch
+            if (temp_res == "Failed" or ("Failed to parse input" in temp_res)):
+                #print("Dumping binary data:")
+                #print(str(orig))  # dump out raw data
                 # keep a copy, helps when debugging
                 f = open('/tmp/event_debug_bytes2', 'wb')
                 f.write(orig)
                 f.close()
-                return
+                return(res+"Dumping binary data:\n"+str(orig))
         if name is not None:
-            print(name+" "+str(count)+": {\n"+textwrap.indent(res, '   ')+"}")
+            res=res+ name+" "+str(count)+": {\n"+textwrap.indent(temp_res, '   ')+"}\n"
         pos = pos+msg_len
         count = count+1
     #if pos != len(buf):  # shouldn't happen
     #    raise Exception("decode_pb_array(): pos!=buflen ("+str(pos)+"/"+str(len(buf))+")")
+    return(res)
 
 
 # see https://github.com/protocolbuffers/protobuf/blob/cac9765af0ace57ce00b6ea07b8829339a622b1d/python/google/protobuf/text_format.py#L56
@@ -312,22 +408,80 @@ def protoToString(name, pb):
     decoded = decoded+textwrap.indent(text_format.MessageToString(pb, print_unknown_fields=True), '   ')+"}"
     return decoded
 
+def decodeCerts(certchain):
+    # x509 cert starts with b'0x82' then two bytes giving length, so use this to parse out cert chain
+    from cryptography.hazmat.primitives import serialization
+    from cryptography import x509
+    res=""
+    temp = certchain
+    while len(temp)>0:
+        #print(temp[2:4])
+        length=struct.unpack('!H',temp[2:4])
+        #print(length)
+        #print(temp[0:length[0]+4])
+        cert = x509.load_der_x509_certificate(temp[0:length[0]+4])
+        res=res+"X509 certificate:\n"
+        for property in ['issuer','subject','not_valid_before_utc','not_valid_after_utc','serial_number',
+            'signature_algorithm_oid']: #,'extensions']:
+            res=res+"\t"+property+":"+str(getattr(cert,property))+"\n"
+        try:
+            res=res+"\t"+"public key:"+str(cert.public_key().public_bytes(
+                encoding=serialization.Encoding.PEM,format=serialization.PublicFormat.SubjectPublicKeyInfo))+"\n"
+        except:
+            pass
+        temp=temp[length[0]+4:]
+    return res  
 
-def decode_gRPC(data, decoder):
+def decode_signedcerts(payload):
+    # decode https://remoteprovisioning.googleapis.com/v1/:signCertificates response
+    response = cbor2.loads(payload)
+    try:
+        certchain = response[0]
+        res="Cert chain:\n"
+        res = res +decodeCerts(certchain)
+        certs = response[1]
+        res = res+"Individual certs:\n"
+        for cert in certs:
+            res = res +decodeCerts(cert)
+        return res
+    except:
+        return str(response)
+
+def decode_eek(payload):
+    geek = cbor2.loads(payload)
+    res=""
+    for eek in geek[0]:
+        res=res+"Elliptic Curve Index: "+str(eek[0])+" EekChain (ECDH key and cert chain, used in later cert signing request): "+str(eek[1])+"\n"
+        res = res+"Challenge: "+base64.b64encode(geek[1]).decode('utf8')+"\n"
+        if (len(geek)>2):
+            res=res+"DeviceConfig: "+str(geek[2])+"\n"
+    return res
+
+def decode_cbor(payload):
+    try:
+        return str(cbor2.loads(payload))
+    except:
+        return str(payload)
+
+def decode_gRPC(data,decoder,tag="POST Body (gRPC decoded)"):
+    res=""
+    orig_data = data
     while data:
         try:
-            compressed, length = struct.unpack('!?i', data[:5])
+            compressed, length = struct.unpack('!?I', data[:5])
             message = struct.unpack('!%is'%length, data[5:5+length])[0]
             if compressed:
                 # assume gzip, actual compression has to be parsed from 'grpc-encoding' header
                 # see also: https://www.oreilly.com/library/view/grpc-up-and/9781492058328/ch04.html
                 message = zlib.decompress(message, 32+zlib.MAX_WBITS)
         except Exception as e: 
-            print(repr(e))
-            print("Invalid gRPC message: ",(data,))
-            return
-        try_decode_pb_array("POST Body (gRPC)", message, decoder)
+            #print(repr(e))
+            #print("compressed ",compressed, "length", length, "data len ",len(orig_data),len(data))
+            #print("Invalid gRPC message: ",(orig_data,))
+            return "Invalid gRPC message: "+str(orig_data)
+        res=res+try_decode_pb_array(tag, message, decoder)+"\n"
         data = data[5+length:]
+    return(res)
 
 #def decode_gRPC(postData, decoder):
 #    found = findGzipMagicHeader(postData)
@@ -370,7 +524,7 @@ def decode_firebase_analytics(bytes, verbose=True, debug=False):
         return "Failed: "
 
 
-def decode_firebase_logbatch(bytes, verbose=False, grep=True, debug=False):
+def decode_firebase_logbatch_event(bytes, verbose=False, grep=True, debug=False):
     try:
         if debug:
             fname='/tmp/firebaselogbatch_bytes'
@@ -386,9 +540,9 @@ def decode_firebase_logbatch(bytes, verbose=False, grep=True, debug=False):
                 firebase = firebase_logbatch_pb2.FirelogEvent()
                 firebase.ParseFromString(bytes)
                 if fieldIsSet(firebase.traceMetric) and firebase.traceMetric.name:
-                    print('+++FIREBASE_BATCH',firebase.traceMetric.clientStartTimeis,firebase.applicationInfo.androidAppInfo.packageName, firebase.applicationInfo.appInstanceId, firebase.traceMetric.name)
+                    decoded =decoded +'+++FIREBASE_BATCH %s %s %s %s',(firebase.traceMetric.clientStartTimeis,firebase.applicationInfo.androidAppInfo.packageName, firebase.applicationInfo.appInstanceId, firebase.traceMetric.name)
             except Exception as e:
-                print("firebase grep failed:")
+                print("firebase grep failed:\n")
                 print(repr(e))
         return(decoded)
     except subprocess.CalledProcessError as e:
@@ -397,6 +551,35 @@ def decode_firebase_logbatch(bytes, verbose=False, grep=True, debug=False):
             print(e)
         return "Failed"
 
+def decode_firebase_logbatch(postData, verbose=True):
+    res=str(postData)
+    try:
+        data = json.loads(postData)
+        res=res+"\nLOGEVENTS FROM JSON (decoded):\n"
+        count = 1
+        for log in data['logRequest']:
+            tag=""
+            if log['logSourceName']:
+                tag=log['logSourceName']
+            for e in log['logEvent']:
+                if 'sourceExtension' in e:
+                    buf = decodeBase64(e['sourceExtension'])
+                    try:
+                        if tag == "FIREPERF":
+                            res=res+tag+" log event "+str(count)+":\n"
+                            res=res+decode_firebase_logbatch_event(buf)+"\n"
+                        else:
+                            res=res+try_decode_pb_array(tag+" log event "+str(count), buf, decode_pb)+"\n"
+                    except Exception as ee:
+                        res=res+"Firelog decoding failed:\n"
+                        res=res+repr(ee)
+                        res=res+try_decode_pb_array(tag+" log event "+str(count), buf, decode_pb)+"\n"
+                res=res+"\n"
+            count = count+1
+    except Exception as e:
+        if verbose:
+            print("JSON decoding failed:")
+            print(repr(e))
 
 def decode_log_batch(bytes, verbose=True, debug=False):
     # partially decodes POST payload from https://play.googleapis.com/log/batch endpoint
@@ -456,9 +639,12 @@ def decode_playstore_response(bytes, verbose=True, debug=False):
         f.write(bytes)
         f.close()
         # finsky_protobuf's are from // and https://github.com/mmcloughlin/finsky/tree/master/protobuf
-        decoded = subprocess.check_output("protoc --decode=\"Response.ResponseWrapper\" -I='"+mypath+"/finsky_protobuf' response.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
-        # print(str)
-        return(decoded)
+        str = subprocess.check_output("protoc --decode=\"Response.ResponseWrapper\" -I='"+mypath+"/finsky_protobuf' response.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        #print(str)
+        str = subprocess.check_output("python3 '"+mypath+"/playstoreresponse_decode.py' '"+fname+"'", 
+                                      shell=True, stderr=subprocess.STDOUT, text=True)
+        #print(str)
+        return(str)
     except subprocess.CalledProcessError as e:
         if verbose:
             print(e.output)
@@ -530,8 +716,27 @@ def decode_deviceKeyRequest(bytes, verbose=False, debug=False):
             print(e)
         return "Failed"
 
+def decode_deviceKeyResponse(bytes, verbose=False, debug=False):
+    try:
+        #f = open('/tmp/devicekey_bytes', 'wb')
+        if debug:
+            fname='/tmp/devicekey_bytes'
+            f = open(fname, 'wb')
+        else:
+            f = tempfile.NamedTemporaryFile(delete=False)
+            fname=f.name
+        f.write(bytes)
+        f.close()
+        decoded = subprocess.check_output("protoc --decode=\"DeviceKeyResponse\" -I='"+mypath+"' devicekeyrequest.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        #print(decoded)
+        return(decoded)
+    except subprocess.CalledProcessError as e:
+        if verbose:
+            print(e.output)
+            print(e)
+        return "Failed"
 
-def decode_locm(bytes, verbose=False, debug=False):
+def decode_locm(data, verbose=True, debug=False):
     try:
         #f = open('/tmp/locm_bytes', 'wb')
         if debug:
@@ -540,7 +745,29 @@ def decode_locm(bytes, verbose=False, debug=False):
         else:
             f = tempfile.NamedTemporaryFile(delete=False)
             fname=f.name
-        f.write(bytes)
+        # read header.  
+        # writeShort(2), writeByte(0), <length><string1>, writeLong(0L), <length><string2>
+        # string1="location,2023,android,gms,en_US", string2="g" 
+        posn=3 # writeShort(2), writeByte(0) \x00\x02\x00
+        length = struct.unpack('!h', data[posn:posn+2])[0] # string length \x00\x1f
+        posn=posn+2+length # string "location,2023,android,gms,en_US"
+        posn=posn+8+3 # writeLong(0L), \x00\x00\x00\x00\x00\x00\x00\x00\x00\x01g
+        posn=posn+4 # writeInt(message length)
+        posn=posn+3 # byte(0), short(257)  x00x01\x01
+        # message header
+        posn=posn+2 # writeShort(message id)
+        posn=posn+10 # string "g:loc/ul" x00\x08g:loc/ul
+        posn=posn+2 # writeShort(0)
+        posn=posn+6 # string "POST" \x00\x04POST
+        posn=posn+2 # writeShort
+        posn=posn+2 # string "" \x00\x00
+        posn=posn+6 # string "ROOT" \x00\x04ROOT  
+        posn=posn+1 # writeByte(0)
+        posn=posn+4 # writeInt(message length)
+        posn=posn+3 # string "g" \x00\x01g
+        # what follows is a gzipped protobuf
+        message = zlib.decompress(data[posn:], 32+zlib.MAX_WBITS)
+        f.write(message)
         f.close()
         decoded = subprocess.check_output("protoc --decode=\"LocRequest\" -I='"+mypath+"' locm.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
         #print(decoded)
@@ -552,11 +779,11 @@ def decode_locm(bytes, verbose=False, debug=False):
         return "Failed"
 
 kollektomat_count=0
-def decode_kollektomat(bytes, verbose=True, debug=True):
+def decode_kollektomatproto(bytes, verbose=False, debug=False, saveData=True):
     #print("decode_kollektomat")
     try:
         #f = open('/tmp/locm_bytes', 'wb')
-        if True:
+        if debug:
             global kollektomat_count
             fname='/tmp/kollektomat_bytes_'+str(kollektomat_count)
             kollektomat_count = kollektomat_count + 1
@@ -569,7 +796,7 @@ def decode_kollektomat(bytes, verbose=True, debug=True):
         #print(fname)
         decoded = subprocess.check_output("protoc --decode=\"KollektomatRequest\" -I='"+mypath+"' locm.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
         #print(decoded)
-        if True:
+        if saveData:
             # save location data
             kollektomat = locm_pb2.KollektomatRequest()
             kollektomat.ParseFromString(bytes)
@@ -597,11 +824,14 @@ def decode_kollektomat(bytes, verbose=True, debug=True):
                         f.close()
         return(decoded)
     except subprocess.CalledProcessError as e:
-        if True:
+        if verbose:
             print(e.output)
             print(e)
         return "Failed"
 
+def decode_kollektomat(postData, verbose=False, debug=False):
+    #print("raw: ",postData)
+    return(decode_gRPC(postData,decode_kollektomatproto))
 
 def base64padding(header):
     if len(header) % 4 == 2:
@@ -611,11 +841,17 @@ def base64padding(header):
     else:
         extras=""
     return extras
-  
+
+def decodeBase64(header):
+    return base64.b64decode(header + base64padding(header))
+
+def urlsafe_decodeBase64(header):
+    return base64.urlsafe_b64decode(header + base64padding(header))
+
 
 def decodeBase64ZippedProto(header):
     try:
-        buf = base64.b64decode(header + base64padding(header))
+        buf = urlsafe_decodeBase64(header)
         unzipped = zlib.decompress(buf, 32 + zlib.MAX_WBITS)
         return decode_pb(unzipped)
     except Exception as e:
@@ -624,7 +860,7 @@ def decodeBase64ZippedProto(header):
 
 
 def decodeXGoogXSpatula(header, debug=False):
-    buf = base64.b64decode(header+base64padding(header))
+    buf = urlsafe_decodeBase64(header)
     #try_decode_pb_array("Decoded x-goog-spatula header", buf, decode_pb)
     #f = open('/tmp/spatula_bytes', 'wb')
     if debug:
@@ -636,9 +872,22 @@ def decodeXGoogXSpatula(header, debug=False):
     f.write(buf)
     f.close()
     decoded = subprocess.check_output("protoc --decode=\"GoogleSpatulaHeader\" -I='"+mypath+"' spatula.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
-    print("Decoded x-goog-spatula header:\n", decoded)
+    return("Decoded x-goog-spatula header:\n"+decoded)
     #return(decoded)
 
+def decodeAuthBearerHeader(header, debug=False):
+    # example: ya29.m.CqkEASf-AWiMjE32vF2w15AemCtG9oEVKMmZb0nTui52upWAWK5BdGGWTH56eclQbzl7z_3WJQo-B7a8MvQUpKT3mFenAl_P8Sj87WZG74IA6D7VHv77c2D998XR3h3GusC_Z1r87prVJPvZYcknxec8BsJZteObEGtb3zoUu-7_3w87SyynzLFM852uVKkOi5EO60Xtqg9ti6Cdo1hyHOECiDk6j6_dgTkZzhnzHPsMJsd9F9Db-oLuk2ffF6Y4Q924wzLA_6ZTqiGbJZrIt7FOVMCOwwzVsRfsqclRAx-ICGqAl-GvUbVP5TxQdiLdVzwI5-HIk00G_Ap4MgD7X-XbTFjTL5eaWtbbR9YJ4HX6xchgraf1fEqDOYVzHC3kHLXWdttPh1pvMrCGHs9n7wYCzVjR_jr5KeoP2RK066lqDcdCSg-RfT08qxWDLmFeNJur8gBC6HiqqzrDgdU01TxwI9xUAiK5Lm2zS-eCFUISo4NK421xUHdNe_eFY4WrDij6-TXkyzZN4LZ0mvz91ec9b0vL19frdJq9pl2riuxrixlb2ZxMv0WuE9jL0vj3aiVLRvuQxtScmn8XN0O8EYZVTPjIbu9cnghV4UEqMunY5fHpmhfMUDSfURG_mvR8AWMuqP5IC9BeWmDrgTbEuOnIsQGvGhB53XLO3mKN2tanptCj2BWuj6oN0k7wSUus9hLrhC6vFuyHMnYdf4nxwjmuuN4f6pJhCY460xIMCAESBgoBMxDRHBgFGiBAuva1FdbuSY0ohuHtc0CktKXibIqksqQO1SGn9r24eiICCAEqK2FDZ1lLQVlrU0FSSVNGUUhHWDJNaVl6X3ZTdDVKTmdINURHY0FfYm8tdlE
+    buf = urlsafe_decodeBase64(header[7:])
+    if debug:
+        fname='/tmp/intermediatetoken_bytes'
+        f = open(fname, 'wb')
+    else:
+        f = tempfile.NamedTemporaryFile(delete=False)
+        fname=f.name
+    f.write(buf)
+    f.close()
+    decoded = subprocess.check_output("protoc --decode=\"IntermediateToken\" -I='"+mypath+"' intermediatetoken.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+    return("Decoded Auth Bearer header:\n"+decoded)
 
 def decodeHeterodyneResponse(buf, verbose=True, debug=False):
     #f = open('/tmp/heterodyneresponse_bytes', 'wb')
@@ -652,7 +901,7 @@ def decodeHeterodyneResponse(buf, verbose=True, debug=False):
     f.close()
     try:
         decoded = subprocess.check_output("protoc --decode=\"HeterodyneResponse\" -I='"+mypath+"' exptsandconfigs_response.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
-        print("Decoded heterodyne response:\n", decoded)
+        return("Decoded heterodyne response:\n"+decoded)
     except subprocess.CalledProcessError as e:  
         if verbose:
             print(e.output)
@@ -673,7 +922,7 @@ def decodeHeterodyneRequest(buf, verbose=True, debug=False):
     f.close()
     try:
         decoded = subprocess.check_output("protoc --decode=\"HeterodyneRequest\" -I='"+mypath+"' exptsandconfigs_request.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
-        print("Decoded heterodyne request:\n", decoded)
+        return("Decoded heterodyne request:\n"+decoded)
     except subprocess.CalledProcessError as e:  
         if verbose:
             print(e.output)
@@ -829,7 +1078,7 @@ class PrintTrace:
         print('----------------')
 
     def tcp_message(self, flow: tcp.TCPFlow):
-        assumeFL = True
+        assumeFL = False #True
         if assumeFL:
             # assume a raw tcp connection is a federated learning exchange
             # TO DO: add some checking so that fall back to something reasonable if in fact its something else
@@ -857,6 +1106,13 @@ class PrintTrace:
             typespec=int,
             default=-1,
             help="Add a end timestamp, ignore later connections")
+        # add command line option to only process google connections, e.g. use as "--set google_only=false"
+        loader.add_option(
+            name="google_only",
+            typespec=bool,
+            default=True,
+            help="Only process Google connections")
+
 
     def response(self, flow:http.HTTPFlow):
         
@@ -872,72 +1128,14 @@ class PrintTrace:
 
         print("\ntimestamp %s (%s UTC)"%(flow.request.timestamp_start, datetime.datetime.fromtimestamp(flow.request.timestamp_start,datetime.timezone.utc)))
         print("%s %s" % (flow.request.method, flow.request.pretty_url))
-        googleOnly = True
-        if googleOnly:
+        url = flow.request.pretty_url
+        if ctx.options.google_only:
             # bail if not a google related connection
-            url = flow.request.pretty_url
-            if not('goog' in url or 'doubleclick' in url or 'app-measurement' in url or 'firebase' in url or 'appspot' in url):
+            if not('goog' in url or 'doubleclick' in url or 'app-measurement' in url or 'firebase' in url or 'appspot' in url or "youtube" in url):
                 return
-        req = flow.request.path.split("?")
-        req = req[0]
-        request_content_sum = 0
-        for q in flow.request.query:
-            request_content_sum += len(flow.request.query[q])
-        headers=[]
-        for hh in flow.request.headers:
-            h={'name':hh, 'value':flow.request.headers[hh]}
-            headers.append(h)
-            print(h['name'], ':', h['value'])
-            request_content_sum += len(h['value'])
-            if h['name'].lower() == "x-goog-spatula":
-                decodeXGoogXSpatula(h['value'])
-            elif h['name'].lower() in ["x-dfe-phenotype", "x-ps-rh"]:
-                # TO DO: sometimes the unzipped here fails, which seems odd.
-                res = decodeBase64ZippedProto(h['value'])
-                if res != "Failed":
-                    print("Decoded "+h['name']+" header:\n", res)
-            elif h['name'].lower() == "x-dfe-encoded-targets":
-                val = h['value'] + '=='
-                try:
-                    buf = base64.b64decode(val+base64padding(val))
-                    print("Decoded x-dfe-encoded-targets header:\n", decode_pb(buf))
-                except:
-                    pass
-            elif h['name'].lower() == "x-firebase-client":
-                val = h['value']
-                try:
-                    buf = base64.urlsafe_b64decode(val+base64padding(val))
-                    unzipped = zlib.decompress(buf, 32 + zlib.MAX_WBITS)
-                    print("Decoded x-firebase-client header:\n", unzipped)
-                except Exception as e:
-                    print(e)
 
-        postData = ""
-        mimeType = ""
-        if flow.request.method == "POST":
-            postData = flow.request.content
-            request_content_sum += len(postData)
-            if 'Content-Type' in flow.response.headers:
-                mimeType = flow.response.headers['Content-Type'] 
-            elif 'content-type' in flow.response.headers:
-                mimeType = flow.response.headers['content-type']
- 
-        responseCookies = ""
-        for hh in flow.response.headers:
-            h={'name':hh, 'value':flow.response.headers[hh]}
-            if 'cookie' in h['name'] or 'Cookie' in h['name']:
-                responseCookies = responseCookies+h['name']+": " + h['value']+"\n"
-        for hh in flow.request.headers:
-            # shouldn't happen
-            if 'set-cookie' in h['name'] or 'Set-Cookie' in h['name']:
-                h={'name':hh, 'value':flow.request.headers[hh]}
-                responseCookies = responseCookies+h['name']+"(request!): " + h['value']+"\n"
-        if flow.response.content is not None and len(flow.response.content) > 0:
-            responseData = flow.response.content
-        else:
-            responseData = None
-
-        printPostBody(flow.request.pretty_url, mimeType, postData, responseData=responseData, responseCookies=responseCookies, responseHeaders=flow.response.headers) 
+        request_content_sum = printRequest(url,flow.request) 
+        printResponse(url,flow.response) 
         print('+++REQUEST ', flow.request.pretty_url, request_content_sum, flow.request.timestamp_start)
  
 

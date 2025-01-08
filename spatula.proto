@@ -9,6 +9,6 @@ message GoogleSpatulaHeader {
 	optional AppCertificate appCertificate=1;
 	optional string hashAppCertificate = 2;
 	optional int64 androidID = 3;
-	optional int64 device_key1 = 4;
-	optional string device_key2 = 5;
+	optional uint64 droidguardSessionId = 4;
+	optional string deviceKey = 5;
 }

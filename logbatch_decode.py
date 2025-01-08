@@ -137,7 +137,7 @@ def decode_gboard_pb(bb, verbose=False, terse=False, grep=True, debug=False):
                 gboard.ParseFromString(bb)
                 if gboard.input_info.keyboard_usage_info:
                     packageName = gboard.input_info.keyboard_usage_info.applicationName
-                    print("+++LATIN_IME",gboard.currentTimeMillis,gboard.elapsedRealtime,gboard.keyboardEvent,packageName)
+                    str=str+"+++LATIN_IME %s %s %s %s"%(gboard.currentTimeMillis,gboard.elapsedRealtime,gboard.keyboardEvent,packageName)
             except Exception as e:
                 print("LATIN_IME grep failed:")
                 print(e)
@@ -442,6 +442,25 @@ def decode_tron(bytes, verbose=True, terse=False, debug=False):
             print(e)
         return "Failed"
 
+def decode_netstats(bytes, verbose=False, terse=False, debug=False):
+    try:
+        if debug:
+            fname='/tmp/netstats_bytes'
+            f = open(fname, 'wb')
+        else:
+            f = tempfile.NamedTemporaryFile(delete=False)
+            fname=f.name
+        f.write(bytes)
+        f.close()
+        decoded = subprocess.check_output("protoc --decode=\"NetstatsRequest\" -I='"+mypath+"' netstats.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        #print(decoded)
+        return(decoded)
+    except subprocess.CalledProcessError as e:
+        if verbose:
+            print(e.output)
+            print(e)
+        return "Failed"
+
 
 if len(sys.argv)>1:
     fname=sys.argv[1]
@@ -490,25 +509,26 @@ try:
             print("logSourceName: "+inner.logSourceName)
         #try_decode_pb_array("logEntry", inner.logEntry, decode_pb)   
         if inner.logSourceName == "ANDROID_MESSAGING":
-            try_decode_pb_array("logEntry", inner.logEntry, decode_messaging_pb, verbose=True, debug=False)   
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_messaging_pb, verbose=True, debug=False) )  
         elif inner.logSourceName == "ANDROID_DIALER":
-            try_decode_pb_array("logEntry", inner.logEntry, decode_dialer_pb, verbose=True, debug=False)
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_dialer_pb, verbose=True, debug=False))
         elif inner.logSourceName == "LATIN_IME":
-            try_decode_pb_array("logEntry", inner.logEntry, decode_gboard_pb, verbose=True, debug=False)
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_gboard_pb, verbose=True, debug=False))
         elif inner.logSourceName == "WESTWORLD" or inner.logSourceName == "ANONYMOUS_WESTWORLD":
-            try_decode_pb_array("logEntry", inner.logEntry, decode_westworld, verbose=True, debug=False)
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_westworld, verbose=True, debug=False))
         elif inner.logSourceName == "LB_AS" or inner.logSourceName == "LB_CFG":
-            try_decode_pb_array("logEntry", inner.logEntry, decode_lockbox, verbose=True, debug=False)
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_lockbox, verbose=True, debug=False))
         elif inner.logSourceName == "TRON":
-            try_decode_pb_array("logEntry", inner.logEntry, decode_tron, verbose=True, debug=False)
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_tron, verbose=True, debug=False))
             #print('logEntry:')
             #res=decode_tron(inner.logEntry) 
             #if res=="Failed":
-
         elif inner.logSourceName == "ACTIVITY_RECOGNITION":
-            try_decode_pb_array("logEntry", inner.logEntry, decode_AR, verbose=True, debug=False)
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_AR, verbose=True, debug=False))
+        elif inner.logSourceName == "NETSTATS":
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_netstats, verbose=True, debug=True))
         else:
-            try_decode_pb_array("logEntry", inner.logEntry, decode_pb, verbose=True, debug=False)
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_pb, verbose=True, debug=False))
         print("}")
 except Exception as e:
     print(e)
