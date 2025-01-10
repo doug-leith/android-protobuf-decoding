@@ -69,6 +69,10 @@ Each message contains a sequence of log events, which may be from different log 
 
 - activity_recognition.proto is (partially) decoded protobuf definition
 
+### NETSTATS log source (Google Play Services log of network usage by apps and components)
+
+- netstats.proto is (partially) decoded protobuf definition
+
 ## Google Play Services https://android.clients.google.com/checkin
 
 - checkin.proto is (partially) decoded protobuf definition
