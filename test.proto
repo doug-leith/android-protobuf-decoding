@@ -1,6 +1,0 @@
-syntax = "proto2";
-
-message Test {
-	optional  int32 one=1;
-	optional  string two=2;
-}
