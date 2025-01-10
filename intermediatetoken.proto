@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+message IntermediateToken {
+	message AllowedScopeId {
+		optional int32 isUpdated=1;
+		repeated int32 scopeIds=2 [packed=true];  // identifies scopes to which this token applies
+		optional int32 elapsedTimeMillis=3;
+	}
+	optional bytes tokenBytes=1;  // the actual authentication token?
+	repeated AllowedScopeId allowedScopeIds=2;
+	optional bytes hmacSHA256=3; // protects allowedScopeIds field
+	//optional string unknown=5; // present in ya29.m token sent by google servers but not referred to within gms apk
+}

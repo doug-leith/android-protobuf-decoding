@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+message DeviceKeyRequest {
+	optional string droidguardResultRequestString=1;
+	// droidguardResultRequestString itself decodes as a protobuf, see e.g. https://i.blackhat.com/Asia-22/Thursday-Materials/asia-22-Thomas-DroidGuard-A-Deep-Dive-Into-Safetynet-slides.pdf
+	optional uint64 androidID=2;
+	optional uint64 droidguardSessionId=3;
+	message SDKVersion {
+		optional fixed32 buildVERSIONSDK=1;
+		optional fixed32 version=2;
+	}
+	optional SDKVersion sdkVersion=4;
+	optional string securityToken=6;
+}
+
+message DeviceKeyResponse {
+	optional uint64 droidguardSessionId=1;
+	optional uint64 AndroidId=3;
+	optional bytes hmacSHA256key=4; // used for hashes in Spatula header
+	optional bytes deviceKey=5;
+}

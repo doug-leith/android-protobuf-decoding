@@ -1,0 +1,121 @@
+syntax="proto2";
+
+message SubscriberInfo {//ccsy
+  optional string type=2;
+  optional string subtype=4;
+  optional string subscriberId=5;
+  optional bool roaming=6;
+}
+
+message PackageInfo {//ccsu
+  optional string packageName=1;
+  optional int32 versionCode=2;
+}
+
+message UsageStats {//ccst
+  optional int64 start=1;
+  optional int64 rxBytes=2;
+  optional int64 rxPackets=3;
+  optional int64 txBytes=4;
+  optional int64 txPackets=5;
+  optional int64 operations=6;
+  
+}
+
+message Info { // ccsv
+  repeated SubscriberInfo subscriberInfo=1;
+  repeated PackageInfo packageInfo=3;
+  optional string nameForUid=4;
+  optional int32 set=5;
+  optional int64 tag=6;
+  optional int64 duration=7;
+}
+
+message NetStatsEvent { // ccsw
+  repeated Info info=1;
+  repeated UsageStats usageStats=2;
+}
+
+message NetStatsWrapper{ // ccta
+  repeated NetStatsEvent netStatsEvent=3; 
+  repeated NetStatsEvent taggedNetStatsEvent=4;
+  optional int32 errorCode=5;
+}
+
+message NetstatsReport{ // crfj
+  optional int64 lastRunMillis=1;
+  optional int64 currentRunMillis=2;
+  optional NetStatsWrapper netStatsWrapper=25;  
+}
+
+message Tokens { //bfyb
+  //repeated int32 b=1;
+  //repeated int32 c=2;
+  repeated int32 token=3; // only this is ever set.  
+  //repeated int32 d=4;
+}
+
+message ExperimentTokens { //bnar
+  optional Tokens tokens=1;
+  repeated bytes tokenBytes=2; 
+  optional bool hasContent=3; // true when content is set
+}
+
+enum ActiveNetworkType {
+    MOBILE=0;
+    NONE=-1;
+    WIFI=1;
+    MOBILE_MMS=2;
+    MOBILE_SUPL=3;
+    MOBILE_DUN=4;
+    MOBILE_HIPRI=5;
+    WIMAX=6;
+    BLUETOOTH=7;
+    DUMMY=8;
+    ETHERNET=9;
+    MOBILE_FOTA=10;
+    MOBILE_IMS=11;
+    MOBILE_CBS=12;
+    WIFI_P2P=13;
+    MOBILE_IA=14;
+    MOBILE_EMERGENCY=15;
+    PROXY=16;
+    VPN=17;
+}
+
+enum MobileSubtype{
+    UNKNOWN_MOBILE_SUBTYPE=0;
+    GPRS=1;
+    EDGE=2;
+    UMTS=3;
+    CDMA=4;
+    EVDO_0=5;
+    EVDO_A=6;
+    RTT=7;
+    HSDPA=8;
+    HSUPA=9;
+    HSPA=10;
+    IDEN=11;
+    EVDO_B=12;
+    LTE=13;
+    EHRPD=14;
+    HSPAP=15;
+    GSM=16;
+    TD_SCDMA=17;
+    IWLAN=18;
+    LTE_CA=19;
+    COMBINED=100;
+}
+
+message ConnectionDetails {//bmyx
+  optional ActiveNetworkType activeNetworkType=1;
+  optional MobileSubtype mobileSubtype=2;
+}
+
+message NetstatsRequest { 
+  optional int64 currentTimeMillis=1;
+  repeated NetstatsReport  netstatsReport=6;
+  optional ExperimentTokens experimentTokens=16; 
+  optional int32 bootCount=22;
+  optional ConnectionDetails connectionDetails=23;  
+}
