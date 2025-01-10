@@ -8,15 +8,19 @@ To save a packet trace to a file using mitmdump use the -w option.  This binary 
 
 Clone the repo and install into a venv using:
 
+```shell
 git clone https://github.com/doug-leith/android-protobuf-decoding.git
 cd android-protobuf-decoding
 python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
+```
 
 To test the installation use:
 
+```shell
 mitmdump --flow-detail 0 -s decoding_helpers.py -nr example_firebase.mitm | more
+```
 
 The output should match that in file example_firebase.txt.  This contains Google/Firebase Analytic event logging by the Google Play store app recording it being opened following a factory reset.
 
