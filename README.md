@@ -5,17 +5,20 @@ For details of how to collect decrypted packet traces from an Android handset se
 To save a packet trace to a file using mitmdump use the -w option.  This binary file can then be parsed using the scripts described below.
 
 ## Quick start
-We include an example mitmproxy trace file containing a connection to https://play.googleapis.com/log/batch made by the Google Play Services Clearbut logger in file example_messaging.mitm.   To decode this file use:
 
-mitmdump --flow-detail 0 -s decoding_helpers.py -nr example_messaging.mitm | more
+Clone the repo and install into a venv using:
 
-The output should match that in file example_messaging.txt.  This contains telemetry sent by the Google Messages app via the ANDROID_MESSAGING and CARRIER_SERVICES Clearcut logger log sources.
+git clone https://github.com/doug-leith/android-protobuf-decoding.git
+cd android-protobuf-decoding
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
 
-We also include a second example of a connection to https://app-measurement.com/a made by Google/Firebase Analytics in file example_firebase.mitm.  To decode this file use:
+To test the installation use:
 
 mitmdump --flow-detail 0 -s decoding_helpers.py -nr example_firebase.mitm | more
 
-The output should match that in file example_firebase.txt.  This contains event logging by the Google Dialer app recording the fact that outgoing calls have been placed.
+The output should match that in file example_firebase.txt.  This contains Google/Firebase Analytic event logging by the Google Play store app recording it being opened following a factory reset.
 
 ## Google/Firebase Analytics
 
@@ -66,7 +69,7 @@ Each message contains a sequence of log events, which may be from different log 
 
 - checkin.proto is (partially) decoded protobuf definition
 
-## Google Play Services /experimentsandconfigs
+## Google Play Services https://www.googleapis.com/experimentsandconfigs/v1/getExperimentsAndConfigs
 
 - exptsandconfigs_request.proto and exptsandconfigs_response.proto
 
@@ -78,10 +81,27 @@ Each message contains a sequence of log events, which may be from different log 
 
 - KollektomatRequest within locm.proto is (partially) decoded protobuf definition (note that request is in gRPC format)
 
-## Google Play Store
+## Google Play Services https://android.googleapis.com/auth/devicekey
 
-- playstore_decode.py is a python script to decode and print out a binary protobuf stored in file /tmp/playstore_bytes.
+- devicekeyrequest.proto is (partially) decoded protobuf definition for request and response
+
+## Google Play Store https://play.googleapis.com/play/log and https://play-fe.googleapis.com/fdfe
+
+- playstore_decode.py is a python script to decode requests and responses for https://play.googleapis.com/play/log, and print out a binary protobuf stored in file /tmp/playstore_bytes.
 - playstore.proto is (partially) decoded protobuf definition, but note that it contains serialized protobufs and so extra work is needed to fully decode data (see playstore_decode.py)
+- playstoreresponse_decode.py decodes the responses sent by https://play-fe.googleapis.com/fdfe
+
+## AOSP https://remoteprovisioning.googleapis.com/v1/:signCertificates
+
+- decodes signed public keys response
+
+## x-goog-spatula header
+
+- spatula.proto is (partially) decoded protobuf definition
+
+## authorization: Bearer header
+
+- intermediatetoken.proto is (partially) decoded protobuf definition
 
 ## Mitmproxy python addon
 

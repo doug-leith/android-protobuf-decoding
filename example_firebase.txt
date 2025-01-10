@@ -1,159 +1,112 @@
-Loading script ../addon/addon.py
-POST https://app-measurement.com/a
+[09:06:48.134] Loading script decoding_helpers.py
+
+timestamp 1734600514.241981 (2024-12-19 09:28:34.241981+00:00 UTC)
+POST https://region1.app-measurement.com/a
+Request headers:
+Content-Encoding : gzip
+Content-Length : 470
+Content-Type : application/x-www-form-urlencoded
+User-Agent : Dalvik/2.1.0 (Linux; U; Android 15; Pixel 7 Build/AP4A.241205.013)
+Host : region1.app-measurement.com
+Connection : Keep-Alive
+Accept-Encoding : gzip
+POST Body (decoded):
 body {
   always_one: 1
   event {
     event_info {
+      setting_code: "_c" // firebase_conversion
+      data_int: 1
+    }
+    event_info {
       setting_code: "_o" // firebase_event_origin
       data_str: "auto"
     }
     event_info {
-      setting_code: "_sid" // session_id
-      data_int: 1635013035
-    }
-    event_info {
-      setting_code: "_sno" // session_number
-      data_int: 8
-    }
-    event_code: "_s" // session_start
-    event_timestamp: 1635013035972
-    previous_event_timestamp: 1634976331041
-  }
-  event {
-    event_info {
-      setting_code: "_o" // firebase_event_origin
-      data_str: "app"
-    }
-    event_code: "OUTGOING_CALL_PLACED"
-    event_timestamp: 1635013035855
-    previous_event_timestamp: 1634978189654
-  }
-  event {
-    event_info {
-      setting_code: "_o" // firebase_event_origin
-      data_str: "app"
-    }
-    event_code: "OUTGOING_CALL_PLACED"
-    event_timestamp: 1635013037816
-    previous_event_timestamp: 1635013035855
-  }
-  event {
-    event_info {
-      setting_code: "_o" // firebase_event_origin
-      data_str: "auto"
+      setting_code: "_r" // realtime
+      data_int: 1
     }
     event_info {
       setting_code: "_et" // engagement_time_msec
-      data_int: 1982
-    }
-    event_code: "_e" // user_engagement
-    event_timestamp: 1635013037864
-    previous_event_timestamp: 1634978190866
-  }
-  event {
-    event_info {
-      setting_code: "_o" // firebase_event_origin
-      data_str: "auto"
+      data_int: 1
     }
     event_info {
-      setting_code: "_sc" // firebase_screen_class
-      data_str: "MainActivity"
+      setting_code: "_pfo" // previous_first_open_count
     }
     event_info {
-      setting_code: "_si" // firebase_screen_id
-      data_int: 6625442165989094211
-    }
-    event_code: "_vs" // screen_view
-    event_timestamp: 1635013037956
-    previous_event_timestamp: 1634978189769
-  }
-  event {
-    event_info {
-      setting_code: "_o" // firebase_event_origin
-      data_str: "auto"
+      setting_code: "_sys" // system_app
+      data_int: 1
     }
     event_info {
-      setting_code: "_et" // engagement_time_msec
-      data_int: 1074
+      setting_code: "_uwa" // update_with_analytics
     }
     event_info {
-      setting_code: "_sc" // firebase_screen_class
-      data_str: "MainActivity"
+      setting_code: "_sysu" // system_app_update
     }
-    event_info {
-      setting_code: "_si" // firebase_screen_id
-      data_int: 6625442165989094211
-    }
-    event_code: "_e" // user_engagement
-    event_timestamp: 1635013039037
-    previous_event_timestamp: 1635013037864
-  }
-  event {
-    event_info {
-      setting_code: "_o" // firebase_event_origin
-      data_str: "auto"
-    }
-    event_code: "_ab" // app_background
-    event_timestamp: 1635013039074
-    previous_event_timestamp: 1634978190903
+    event_code: "_f" // first_open
+    event_timestamp: 1734600130510
   }
   user {
-    timestamp: 1634718012033
+    timestamp: 1734600130510
     setting: "_fot"
-    data_int: 1634720400000
+    data_int: 1734602400000
   }
   user {
-    timestamp: 1634718012033
+    timestamp: 1734600130510
     setting: "_fi" // first_install
+    data_int: 1
   }
   user {
-    timestamp: 1635013042106
+    timestamp: 1734600514995
     setting: "_lte" // lifetime_engagement
-    data_int: 568287
+    data_int: 1
   }
   user {
-    timestamp: 1635013042107
-    setting: "_se" // session_scoped_engagement
-    data_int: 3056
+    timestamp: 1734600515001
+    setting: "_npa"
+    data_int: 1
   }
-  user {
-    timestamp: 1635013035972
-    setting: "_sno" // session_number
-    data_int: 8
-  }
-  user {
-    timestamp: 1635013035972
-    setting: "_sid" // session_id
-    data_int: 1635013035
-  }
-  message_timestamp: 1635013042098
-  event_timestamp: 1635013035855
-  bundle_end_timestamp: 1635013039074
-  last_bundle_end_timestamp: 1634978190903
+  message_timestamp: 1734600514991
+  event_timestamp: 1734600130510
+  bundle_end_timestamp: 1734600130510
   operating_system: "android"
-  operating_system_version: "11"
-  Build_MODEL: "Pixel 2"
+  operating_system_version: "15"
+  Build_MODEL: "Pixel 7"
   language_country: "en-ie"
-  timezone_offset_mins: 60
-  package_name: "com.google.android.dialer"
-  app_version: "70.05.401408800"
-  gmp_version: 44007
-  gms_version: 213916
-  google_ad_id: "916c714a-e838-479d-a7a6-3325d838da5f"
-  random_hex: "27119320961e981207e9f885ddfb897b"
-  dev_cert_hash: 12863297414841520258
-  daily_conversions_count: 16
-  health_monitor_sample: "4:2WP213916:Interrupted in onRunTask while uploading"
-  gmp_app_id: "1:566865154279:android:85888a731cba65c4ed1242"
-  last_bundle_start_timestamp2: 1634978132513
+  app_store: "manual_install"
+  package_name: "com.android.vending"
+  app_version: "43.0.18-31 [0] [PR] 679685942"
+  gmp_version: 101006
+  gms_version: 243333
+  google_ad_id: "d4a1aab9-f57a-43f0-a138-60fd1af33913"
+  appInstanceId: "6021f37862b0bbe21040ad0c1c1b51ce"
+  dev_cert_hash: 12815780039134672363
+  daily_conversions_count: 1
+  gmp_app_id: "1:327451421140:android:9c547b5ed466b580"
   always_true: true
-  firebase_instance_id: "f86VDMH_SSGcArMl6Up973"
-  app_version_int: 7903277
-  config_version: 1631224292436546
-  M: 23180913
-  dynamite_version: 53
-  unknown: "G1--"
+  firebase_instance_id: "dT55cNetSmiJkAd8tGpXEz"
+  app_version_int: 84301830
+  config_version: 1728948417920150
+  dynamite_version: 121
+  consent_state: "G1--"
+  67: 35
+  71: "19911"
+  72: 1
+  73: "ahmopsy"
 }
 
 
-<<< HTTP 204, 0.00B
+Response headers:
+Date : Thu, 19 Dec 2024 09:28:34 GMT
+Pragma : no-cache
+Expires : Fri, 01 Jan 1990 00:00:00 GMT
+Cache-Control : no-cache, no-store, must-revalidate
+Content-Type : image/gif
+Cross-Origin-Resource-Policy : cross-origin
+Content-Security-Policy-Report-Only : script-src 'none'; form-action 'none'; frame-src 'none'; report-uri https://csp.withgoogle.com/csp/scaffolding/ascnsrsgac:118:0
+Cross-Origin-Opener-Policy-Report-Only : same-origin; report-to=coop_reporting
+Report-To : {"group":"coop_reporting","max_age":2592000,"endpoints":[{"url":"https://csp.withgoogle.com/csp/report-to/scaffolding/ascnsrsgac:118:0"}],}
+Server : Golfe2
+Content-Length : 0
+Alt-Svc : h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
++++REQUEST  https://region1.app-measurement.com/a 660 1734600514.241981

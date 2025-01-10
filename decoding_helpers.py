@@ -1,6 +1,6 @@
 from google.protobuf.internal.decoder import _DecodeVarint32
 from google.protobuf import text_format
-#from google.protobuf import unknown_fields
+from google.protobuf.unknown_fields import UnknownFieldSet
 import subprocess
 import textwrap
 import sys
@@ -39,7 +39,7 @@ def printBinaryString(string):
         if c >= 32 and c <= 127:
             print('%c' % c, end='')
         else:
-            print('\%X' % c, end='')
+            print('%X' % c, end='')
     print()
 
 
@@ -251,7 +251,7 @@ def printResponse(url, response, verboseResponse=False):
     'experimentsandconfigs/v1/getExperimentsAndConfigs': decodeHeterodyneResponse,
     'android.clients.google.com/checkin': decode_checkin_response,
     'android.googleapis.com/checkin': decode_checkin_response,
-    'play-fe.googleapis.com': decode_playstore_response,
+    'play-fe.googleapis.com/fdfe': decode_playstore_response,
     #'android.clients.google.com/fdfe': decode_playstore_response,
     '/log/batch':decode_pb,
     'remoteprovisioning.googleapis.com/v1/:fetchEekChain': decode_eek,
@@ -385,11 +385,17 @@ def decode_pb_array(name, buf, decoder, verbose=False, debug=False):
 
 
 # see https://github.com/protocolbuffers/protobuf/blob/cac9765af0ace57ce00b6ea07b8829339a622b1d/python/google/protobuf/text_format.py#L56
-def protoUnknownFieldsToString(pb):
+def protoUnknownFieldsToString(pb, verbose=True):
     out = text_format.TextWriter(as_utf8=False)
     printer = text_format._Printer(out)
-    printer._PrintUnknownFields(pb.UnknownFields())
-    #printer._PrintUnknownFields(unknown_fields.UnknownFieldSet(pb))
+    try:
+        # try to use newer unknown fields API
+        printer._PrintUnknownFields(UnknownFieldSet(pb))
+    except Exception as e:
+        if verbose:
+            print("In protoUnknownFieldsToString couldn't get UnknownFieldSet: ",e)
+    #old API
+    #printer._PrintUnknownFields(pb.UnknownFields())
     result = out.getvalue()
     out.close()
     return result
@@ -1024,6 +1030,7 @@ def bytes_to_escaped_str(
 class PrintTrace:
 
     start_timestamp = -1
+    connection_count = 0
 
     # federated learning uses http2 with prior info, which is not supported by mitmproxy, so we need to handle
     # http2 stream processing ourselves.
@@ -1112,7 +1119,19 @@ class PrintTrace:
             typespec=bool,
             default=True,
             help="Only process Google connections")
+        # add command line option to only process a specified number of connections"
+        loader.add_option(
+            name="num_connections",
+            typespec=int,
+            default=-1,
+            help="Number of connections to process")
 
+    def request(self, flow:http.HTTPFlow):
+        if ctx.options.num_connections and ctx.options.num_connections>0:
+            if self.connection_count >= ctx.options.num_connections:
+                ctx.master.shutdown() # quit mitmdump, doesn't seem to work?
+                quit() # force quit, works but generates error trace
+        self.connection_count = self.connection_count+1
 
     def response(self, flow:http.HTTPFlow):
         

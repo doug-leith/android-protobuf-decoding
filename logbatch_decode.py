@@ -472,7 +472,7 @@ f.close()
 #print(decode_pb(data))
 
 try:
-    logbatch = logbatch_pb2.LogBatchContainer()
+    logbatch = logbatch_pb2.ClearcutLoggerEvents()
     logbatch.ParseFromString(data)
     for i in range(len(logbatch.inner)):
         inner = logbatch.inner[i]
