@@ -10,7 +10,7 @@ message POST_body {
 
 message FirebaseAnalyticsEvents { //ahcq
 
-  int32 always_one=1; // field achq.c, always 1?
+  int32 protocol_version=1; // field achq.c, always 1?
 
   repeated EventParcel event=2;
   message EventParcel {  //ahci
@@ -29,48 +29,49 @@ message FirebaseAnalyticsEvents { //ahcq
 
   repeated UserAttributeParcel user=3;
   message UserAttributeParcel { //ahcy
-     int64 timestamp=1;
-     string setting=2;
-     string data_str=3;
-     int64 data_int=4;
-     float data_float=6;
+     int64 set_timestamp_millos=1;
+     string name=2;
+     string string_value=3;
+     int64 int_value=4;
+     float float_value=5;
+     double double_value=6;
   }
 
   // timestamps
-   int64 message_timestamp=4;
+   int64 upload_timestamp_millis=4;
    int64 event_timestamp=5;
    int64 bundle_end_timestamp=6;
-   int64 last_bundle_end_timestamp=7;
+   int64 previous_bundle_end_timestamp=7;
 
   // Platform
    string operating_system=8;
    string operating_system_version=9;
-   string Build_MODEL=10;
-   string language_country=11;
-   int32 c=12;
+   string device_model=10;
+   string user_default_language=11;
+   int32 time_zone_offset=12;
 
   //AppMetadata
    string app_store =13;
    string package_name=14;
    string app_version=16;
    int64 gmp_version=17;
-   int64 gms_version=18;  // firebase_analytics_collection_disabled ? 19629 : 19003
+   int64 uploading_gmp_version=18;  // firebase_analytics_collection_disabled ? 19629 : 19003
    string google_ad_id=19;
-   bool no_ad_id=20;  //?
+   bool limited_ad_tracking=20;  //?
    string appInstanceId=21;
    uint64 dev_cert_hash=22; // originally signed, make unsigned so prints more nicely
    int32 daily_conversions_count=23;
    string health_monitor_sample=24;
    string gmp_app_id=25;
-   int64 last_bundle_start_timestamp2=26;
-   bool always_true=28;  // field achq.B, always true?
+   int64 previous_bundle_start_timestamp2=26;
+   bool service_upload=28;  // field achq.B, always true?
 
-   repeated FilterList filter_list=29; //ahce
-   message FilterList {
-      int32 filter_id=1;
-      google.protobuf.Any c=2; //MESSAGE ahcu event filter?
-      google.protobuf.Any d=3; //MESSAGE ahcu property filter?
-      bool e=4;
+   repeated AudienceMembership filter_list=29; //ahce
+   message AudienceMembership {
+      int32 audience_id=1;
+      google.protobuf.Any current_data=2; //MESSAGE ahcu event filter?
+      google.protobuf.Any previous_data=3; //MESSAGE ahcu property filter?
+      bool new_audience=4;
    }
 
    string firebase_instance_id=30;
@@ -86,5 +87,51 @@ message FirebaseAnalyticsEvents { //ahcq
    int64 dynamite_version=46;
    int64 O=47; // unused?
    string consent_state=52; // adStorageConsentGranted, analyticsStorageConsentGranted e.g. "G1<adStorageConsentGranted><analyticsStorageConsentGranted>" with "-"=null, "1"=true, "0"=false, e.g. "G1--" => adStorageConsentGranted=null, analyticsStorageConsentGranted=null
-
+   string session_stitching_token=63;
+   string google_signals=64;
+   int64 target_os_version=67; // e.g. 33
+   string consent_diagnostics=71; //e.g. "19911"
+   // consent_diagnostics is enum_map
+    // first char is always "1", then next characters are for:
+    // AD_STORAGE("ad_storage"),
+    // ANALYTICS_STORAGE("analytics_storage"),
+    // AD_USER_DATA("ad_user_data"),
+    // AD_PERSONALIZATION("ad_personalization");
+   // enum values for each setting are:
+    // UNSET('0'),
+    // REMOTE_DEFAULT('1'),
+    // REMOTE_DELEGATION('2'),
+    // MANIFEST('3'),
+    // INITIALIZATION('4'),
+    // API('5'),
+    // CHILD_ACCOUNT('6'),
+    // TCF('7'),
+    // REMOTE_ENFORCED_DEFAULT('8'),
+    // FAILSAFE('9');
+    // so 19911" = AD_STORAGE(FAILSAFE), ANALYTICS_STORAGE(FAILSAFE), AD_USER_DATA(REMOTE_DEFAULT), AD_PERSONALIZATION(REMOTE_DEFAULT)
+   bool is_dma_region=72; // e.g. 1
+   string core_platform_services=73;  // e.g. "ahmpsy"
+   int32 ad_services_version=74;
+   message Attribution_eligibility_status {
+      bool eligible=1;  // a string?
+      bool no_access_adservices_attribution_permission=2;
+      bool pre_r=3;
+      bool r_extensions_too_old=4;
+      bool adservices_extension_too_old=5;
+      bool ad_storage_not_allowed=6;
+      bool measurement_manager_disabled=7;
+   }
+   Attribution_eligibility_status attribution_eligibility_status=76;
+   int32 delivery_index=77;
+   message Ad_campaign_info {
+      string deep_link_gclid=1; // c
+      string deep_link_gbraid=2; // d
+      string deep_link_gad_source=3;  // e
+      int64 deep_link_session_millis=4; // f
+      string market_referrer_gclid=5; // g
+      string market_referrer_gbrai=6; // h
+      string market_referrer_gad_source=7; // i
+      int64 market_referrer_click_millis=8; // j   
+   }
+   Ad_campaign_info ad_campaign_info=79;
 }

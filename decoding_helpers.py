@@ -211,7 +211,9 @@ def printRequest(url, request):
     'play.googleapis.com/play/log':decode_playstore,
     'firebaselogging-pa.googleapis.com/v1/firelog/legacy/batchlog':decode_firebase_logbatch,
     'remoteprovisioning.googleapis.com/v1/:fetchEekChain' : decode_cbor,
+    'remoteprovisioning.googleapis.com/v1:fetchEekChain' : decode_cbor,
     'remoteprovisioning.googleapis.com/v1/:signCertificates' : decode_cbor,
+    'remoteprovisioning.googleapis.com/v1:signCertificates' : decode_cbor,
     }
 
     postData = ""
@@ -256,6 +258,7 @@ def printResponse(url, response, verboseResponse=False):
     '/log/batch':decode_pb,
     'remoteprovisioning.googleapis.com/v1/:fetchEekChain': decode_eek,
     'remoteprovisioning.googleapis.com/v1/:signCertificates' : decode_signedcerts,
+    'remoteprovisioning.googleapis.com/v1:signCertificates' : decode_signedcerts,
     'android.googleapis.com/auth/devicekey': decode_deviceKeyResponse,
     }
 
@@ -289,10 +292,11 @@ def printResponse(url, response, verboseResponse=False):
                 printUsingMimeType(responseData,responseMimeType,"Response data")
             else:
                 print("Response data (truncated):")
-                print(responseData[:1000])
+                print(responseData[:1000],"<truncated>")
 
     
-
+from mitm_protobuf import format_pbuf
+import difflib
 def decode_pb(bb, verbose=False, debug=False):
     # try to decode a protobuf without knowing the schema, usually works fine
     # but there can be ambiguity in encoding and so result may not be quite what we'd
@@ -305,9 +309,19 @@ def decode_pb(bb, verbose=False, debug=False):
         fname=f.name
     f.write(bb)
     f.close()
-    try:
+    try:       
         res = subprocess.check_output("cat "+fname+" | protoc --decode_raw", 
                                        shell=True, stderr=subprocess.STDOUT, text=True)
+        
+        '''
+        # test of alternative raw decoding approach, but it makes different choices/guesses from protoc
+        mitm_res = format_pbuf(bb)        
+        diff="".join(difflib.ndiff(res.splitlines(keepends=True),mitm_res.splitlines(keepends=True)))
+        if len(diff)>0:
+            print("+++mitm")
+            print(diff)
+            print("---mitm")
+        '''
         return res
     except subprocess.CalledProcessError as e:  
         res=""
@@ -429,7 +443,10 @@ def decodeCerts(certchain):
         res=res+"X509 certificate:\n"
         for property in ['issuer','subject','not_valid_before_utc','not_valid_after_utc','serial_number',
             'signature_algorithm_oid']: #,'extensions']:
-            res=res+"\t"+property+":"+str(getattr(cert,property))+"\n"
+            try:
+                res=res+"\t"+property+":"+str(getattr(cert,property))+"\n"
+            except Exception as e:
+                print(e)
         try:
             res=res+"\t"+"public key:"+str(cert.public_key().public_bytes(
                 encoding=serialization.Encoding.PEM,format=serialization.PublicFormat.SubjectPublicKeyInfo))+"\n"
@@ -450,7 +467,8 @@ def decode_signedcerts(payload):
         for cert in certs:
             res = res +decodeCerts(cert)
         return res
-    except:
+    except Exception as e:
+        #print(e)
         return str(response)
 
 def decode_eek(payload):

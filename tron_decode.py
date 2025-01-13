@@ -370,6 +370,6 @@ else:
 f = open(fname, 'rb')
 data = f.read()
 f.close()
-try_decode_pb_array("tron event", data, decode_tron_pb, verbose=True, debug=False)
+res=try_decode_pb_array("tron event", data, decode_tron_pb, verbose=True, debug=False)
 #print(decode_pb(data))
-
+print(res)
