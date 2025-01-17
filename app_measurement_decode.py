@@ -46,17 +46,21 @@ try:
             firebase = app_measurement_pb2.POST_body()
             firebase.ParseFromString(firebase_bytes)
             for b in makeIter(firebase.body):
+                #print(b.event)
                 for e in makeIter(b.event):
-                    #print(e)
                     if e.event_code == "_vs":
-                        #print("+++FIREBASE_ANALYTICS_", e.event_timestamp, b.package_name, b.firebase_instance_id)
+                        print("+++FIREBASE_ANALYTICS screen_view", e.event_timestamp, b.package_name, b.firebase_instance_id)
                         for ei in e.event_info:
                             if ei.setting_code == "_sc":
-                                if b.always_null:
-                                    cookie=str(b.always_null)
+                                if b.cookie:
+                                    cookie=str(b.cookie)
                                 else:
                                     cookie="<empty>"
-                                print("+++FIREBASE_ANALYTICS", e.event_timestamp, b.package_name, b.firebase_instance_id, ei.data_str, cookie)
+                                print("+++FIREBASE_ANALYTICS screen_view details", e.event_timestamp, b.package_name, b.firebase_instance_id, ei.data_str, cookie)
+                    elif e.event_code == "_f":
+                        print("+++FIREBASE_ANALYTICS first_open", e.event_timestamp, b.package_name, b.firebase_instance_id)
+                    elif e.event_code == "_ab":
+                        print("+++FIREBASE_ANALYTICS app_background", e.event_timestamp, b.package_name, b.firebase_instance_id)
         except Exception as e:
             print("grep failed:")
             print(repr(e))

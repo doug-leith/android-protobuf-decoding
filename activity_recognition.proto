@@ -77,10 +77,22 @@ message Activity {
 		STILL=3;
 		UNKNOWN=4;
 		TILTING=5;
+    EXITING_VEHICLE=6;
 		WALKING=7;
 		RUNNING=8;
+    OFF_BODY=9;
+    TRUSTED_GAIT=10;
+    FLOOR_CHANGE=11;
+    ON_STAIRS=12;
+    ON_ESCALATOR=13;
+    IN_ELEVATOR=14;
+    SLEEPING=15;
 		IN_ROAD_VEHICLE=16;
 		IN_RAIL_VEHICLE=17;
+    IN_TWO_WHEELER_VEHICLE=18;
+    IN_FOUR_WHEELER_VEHICLE=19;
+    IN_CAR=20;
+    IN_BUS=21;
 	}
 	optional float confidence=2;
 	optional ActivityEnum activity=3;
@@ -145,7 +157,7 @@ message ActivityTransitionEvent {
 //\u000fဉ\u000e n
 //\u0010ဉ\u000f\u0011ဉ\u0010\u0012ဉ\u0011\u0015ဉ\u0014\u0016ဉ\u0015\u0017ဉ\u0016\u0018ဉ\u0017\u0019ဉ\u0018\u001aဉ\u0019\u001bဉ\u001a", new Object[]{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x"});
 
-message ActivityRecognitionEvent{
+message ActivityRecognitionEvent{ // cjap
   repeated ActivityIntervalSetting activityIntervalSetting=1;
 	repeated ActivityDetectedList activityDetectedList=2;
   repeated ActivityTransitionEvent activityTransitionEvent=4;
