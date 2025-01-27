@@ -1,6 +1,6 @@
 from google.protobuf.internal.decoder import _DecodeVarint32
 from google.protobuf import text_format
-from google.protobuf.unknown_fields import UnknownFieldSet
+from google.protobuf.unknown_fields import UnknownFieldSet # only present in recent versions of google module
 import subprocess
 import textwrap
 import sys
@@ -32,7 +32,6 @@ sys.path.append(mypath)
 
 #print(sys.version)
 #print(text_format.__file__)
-
 
 def printBinaryString(string):
     for c in string:
@@ -85,6 +84,9 @@ def stringContains(string, snippets):
 def printUsingMimeType(payload,mimeType,tag="POST Body"):
     #print("mimetype:",mimeType)
     if len(payload)==0 or payload==None:
+        return
+    if mimeType is None:
+        print(payload)
         return
     if mimeType in ['application/x-protobuf', 'application/x-protobuffer', 'application/x-brotli', 
                     'application/octet-stream','application/x-gzip','application/protobuf',
@@ -205,11 +207,12 @@ def printRequest(url, request):
     'app-measurement.com/a': decode_firebase_analytics,
     'android.clients.google.com/checkin': decode_checkin,
     'android.googleapis.com/checkin': decode_checkin,
-    '/log/batch': decode_log_batch,
+    'play.googleapis.com/log/batch': decode_log_batch,
     'experimentsandconfigs/v1/getExperimentsAndConfigs': decodeHeterodyneRequest,
     'android.googleapis.com/auth/devicekey': decode_deviceKeyRequest,
     'play.googleapis.com/play/log':decode_playstore,
     'firebaselogging-pa.googleapis.com/v1/firelog/legacy/batchlog':decode_firebase_logbatch,
+    'firebaselogging.googleapis.com/v0cc/log/batch':decode_firebase_logbatch,
     'remoteprovisioning.googleapis.com/v1/:fetchEekChain' : decode_cbor,
     'remoteprovisioning.googleapis.com/v1:fetchEekChain' : decode_cbor,
     'remoteprovisioning.googleapis.com/v1/:signCertificates' : decode_cbor,
@@ -255,7 +258,7 @@ def printResponse(url, response, verboseResponse=False):
     'android.googleapis.com/checkin': decode_checkin_response,
     'play-fe.googleapis.com/fdfe': decode_playstore_response,
     #'android.clients.google.com/fdfe': decode_playstore_response,
-    '/log/batch':decode_pb,
+    'play.googleapis.com/log/batch':decode_pb,
     'remoteprovisioning.googleapis.com/v1/:fetchEekChain': decode_eek,
     'remoteprovisioning.googleapis.com/v1/:signCertificates' : decode_signedcerts,
     'remoteprovisioning.googleapis.com/v1:signCertificates' : decode_signedcerts,
@@ -564,11 +567,11 @@ def decode_firebase_logbatch_event(bytes, verbose=False, grep=True, debug=False)
                 firebase = firebase_logbatch_pb2.FirelogEvent()
                 firebase.ParseFromString(bytes)
                 if fieldIsSet(firebase.traceMetric) and firebase.traceMetric.name:
-                    decoded =decoded +'+++FIREBASE_BATCH %s %s %s %s',(firebase.traceMetric.clientStartTimeis,firebase.applicationInfo.androidAppInfo.packageName, firebase.applicationInfo.appInstanceId, firebase.traceMetric.name)
+                    decoded =decoded +'+++FIREBASE_BATCH '+str(firebase.traceMetric.clientStartTimeis)+" "+str(firebase.applicationInfo.androidAppInfo.packageName)+" "+str(firebase.applicationInfo.appInstanceId)+" "+str(firebase.traceMetric.name)+"\n"
             except Exception as e:
                 print("firebase grep failed:\n")
                 print(repr(e))
-        return(decoded)
+        return decoded
     except subprocess.CalledProcessError as e:
         if verbose:
             print(e.output)
@@ -591,24 +594,29 @@ def decode_firebase_logbatch(postData, verbose=True):
                     try:
                         if tag == "FIREPERF":
                             res=res+tag+" log event "+str(count)+":\n"
-                            res=res+decode_firebase_logbatch_event(buf)+"\n"
+                            decoded=decode_firebase_logbatch_event(buf,verbose=verbose)
+                            if decoded == "Failed":
+                                # try raw decode
+                                decoded=try_decode_pb_array(tag+" log event "+str(count), buf, decode_pb)
+                                res=res+decoded
+                            else:
+                                res=res+str(decoded)
                         else:
                             res=res+try_decode_pb_array(tag+" log event "+str(count), buf, decode_pb)+"\n"
                     except Exception as ee:
                         res=res+"Firelog decoding failed:\n"
-                        res=res+repr(ee)
-                        res=res+try_decode_pb_array(tag+" log event "+str(count), buf, decode_pb)+"\n"
+                        res=res+repr(ee)+"\nTrying raw decode:\n"
+                        res=res+try_decode_pb_array(tag+" log event "+str(count), buf, decode_pb)
                 res=res+"\n"
             count = count+1
+        return res
     except Exception as e:
-        if verbose:
-            print("JSON decoding failed:")
-            print(repr(e))
+        print("JSON decoding failed:")
+        print(repr(e))
 
 def decode_log_batch(bytes, verbose=True, debug=False):
     # partially decodes POST payload from https://play.googleapis.com/log/batch endpoint
     try:
-        #f = open('/tmp/batch_bytes', 'wb')
         if debug:
             fname='/tmp/batch_bytes'
             f = open(fname, 'wb')
@@ -631,7 +639,6 @@ def decode_log_batch(bytes, verbose=True, debug=False):
 def decode_playstore(bytes, verbose=True, debug=False):
     # partially decodes POST payload from https://play.googleapis.com/play/log?format=raw&proto_v2=true endpoint
     try:
-        #f = open('/tmp/playstore_bytes', 'wb')
         if debug:
             fname='/tmp/playstore_bytes'
             f = open(fname, 'wb')
@@ -803,10 +810,8 @@ def decode_locm(data, verbose=True, debug=False):
         return "Failed"
 
 kollektomat_count=0
-def decode_kollektomatproto(bytes, verbose=False, debug=False, saveData=True):
-    #print("decode_kollektomat")
+def decode_kollektomatproto(bytes, verbose=False, debug=False, Grep=True, saveData=True):
     try:
-        #f = open('/tmp/locm_bytes', 'wb')
         if debug:
             global kollektomat_count
             fname='/tmp/kollektomat_bytes_'+str(kollektomat_count)
@@ -829,9 +834,14 @@ def decode_kollektomatproto(bytes, verbose=False, debug=False, saveData=True):
                     continue
                 if not request.locRequest.signals:
                     continue
+                if ctx.options.expt_name:
+                    # allows to run on multiple files without creating clashes
+                    expt_name = ctx.options.expt_name
+                else:
+                    expt_name=""
                 for signals in request.locRequest.signals:
                     if fieldIsSet(signals.gpsInfo) and signals.gpsInfo.latLong:
-                        fname='/tmp/kollektomat_gpslocs'
+                        fname='/tmp/kollektomat_gpslocs'+expt_name
                         f = open(fname, 'a')
                         print("lat: ",float(signals.gpsInfo.latLong.lat)/1.0e7, " long: ", float(signals.gpsInfo.latLong.long)/1.0e7, "gpsTime: ", signals.gpsInfo.gpsTime, ' ', end='', file=f)
                         if fieldIsSet(signals.gpsInfo.speed):
@@ -839,14 +849,36 @@ def decode_kollektomatproto(bytes, verbose=False, debug=False, saveData=True):
                         print(file=f)
                         f.close()
                     elif fieldIsSet(signals.wifiSignals) and signals.wifiSignals.wifiSignal:
-                        fname='/tmp/kollektomat_wifilocs'
+                        fname='/tmp/kollektomat_wifilocs'+expt_name
                         f = open(fname, 'a')
                         print(int(signals.wifiSignals.timestamp),' ', end='', file=f)
                         for wifi in signals.wifiSignals.wifiSignal:
                             print(int(wifi.macAddress),int(wifi.rssi),' ', end='', file=f)
                         print(file=f)
                         f.close()
-        return(decoded)
+        grep=""
+        if Grep:
+            res = decoded.split('\n')
+            grep="+++KOLLEKTOMAT ";
+            try:
+                for s in res:
+                    if re.search('cellSignals', s):
+                        grep=grep+"cellSignals "
+                    if re.search('cellId', s):
+                        grep=grep+s.replace(" ", "")+" "
+                    if re.search('wifiSignals', s):
+                        grep=grep+"wifiSignals "
+                    if re.search('macAddress', s):
+                        grep=grep+s.replace(" ", "")+" "
+                    if re.search('detectedActivities', s):
+                        grep=grep+"detectedActivities "
+                    if re.search('activity', s):
+                        grep=grep+s.replace(" ", "")+" "
+                grep=grep+"\n"
+            except Exception as e:
+                print("AKOLLEKTOMAT grep failed:")
+                print(e)
+        return grep+decoded
     except subprocess.CalledProcessError as e:
         if verbose:
             print(e.output)
@@ -914,7 +946,6 @@ def decodeAuthBearerHeader(header, debug=False):
     return("Decoded Auth Bearer header:\n"+decoded)
 
 def decodeHeterodyneResponse(buf, verbose=True, debug=False):
-    #f = open('/tmp/heterodyneresponse_bytes', 'wb')
     if debug:
         fname='/tmp/heterodyneresponse_bytes'
         f = open(fname, 'wb')
@@ -935,7 +966,6 @@ def decodeHeterodyneResponse(buf, verbose=True, debug=False):
 
 
 def decodeHeterodyneRequest(buf, verbose=True, debug=False):
-    #f = open('/tmp/heterodynereq_bytes', 'wb')
     if debug:
         fname='/tmp/heterodynereq_bytes'
         f = open(fname, 'wb')
@@ -981,19 +1011,21 @@ def decode_wbxml(buf, verbose=True, debug=False):
     # decode binary XML format https://en.wikipedia.org/wiki/WBXML
     # using libwbxml https://github.com/libwbxml/libwbxml
     unzipped = buf  # zlib.decompress(buf,32 + zlib.MAX_WBITS)
-    #f = open('/tmp/wbxml', 'wb')
     if debug:
         fname='/tmp/wbxml'
         f = open(fname, 'wb')
+        fname_xml = '/tmp/xml'
     else:
         f = tempfile.NamedTemporaryFile(delete=False)
         fname=f.name
+        f_xml = tempfile.NamedTemporaryFile(delete=False)
+        fname_xml=f_xml.name
     f.write(unzipped)
     f.close()
     try:
-        subprocess.check_output("wbxml2xml -o /tmp/xml "+fname, 
+        subprocess.check_output("wbxml2xml -o "+fname_xml+" "+fname, 
                                 shell=True, stderr=subprocess.STDOUT, text=True)
-        f = open('/tmp/xml', 'r')
+        f = open(fname_xml, 'r')
         xml = f.read()
         f.close()
         return xml
@@ -1004,15 +1036,20 @@ def decode_wbxml(buf, verbose=True, debug=False):
         return "Failed"
 
 
-def decode_bond(buf):
+def decode_bond(buf, debug=False):
     # this uses OneDrive telemetry schema from Samsung handset, not portable
     # and needs decoder executable "onedrive" to be in directory
     unzipped = buf  # zlib.decompress(buf,32 + zlib.MAX_WBITS)
-    f = open('/tmp/bond', 'wb')
+    if debug:
+        fname = '/tmp/bond'
+        f = open(fname, 'wb')
+    else:
+        f = tempfile.NamedTemporaryFile(delete=False)
+        fname=f.name
     f.write(unzipped)
     f.close()
     try:
-        return subprocess.check_output("./onedrive", shell=True, stderr=subprocess.STDOUT, text=True)
+        return subprocess.check_output("./onedrive -i "+fname, shell=True, stderr=subprocess.STDOUT, text=True)
     except Exception as e:
         print(e)
         return "Failed"
@@ -1143,6 +1180,12 @@ class PrintTrace:
             typespec=int,
             default=-1,
             help="Number of connections to process")
+        # add command line option to set an experiment name"
+        loader.add_option(
+            name="expt_name",
+            typespec=str,
+            default="",
+            help="experiment name to use")
 
     def request(self, flow:http.HTTPFlow):
         if ctx.options.num_connections and ctx.options.num_connections>0:

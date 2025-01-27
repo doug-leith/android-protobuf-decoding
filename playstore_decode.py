@@ -9,13 +9,12 @@ import traceback
 
 mypath = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(mypath)
-from decoding_helpers import decode_pb, decode_pb_array, protoUnknownFieldsToString, protoToString
+from decoding_helpers import decode_pb, decode_pb_array, protoUnknownFieldsToString, protoToString, makeIter, fieldIsSet
 
 
 def decode_playstoreevent(buf, verbose=False,debug=False):
 
     try:
-        #f = open('/tmp/logevent_bytes', 'wb')
         if debug:
             fname='/tmp/logevent_bytes'
             f = open(fname, 'wb')
@@ -29,8 +28,8 @@ def decode_playstoreevent(buf, verbose=False,debug=False):
         logevent = playstore_pb2.LogEvent()
         logevent.ParseFromString(buf)
         #print(logevent)
-        if logevent.source_extension is not None:
-            #f = open('/tmp/ext_bytes', 'wb')
+        grep=""
+        if fieldIsSet(logevent.source_extension):
             if debug:
                 fname='/tmp/ext_bytes'
                 f = open(fname, 'wb')
@@ -39,25 +38,54 @@ def decode_playstoreevent(buf, verbose=False,debug=False):
                 fname=f.name
             f.write(logevent.source_extension)
             f.close()
-            if (logSourceName is not None and logSourceName in ["MARKET","WESTINGHOUSE"]):
+            if (fieldIsSet(logSourceName) and logSourceName in ["MARKET","WESTINGHOUSE"]):
                 try:
                     if (logSourceName == "MARKET"):  # "MARKET", decode as PlayStoreLogEvent
                         ext = subprocess.check_output("protoc --decode=\"PlayStoreLogEvent\" -I='"+mypath+"' playstore.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
                         try:
                             playstorelogevent = playstore_pb2.PlayStoreLogEvent()
                             playstorelogevent.ParseFromString(logevent.source_extension)
-                            if playstorelogevent.serverLogsCookie is not None:
+                            #grep=grep+"+++TYPE OF EVENT(*)="+str(logevent.type_of_event)+"\n"
+                            if fieldIsSet(playstorelogevent.serverLogsCookie):
                                 #print("serverLogsCookie (decoded):")
                                 #print(playstorelogevent.serverLogsCookie)
                                 ext=ext+"serverLogsCookie (decoded) {\n"+textwrap.indent(decode_pb(playstorelogevent.serverLogsCookie),'   ')+"}\n"
                                 #print(base64.b64encode(playstorelogevent.serverLogsCookie))
+                            if fieldIsSet(playstorelogevent.background_action) and (str(logevent.type_of_event)=="4"):
+                                if fieldIsSet(playstorelogevent.background_action.backgroundEvent):
+                                    param=""
+                                    if fieldIsSet(playstorelogevent.background_action.search_suggestion_report) and playstorelogevent.background_action.search_suggestion_report.query:
+                                        param = str(playstorelogevent.background_action.search_suggestion_report.query)
+                                    if fieldIsSet(playstorelogevent.background_action.document):
+                                        param=str(playstorelogevent.background_action.document)
+                                    bevent=playstore_pb2.PlayStoreBackgroundActionEvent.Type
+                                    grep=grep+"+++PLAYSTORE backgroundEvent "+bevent.Name(playstorelogevent.background_action.backgroundEvent)+" "+param+"\n"                    
+                            if fieldIsSet(playstorelogevent.impression) and (str(logevent.type_of_event)=="1"):
+                                type=""
+                                if fieldIsSet(playstorelogevent.impression.tree):
+                                    if fieldIsSet(playstorelogevent.impression.tree.type):
+                                        uiType = playstore_pb2.PlayStoreUiElement.Type
+                                        type=uiType.Name(playstorelogevent.impression.tree.type)
+                                grep=grep+"+++PLAYSTORE impression "+type+"\n"
+                            if fieldIsSet(playstorelogevent.click) and (str(logevent.type_of_event)=="3"): 
+                                type=""
+                                for p in makeIter(playstorelogevent.click.element_path):
+                                    if p.type:
+                                        uiType = playstore_pb2.PlayStoreUiElement.Type
+                                        type=type+uiType.Name(p.type)+" "
+                                grep=grep+"+++PLAYSTORE click "+type+"\n"
+                            if fieldIsSet(playstorelogevent.search):
+                                if fieldIsSet(playstorelogevent.search.query):
+                                    grep=grep+"+++PLAYSTORE search "+playstorelogevent.search.query+"\n"
                         except Exception as e:
                             print(e)
-                    elif (logSourceName == "WESTINGHOUSE"):  
-                        ext = subprocess.check_output("protoc --decode=\"WestinghouseEvent\" -I='"+mypath+"' playstore.proto  </tmp/ext_bytes", shell=True, stderr=subprocess.STDOUT, text=True)
+                    elif (logSourceName == "WESTINGHOUSE"): 
+                        try: 
+                            ext = subprocess.check_output("protoc --decode=\"WestinghouseEvent\" -I='"+mypath+"' playstore.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+                        except Exception as e:
+                            print(e)
                 except Exception as e:
-                    if debug:
-                        print(e)
+                    print(e)
                     ext = decode_pb(logevent.source_extension)
             else:
                 ext = decode_pb(logevent.source_extension)
@@ -73,8 +101,7 @@ def decode_playstoreevent(buf, verbose=False,debug=False):
             type_of_event = str(logevent.type_of_event)
             if len(logevent.type_of_event)>0:
                 if int(logevent.type_of_event) in typeOfEvent.keys():
-                    type_of_event = typeOfEvent[int(logevent.type_of_event)]
-                
+                    type_of_event = typeOfEvent[int(logevent.type_of_event)]                
             decoded = decoded+"\ntype_of_event: "+type_of_event
             decoded = decoded+"\ntimezone_offset_seconds: "+str(logevent.timezone_offset_seconds)
             decoded = decoded+"\nClient Info {\n"+protoToString("client_ve",logevent.client_ve)
@@ -88,7 +115,7 @@ def decode_playstoreevent(buf, verbose=False,debug=False):
             decoded = decoded+"\nSOURCE_EXTENSION (decoded):\n"+textwrap.indent(ext,'   ')
         else:
             decoded = decoded_logevent
-        return(decoded)
+        return(grep+decoded)
     except subprocess.CalledProcessError as e:
         if verbose:
             print(e.output)

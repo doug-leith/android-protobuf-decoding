@@ -61,6 +61,8 @@ try:
                         print("+++FIREBASE_ANALYTICS first_open", e.event_timestamp, b.package_name, b.firebase_instance_id)
                     elif e.event_code == "_ab":
                         print("+++FIREBASE_ANALYTICS app_background", e.event_timestamp, b.package_name, b.firebase_instance_id)
+                    elif e.event_code == "_e":
+                        print("+++FIREBASE_ANALYTICS user_engagement", e.event_timestamp, b.package_name, b.firebase_instance_id)
         except Exception as e:
             print("grep failed:")
             print(repr(e))

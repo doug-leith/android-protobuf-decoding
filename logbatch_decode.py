@@ -18,7 +18,7 @@ import gboard_pb3
 import activity_recognition_pb2
 
 
-def decode_messaging_pb(bb, verbose=False, terse=False, debug=False):
+def decode_messaging_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
     if debug:
         fname='/tmp/message_bytes'
         f = open(fname, 'wb')
@@ -28,41 +28,55 @@ def decode_messaging_pb(bb, verbose=False, terse=False, debug=False):
     f.write(bb)
     f.close()
     try:
-        str = subprocess.check_output("cat "+fname+" | protoc --decode=AndroidMessaging_LogEntry -I='"+mypath+"' android_messaging.proto3",shell=True,stderr=subprocess.STDOUT, text=True)
-        if str is not None and terse:
+        decoded = subprocess.check_output("cat "+fname+" | protoc --decode=AndroidMessaging_LogEntry -I='"+mypath+"' android_messaging.proto3",shell=True,stderr=subprocess.STDOUT, text=True)
+        grep=""
+        if decoded is not None and (Grep or terse):
             # just write out minimal event info, handy for getting an overview of a sequence of events
-            str = str.split('\n')
+            res = decoded.split('\n')
             out = ""; ts = False
-            for s in str:
-                m = re.match('timestamp: ([0-9]+)', s)
-                if m and not ts:
-                    out = out+m.group(1)+" "
-                    ts = True
-                elif re.search('eventType', s):
-                    out = out+s
-                #elif re.search('messageProtocol', s):
-                #    out = out+s
-                #elif re.search('conversationType', s):
-                #    out = out+s
-                #elif re.search('conversationIdSHA1', s):
-                #    out = out+s
-                #elif re.search('configStatus', s):
-                #    out = out+s
-                elif re.search('bugleMessageStatus:', s):
-                    out = out+s
-                #elif re.search('sendAttempt', s):
-                #    out = out+s
-                elif re.search('suggestionEventType', s):
-                    out = out+s
-                elif re.search('appLaunch', s):
-                    out = out+s
-                elif re.search('sha256HashMsg', s):
-                    out = out+s
-                elif re.search('sha256HashPrevMsg', s):
-                    out = out+s
-            print(out)
-            return ""
-        return str
+            grep="+++ANDROID_MESSAGING "; 
+            try:
+                for s in res:
+                    m = re.match('timestamp: ([0-9]+)', s)
+                    if m and not ts:
+                        out = out+m.group(1)+" "
+                        ts = True
+                    elif re.search('eventType', s):
+                        out = out+s
+                        grep=grep+s.replace(" ", "")+" "
+                    #elif re.search('messageProtocol', s):
+                    #    out = out+s
+                    #elif re.search('conversationType', s):
+                    #    out = out+s
+                    #elif re.search('conversationIdSHA1', s):
+                    #    out = out+s
+                    #elif re.search('configStatus', s):
+                    #    out = out+s
+                    elif re.search('bugleMessageStatus:', s):
+                        out = out+s
+                        grep=grep+s.replace(" ", "")+" "
+                    #elif re.search('sendAttempt', s):
+                    #    out = out+s
+                    elif re.search('suggestionEventType', s):
+                        out = out+s
+                        grep=grep+s+" "
+                    elif re.search('appLaunch', s):
+                        out = out+s
+                        grep=grep+s.replace(" ", "")+" "
+                    elif re.search('sha256HashMsg', s):
+                        out = out+s
+                        grep=grep+s.replace(" ", "")+" "
+                    elif re.search('sha256HashPrevMsg', s):
+                        out = out+s
+                        grep=grep+s.replace(" ", "")+" "
+                grep=grep+"\n"
+                if terse:
+                    print(out)
+                    return ""
+            except Exception as e:
+                print("ANDROID_MESSAGING grep failed:")
+                print(e)
+        return grep+decoded
     except subprocess.CalledProcessError as e: 
         if verbose:
             print(e.output)
@@ -70,7 +84,7 @@ def decode_messaging_pb(bb, verbose=False, terse=False, debug=False):
         return "Failed"
 
 
-def decode_dialer_pb(bb, verbose=False, terse=False, debug=False):
+def decode_dialer_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
     if debug:
         fname='/tmp/dialer_bytes'
         f = open(fname, 'wb')
@@ -80,26 +94,49 @@ def decode_dialer_pb(bb, verbose=False, terse=False, debug=False):
     f.write(bb)
     f.close()
     try:
-        str = subprocess.check_output("cat "+fname+" | protoc --decode=AndroidDialer_LogEntry -I='"+mypath+"' android_dialer.proto3",shell=True,stderr=subprocess.STDOUT, text=True)
-        if str is not None and terse:
+        decoded = subprocess.check_output("cat "+fname+" | protoc --decode=AndroidDialer_LogEntry -I='"+mypath+"' android_dialer.proto3",shell=True,stderr=subprocess.STDOUT, text=True)
+        grep=""
+        if decoded is not None and (Grep or terse):
             # just write out minimal event info
-            str = str.split('\n')
+            res = decoded.split('\n')
             out = ""; ts = False
-            for s in str:
-                m = re.match('timestamp: ([0-9]+)', s)
-                if m and not ts:
-                    #print(m.groups())
-                    out = out+m.group(1)+" "
-                    ts = True
-                elif re.search('AOSPEventType:', s):
-                    out = out+s
-                elif re.search('queryLength:', s):
-                    out = out+s
-                elif re.search('callDuration:', s):
-                    out = out+s
-            print(out)
-            return ""
-        return str
+            grep="+++ANDROID_DIALER "; 
+            try:
+                for s in res:
+                    m = re.match('timestamp: ([0-9]+)', s)
+                    if m and not ts:
+                        #print(m.groups())
+                        out = out+m.group(1)+" "
+                        ts = True
+                    elif re.search('impressionEvent', s):
+                        out = out+s
+                        grep=grep+"impressionEvent "
+                    elif re.search('AOSPEventType:', s):
+                        out = out+s
+                        #parts=s.split(" ")
+                        grep=grep+s.replace(" ", "")+" "
+                    elif re.search('eventType:', s):
+                        grep=grep+s.replace(" ", "")+" "
+                    elif re.search('searchQuery', s):
+                        out = out+s
+                        grep=grep+"searchQuery "
+                    elif re.search('queryLength:', s):
+                        out = out+s
+                        grep=grep+s.replace(" ", "")+" "
+                    elif re.search('callDetails', s):
+                        out = out+s
+                        grep=grep+"callDetails "
+                    elif re.search('callDuration:', s):
+                        out = out+s
+                        grep=grep+s.replace(" ", "")+" "
+                grep=grep+"\n"
+                if terse:
+                    print(out)
+                    return ""
+            except Exception as e:
+                print("ANDROID_DIALER grep failed:")
+                print(e)
+        return grep+decoded
     except subprocess.CalledProcessError as e:
         if verbose:
             print(e.output)
@@ -107,7 +144,7 @@ def decode_dialer_pb(bb, verbose=False, terse=False, debug=False):
         return "Failed"
 
 
-def decode_gboard_pb(bb, verbose=False, terse=False, grep=True, debug=False):
+def decode_gboard_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
     if debug:
         fname='/tmp/gboard_bytes'
         f = open(fname, 'wb')
@@ -117,12 +154,13 @@ def decode_gboard_pb(bb, verbose=False, terse=False, grep=True, debug=False):
     f.write(bb)
     f.close()
     try:
-        str = subprocess.check_output("cat "+fname+" | protoc --decode=LatinIME_LogEntry -I='"+mypath+"' gboard.proto3",shell=True,stderr=subprocess.STDOUT, text=True)
-        if str is not None and terse:
+        decoded = subprocess.check_output("cat "+fname+" | protoc --decode=LatinIME_LogEntry -I='"+mypath+"' gboard.proto3",shell=True,stderr=subprocess.STDOUT, text=True)
+        grep=""
+        if decoded is not None and terse:
             # just write out minimal event info
-            str = str.split('\n')
+            res = decoded.split('\n')
             out = ""; ts = False
-            for s in str:
+            for s in res:
                 m = re.match('timestamp: ([0-9]+)', s)
                 if m and not ts:
                     out = out+m.group(1)+" "
@@ -131,17 +169,31 @@ def decode_gboard_pb(bb, verbose=False, terse=False, grep=True, debug=False):
                     out = out+s
             print(out)
             return ""
-        if grep:
+        if Grep:
             try: 
                 gboard = gboard_pb3.LatinIME_LogEntry()
                 gboard.ParseFromString(bb)
-                if gboard.input_info.keyboard_usage_info:
-                    packageName = gboard.input_info.keyboard_usage_info.applicationName
-                    str=str+"+++LATIN_IME %s %s %s %s"%(gboard.currentTimeMillis,gboard.elapsedRealtime,gboard.keyboardEvent,packageName)
+                packageName = "-NoPackageName"
+                wordInfo="-NoWordInfo"
+                if fieldIsSet(gboard.input_info):
+                    if fieldIsSet(gboard.input_info.keyboard_usage_info):
+                        if fieldIsSet(gboard.input_info.keyboard_usage_info.applicationName):
+                            packageName = gboard.input_info.keyboard_usage_info.applicationName
+                    if fieldIsSet(gboard.input_info.word_input_info):
+                        if fieldIsSet(gboard.input_info.word_input_info.committedTextLength):
+                            wordInfo="len:"+str(gboard.input_info.word_input_info.committedTextLength)
+                        if fieldIsSet(gboard.input_info.word_input_info.timeToEnterWord):
+                            wordInfo=wordInfo+"+time:"+str(gboard.input_info.word_input_info.timeToEnterWord)                   
+                try:
+                    kevent=gboard_pb3.KeyboardEvent
+                    event=kevent.Name(gboard.keyboardEvent)
+                except:
+                    event=str(gboard.keyboardEvent)
+                grep="+++LATIN_IME %s %s %s %s %s\n"%(gboard.currentTimeMillis,gboard.elapsedRealtime,event,packageName,wordInfo)
             except Exception as e:
                 print("LATIN_IME grep failed:")
                 print(e)
-        return str
+        return grep+decoded
     except subprocess.CalledProcessError as e: 
         if verbose:
             print(e.output)
@@ -461,6 +513,67 @@ def decode_netstats(bytes, verbose=False, terse=False, debug=False):
             print(e)
         return "Failed"
 
+def decode_scoobyevents(bytes, verbose=False, terse=False, Grep=True, debug=False):
+    try:
+        if debug:
+            fname='/tmp/scoobyevents_bytes'
+            f = open(fname, 'wb')
+        else:
+            f = tempfile.NamedTemporaryFile(delete=False)
+            fname=f.name
+        f.write(bytes)
+        f.close()
+        decoded = subprocess.check_output("protoc --decode=\"ScoobyEventsRequest\" -I='"+mypath+"' scoobyevents.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        #print(decoded)
+        grep=""
+        if (decoded is not None) and Grep:
+            grep="+++SCOOBY_EVENTS ";
+            res = decoded.split('\n')
+            try:
+                for s in res:
+                    if re.search('phoneNumber', s):
+                        grep=grep+s.replace(" ", "")
+                grep=grep+"\n"
+            except Exception as e:
+                print("SCOOBY_EVENTS grep failed:")
+                print(e)
+                return "Failed"
+        return grep+decoded
+    except subprocess.CalledProcessError as e:
+        #print(e.output)
+        #print(e)
+        return "Failed"
+
+def decode_scoobymessage(bytes, verbose=False, terse=False, Grep=True, debug=False):
+    try:
+        if debug:
+            fname='/tmp/scoobymessageevents_bytes'
+            f = open(fname, 'wb')
+        else:
+            f = tempfile.NamedTemporaryFile(delete=False)
+            fname=f.name
+        f.write(bytes)
+        f.close()
+        decoded = subprocess.check_output("protoc --decode=\"ScoobyEventsRequest\" -I='"+mypath+"' scoobymessageevents.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        #print(decoded)
+        grep=""
+        if (decoded is not None) and Grep:
+            grep="+++SCOOBY_MESSAGE_LOG ";
+            res = decoded.split('\n')
+            try:
+                for s in res:
+                    if re.search('phoneNumber', s):
+                        grep=grep+s.replace(" ", "")
+                grep=grep+"\n"
+            except Exception as e:
+                print("SCOOBY_MESSAGE_LOG grep failed:")
+                print(e)
+                return "Failed"
+        return grep+decoded
+    except subprocess.CalledProcessError as e:
+        #print(e.output)
+        #print(e)
+        return "Failed"
 
 if len(sys.argv)>1:
     fname=sys.argv[1]
@@ -526,7 +639,11 @@ try:
         elif inner.logSourceName == "ACTIVITY_RECOGNITION":
             print(try_decode_pb_array("logEntry", inner.logEntry, decode_AR, verbose=True, debug=False))
         elif inner.logSourceName == "NETSTATS":
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_netstats, verbose=True, debug=True))
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_netstats, verbose=True, debug=False))
+        elif inner.logSourceName == "SCOOBY_EVENTS":
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_scoobyevents, verbose=True, debug=False))
+        elif inner.logSourceName == "SCOOBY_MESSAGE_LOG":
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_scoobymessage, verbose=True, debug=False))
         else:
             print(try_decode_pb_array("logEntry", inner.logEntry, decode_pb, verbose=True, debug=False))
         print("}")
