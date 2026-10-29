@@ -14,6 +14,20 @@ def varint(n):
         else:
             return out + bytes([b])
 
+def odd_varint(rng, n):
+    # usually the plain encoding; sometimes padded with redundant bytes (up to 11), or with bits
+    # set above 32, which protoc treats differently at the top level and inside a nested field
+    r = rng.random()
+    if r < 0.85:
+        return varint(n)
+    if r < 0.93:
+        n += rng.choice([1, 2, 255, 2**31]) << 32
+    e = varint(n)
+    pad = rng.randint(0, 11-len(e)) if len(e) < 11 else 0
+    if pad:
+        e = bytes(c | 0x80 for c in e) + b"\x80"*(pad-1) + b"\x00"
+    return e
+
 def random_message(rng, depth):
     # nested messages, groups, overlong varints and edge values, to exercise the parse and print rules
     out = b""
@@ -21,19 +35,19 @@ def random_message(rng, depth):
         field = rng.choice([1, 2, 15, 16, 2047, 2**29-1, rng.randint(1, 2**29-1)])
         kind = rng.choice("vvfdllmmg" if depth > 0 else "vvfdll")
         if kind == "v":
-            out += varint(field << 3) + varint(rng.choice([0, 1, 127, 128, 2**31, 2**63, 2**64-1, rng.getrandbits(64)]))
+            out += odd_varint(rng, field << 3) + varint(rng.choice([0, 1, 127, 128, 2**31, 2**63, 2**64-1, rng.getrandbits(64)]))
         elif kind == "f":
-            out += varint(field << 3 | 5) + rng.randbytes(4)
+            out += odd_varint(rng, field << 3 | 5) + rng.randbytes(4)
         elif kind == "d":
-            out += varint(field << 3 | 1) + rng.randbytes(8)
+            out += odd_varint(rng, field << 3 | 1) + rng.randbytes(8)
         elif kind == "l":
             body = rng.choice([b"", rng.randbytes(rng.randint(1, 20)), "héllo 'x' \"y\" \\ ?".encode()])
-            out += varint(field << 3 | 2) + varint(len(body)) + body
+            out += odd_varint(rng, field << 3 | 2) + odd_varint(rng, len(body)) + body
         elif kind == "m":
             body = random_message(rng, depth-1)
-            out += varint(field << 3 | 2) + varint(len(body)) + body
+            out += odd_varint(rng, field << 3 | 2) + odd_varint(rng, len(body)) + body
         else:
-            out += varint(field << 3 | 3) + random_message(rng, depth-1) + varint(field << 3 | 4)
+            out += odd_varint(rng, field << 3 | 3) + random_message(rng, depth-1) + odd_varint(rng, field << 3 | 4)
     return out
 
 def nested(rng):

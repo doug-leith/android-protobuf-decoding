@@ -7,8 +7,10 @@
 #   budget (10 at the top level, one less per printed level) is positive, and it parses with
 #   groups nested no deeper than that budget; otherwise it is printed as a C-escaped string
 # - groups are always printed as nested messages, and also use up one level of budget
-# - tags and lengths are varints of at most 5 bytes (bits of a tag past 32 are dropped);
-#   values are varints of at most 10 bytes (bits past 64 are dropped)
+# - at the top level, tags and lengths are varints of at most 5 bytes (bits of a tag past 32 are
+#   dropped); inside a length-delimited field they may be 10 bytes, with bits past 32 dropped from
+#   both, and a length of 2^31 or more fails
+# - values are varints of at most 10 bytes (bits past 64 are dropped)
 
 class DecodeRawError(Exception):
     pass
@@ -25,11 +27,11 @@ def _varint(buf, pos, maxlen):
             return result & 0xffffffffffffffff, pos
     raise DecodeRawError("varint too long")
 
-def _parse(buf, pos, depth, group=None):
+def _parse(buf, pos, depth, group=None, nested=False):
     # returns ([(field number, wire type, value)], position after the message or group)
     fields = []
     while pos < len(buf):
-        tag, pos = _varint(buf, pos, 5)
+        tag, pos = _varint(buf, pos, 10 if nested else 5)
         tag &= 0xffffffff
         field, wiretype = tag >> 3, tag & 7
         if field == 0:
@@ -43,7 +45,13 @@ def _parse(buf, pos, depth, group=None):
             value = int.from_bytes(buf[pos:pos+n], "little")
             pos += n
         elif wiretype == 2:
-            n, pos = _varint(buf, pos, 5)
+            if nested:
+                n, pos = _varint(buf, pos, 10)
+                n &= 0xffffffff
+                if n >= 0x80000000:
+                    raise DecodeRawError("negative length")
+            else:
+                n, pos = _varint(buf, pos, 5)
             if n > len(buf)-pos:
                 raise DecodeRawError("length past end of input")
             value = buf[pos:pos+n]
@@ -51,7 +59,7 @@ def _parse(buf, pos, depth, group=None):
         elif wiretype == 3:
             if depth <= 0:
                 raise DecodeRawError("groups nested too deep")
-            value, pos = _parse(buf, pos, depth-1, field)
+            value, pos = _parse(buf, pos, depth-1, field, nested)
         elif wiretype == 4:
             if group != field:
                 raise DecodeRawError("unmatched end group")
@@ -82,7 +90,7 @@ def _print(fields, budget, indent, out):
                 sub = None
                 if value and budget > 0:
                     try:
-                        sub = _parse(value, 0, budget)[0]
+                        sub = _parse(value, 0, budget, nested=True)[0]
                     except DecodeRawError:
                         pass
                 if sub is None:
