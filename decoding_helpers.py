@@ -18,6 +18,7 @@ import h2
 import warnings
 import firebase_logbatch_pb2
 import locm_pb2
+from decode_raw import decode_raw, DecodeRawError  # in-process `protoc --decode_raw`
 import datetime
 from mitmproxy.utils import strutils
 from mitmproxy import ctx
@@ -307,15 +308,12 @@ def decode_pb(bb, verbose=True, debug=False):
     if debug:
         fname='/tmp/bytes'
         f = open(fname, 'wb')
-    else:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        fname=f.name
-    f.write(bb)
-    f.close()
-    try:       
-        res = subprocess.check_output("cat "+fname+" | protoc --decode_raw", 
-                                       shell=True, stderr=subprocess.STDOUT, text=True)
-        
+        f.write(bb)
+        f.close()
+    try:
+        # same output as `protoc --decode_raw`, without a protoc process per message (see check_decode_raw.py)
+        res = decode_raw(bb)
+
         '''
         # test of alternative raw decoding approach, but it makes different choices/guesses from protoc
         mitm_res = format_pbuf(bb)        
@@ -326,10 +324,10 @@ def decode_pb(bb, verbose=True, debug=False):
             print("---mitm")
         '''
         return res
-    except subprocess.CalledProcessError as e:  
-        res=""        
+    except DecodeRawError as e:
+        res=""
         if verbose:
-            res="***ERROR: "+str(e.output)+"\n"
+            res="***ERROR: Failed to parse input.\n"
             res=res+str(e)+"\n"
             return "Failed to parse input\n"+res
         return "Failed"
