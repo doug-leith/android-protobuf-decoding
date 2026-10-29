@@ -666,7 +666,7 @@ def decode(data):
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_pb, verbose=True, debug=False))
             print("}")
     except Exception as e:
-        pprint("***ERROR: ",e)
+        print("***ERROR: ",e)
 
 if __name__ == "__main__":
     if len(sys.argv)>1:
