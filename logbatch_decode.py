@@ -15,6 +15,7 @@ mypath = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(mypath)
 from decoding_helpers import decode_pb, decode_wbxml, decode_log_batch, decode_firebase_analytics, try_decode_pb_array, protoUnknownFieldsToString, protoToString, fieldIsSet, makeIter
 import gboard_named_pb  # LATIN_IME, from gboard_named.proto (old manual gboard.proto3 kept as gboard.proto3.backup)
+import icing_named_pb  # ICING, from icing_named.proto (generated from the GMS 21.48.15 APK)
 import activity_recognition_pb2
 
 
@@ -198,6 +199,39 @@ def decode_gboard_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
         if verbose:
             print(e.output)
             print(e)
+        return "Failed"
+
+
+def decode_icing_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
+    # ICING log source: GMS icing (on-device search index) and the libraries that
+    # log under it (MobileDataDownload, MDH channel sync, ProtoDataStore, MobStore)
+    if debug:
+        fname='/tmp/icing_bytes'
+        f = open(fname, 'wb')
+    else:
+        f = tempfile.NamedTemporaryFile(delete=False)
+        fname=f.name
+    f.write(bb)
+    f.close()
+    try:
+        decoded = subprocess.check_output("cat "+fname+" | protoc --decode=Icing_LogEntry -I='"+mypath+"' icing_named.proto",shell=True,stderr=subprocess.STDOUT, text=True)
+        grep=""
+        if Grep:
+            try:
+                ev = icing_named_pb.Icing_LogEntry()
+                ev.ParseFromString(bb)
+                # which kinds of record this event carries (one or more IcingLogEvent fields)
+                kinds = [fd.name for fd, _v in ev.icing_log_event.ListFields() if fd.name != "sample_interval"]
+                pkg = ""
+                if ev.icing_log_event.HasField("package_name_and_icing_version_proto"):
+                    pkg = " ".join(str(v) for _fd, v in ev.icing_log_event.package_name_and_icing_version_proto.ListFields())
+                grep="+++ICING %s %s %s %s\n"%(ev.currentTimeMillis, ev.eventId, ",".join(kinds) or "-", pkg)
+            except Exception as e:
+                print("***ERROR ICING grep: ",e)
+        return grep+decoded
+    except subprocess.CalledProcessError as e:
+        if verbose:
+            print("***ERROR ICING: ",e)
         return "Failed"
 
 
@@ -627,6 +661,8 @@ try:
             print(try_decode_pb_array("logEntry", inner.logEntry, decode_dialer_pb, verbose=True, debug=False))
         elif inner.logSourceName == "LATIN_IME":
             print(try_decode_pb_array("logEntry", inner.logEntry, decode_gboard_pb, verbose=True, debug=False))
+        elif inner.logSourceName == "ICING":
+            print(try_decode_pb_array("logEntry", inner.logEntry, decode_icing_pb, verbose=True, debug=False))
         elif inner.logSourceName == "WESTWORLD" or inner.logSourceName == "ANONYMOUS_WESTWORLD":
             print(try_decode_pb_array("logEntry", inner.logEntry, decode_westworld, verbose=True, debug=False))
         elif inner.logSourceName == "LB_AS" or inner.logSourceName == "LB_CFG":

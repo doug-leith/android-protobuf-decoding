@@ -1,0 +1,1080 @@
+
+Ã˛
+icing_named.proto"—
+Icing_LogEntry,
+currentTimeMillis (RcurrentTimeMillis 
+packageName (	RpackageName1
+keyValuePairList (2.crajRkeyValuePairList6
+icing_log_event (2.IcingLogEventRicingLogEvent
+eventId (ReventId 
+eventFlowId (ReventFlowId&
+timeZoneOffset (RtimeZoneOffset
+f16 (2.cfkeRf16(
+elapsedRealtime (RelapsedRealtime2
+veProducerByteString (RveProducerByteString
+f19 (2.crah_aRf19
+f20 (B™Rf20
+	bootCount (R	bootCount
+f23 (2.cravRf23,
+notDirectBootMode (RnotDirectBootMode
+f30 (Rf30"˘
+IcingLogEvent,
+error_event (2.ErrorEventR
+errorEventB
+icing_storage_state (2.IcingStorageStateRicingStorageState,
+query_stats (2.QueryStatsR
+queryStats/
+timing_stats (2.TimingStatsRtimingStats?
+report_usage_stats (2.ReportUsageStatsRreportUsageStats)
+
+iapi_stats (2
+.IapiStatsR	iapiStats<
+corpus_stats_list (2.CorpusStatsListRcorpusStatsList_
+data_download_file_group_stats
+ (2.DataDownloadFileGroupStatsRdataDownloadFileGroupStatsI
+app_usage_report_stats (2.AppUsageReportStatsRappUsageReportStatsE
+index_document_stats (2.IndexDocumentStatsRindexDocumentStatsH
+contacts_corpus_stats (2.ContactsCorpusStatsRcontactsCorpusStats^
+apps_corpus_maintenance_stats (2.AppsCorpusMaintenanceStatsRappsCorpusMaintenanceStatsH
+contacts_update_stats (2.ContactsUpdateStatsRcontactsUpdateStatsO
+mdh_channel_access_check (2.MdhChannelAccessCheckRmdhChannelAccessCheck3
+mdh_auth_stats (2.MdhAuthStatsRmdhAuthStats'
+sample_interval (RsampleInterval?
+channel_sync_stats (2.ChannelSyncStatsRchannelSyncStatsY
+mob_store_file_operation_log (2.MobStoreFileOperationLogRmobStoreFileOperationLogU
+channel_config_fetch_stats (2.ChannelConfigFetchStatsRchannelConfigFetchStats?
+device_power_state (2.DevicePowerStateRdevicePowerState,
+corpus_info (2.CorpusInfoR
+corpusInfo)
+
+task_stats (2
+.TaskStatsR	taskStats9
+index_init_stats (2.IndexInitStatsRindexInitStats;
+compaction_stats (2.CompactionStatsRcompactionStatsF
+mdd_file_group_status  (2.MddFileGroupStatusRmddFileGroupStatusM
+mdd_service_api_call_log! (2.MddServiceApiCallLogRmddServiceApiCallLogX
+push_notification_batch_log# (2.PushNotificationBatchLogRpushNotificationBatchLogE
+device_storage_state( (2.DeviceStorageStateRdeviceStorageStateR
+usage_reports_slurp_stats* (2.UsageReportsSlurpStatsRusageReportsSlurpStats<
+mdh_channel_event+ (2.MdhChannelEventRmdhChannelEventN
+index_restoration_stats- (2.IndexRestorationStatsRindexRestorationStats<
+mdd_storage_stats. (2.MddStorageStatsRmddStorageStatsE
+mdd_expiration_stats0 (2.MddExpirationStatsRmddExpirationStatsL
+mdd_network_usage_stats1 (2.MddNetworkUsageStatsRmddNetworkUsageStatso
+$package_name_and_icing_version_proto3 (2 .PackageNameAndIcingVersionProtoRpackageNameAndIcingVersionProtoC
+proto_data_store_log4 (2.ProtoDataStoreLogRprotoDataStoreLogB
+request_queue_stats5 (2.RequestQueueStatsRrequestQueueStatsB
+mdd_network_savings6 (2.MddNetworkSavingsRmddNetworkSavingsL
+mdd_download_result_log? (2.MddDownloadResultLogRmddDownloadResultLogd
+!mdd_get_file_groups_by_filter_log@ (2.MddGetFileGroupsByFilterLogRmddGetFileGroupsByFilterLogL
+mdd_android_sharing_logB (2.MddAndroidSharingLogRmddAndroidSharingLogE
+mdd_download_latencyC (2.MddDownloadLatencyRmddDownloadLatency^
+kv_prefs_migration_diagnosticD (2.KvPrefsMigrationDiagnosticRkvPrefsMigrationDiagnostic"&
+craj
+f1 (	Rf1
+f2 (	Rf2"6
+cfke
+f1 (Rf1
+f2 (Rf2
+f3 (Rf3"8
+crav
+f1 (2.crau_aRf1
+f2 (2.cras_aRf2"+
+
+ErrorEvent
+
+error_name (	R	errorName"¸
+IcingStorageState5
+storage_status (2.StorageStatusRstorageStatus(
+index_size_bytes (RindexSizeBytes,
+usable_space_bytes (RusableSpaceBytes*
+total_space_bytes (RtotalSpaceBytes,
+device_storage_low (RdeviceStorageLow"á
+
+QueryStats)
+
+query_type (2
+.QueryTypeR	queryType!
+query_length (RqueryLength2
+num_results_requested (RnumResultsRequested
+num_results (R
+numResults
+
+num_scored (R	numScored&
+init_latency_ms (RinitLatencyMs&
+prep_latency_ms (RprepLatencyMs,
+execute_latency_ms (RexecuteLatencyMs;
+ranking_strategy
+ (2.RankingStrategyRrankingStrategy3
+prep_before_latency_ms (RprepBeforeLatencyMs1
+prep_after_latency_ms (RprepAfterLatencyMs:
+st_query_op_stats (2.STQueryOpStatsRstQueryOpStats0
+calling_package_name (	RcallingPackageNameS
+&disable_clipped_retrieval_optimization (R#disableClippedRetrievalOptimization2
+num_corpora_requested (RnumCorporaRequested/
+lock_wait_latency_ms (RlockWaitLatencyMsU
+native_query_latency_stats (2.NativeQueryLatencyStatsRnativeQueryLatencyStats4
+calling_component_name (	RcallingComponentName!
+prefix_match (RprefixMatch5
+prefix_match_all_tokens (RprefixMatchAllTokens2
+query_sequence_number (RquerySequenceNumber6
+time_since_index_init_ms (RtimeSinceIndexInitMs3
+before_init_latency_ms (RbeforeInitLatencyMs<
+after_query_task_latency_ms (RafterQueryTaskLatencyMs!
+query_origin (	RqueryOrigin7
+query_status (2.QueryResponseStatusRqueryStatusJ
+result_corpus_types  (2.InternalCorpusTypeB™RresultCorpusTypes"]
+TimingStats-
+	operation (2.TimedOperationR	operation
+duration_ms (R
+durationMs"õ
+ReportUsageStats!
+package_name (	RpackageNamed
+user_action_notification_result (2.UserActionNotificationResultRuserActionNotificationResult"{
+	IapiStats-
+
+call_stats (2.IapiCallStatsR	callStats?
+update_index_stats (2.UpdateIndexStatsRupdateIndexStats"B
+CorpusStatsList/
+corpus_stats (2.CorpusStatsRcorpusStats"û
+DataDownloadFileGroupStats&
+file_group_name (	RfileGroupName9
+file_group_version_number (RfileGroupVersionNumber#
+owner_package (	RownerPackage
+
+file_count (R	fileCount
+has_account (R
+hasAccount
+build_id (RbuildId
+
+variant_id (	R	variantId"A
+AppUsageReportStats*
+num_usage_reports (RnumUsageReports"Ä
+IndexDocumentStats5
+index_result (2.NativeIndexResultRindexResult3
+corpus_info	 (2.IndexedCorpusInfoR
+corpusInfo"Ç
+ContactsCorpusStats-
+contacts_db_size_kb (RcontactsDbSizeKb0
+contacts_count_delta (RcontactsCountDelta,
+phones_count_delta (RphonesCountDelta,
+emails_count_delta (RemailsCountDelta.
+postals_count_delta (RpostalsCountDelta"|
+AppsCorpusMaintenanceStats&
+storage_size_kb (RstorageSizeKb6
+maintenance_duration_ms (RmaintenanceDurationMs"•
+ContactsUpdateStats
+
+table_name (	R	tableName%
+inserted_count (RinsertedCount#
+deleted_count (RdeletedCount#
+updated_count (RupdatedCount"œ
+MdhChannelAccessCheck
+
+channel_id (	R	channelId'
+calling_package (	RcallingPackage3
+access_type (2.ChannelAccessTypeR
+accessType9
+access_result (2.ChannelAccessResultRaccessResult"?
+MdhAuthStats/
+auth_result (2.MdhAuthResultR
+authResult"†
+ChannelSyncStats*
+channel_id_string (	RchannelIdString*
+result (2.ChannelSyncResultRresult0
+exception_class_name (	RexceptionClassName(
+sync_duration_ms (RsyncDurationMs0
+has_unsynced_changes (RhasUnsyncedChanges8
+unsubscribed_during_sync (RunsubscribedDuringSync)
+
+channel_id (2
+.ChannelIdR	channelId6
+down_sync_stats (2.DownSyncStatsRdownSyncStats0
+up_sync_stats	 (2.UpSyncStatsRupSyncStatsD
+time_since_push_notification_ms
+ (RtimeSincePushNotificationMs8
+sync_triggers (2.SyncTriggerB™RsyncTriggers&
+has_push_policy (RhasPushPolicy/
+registration_synced (RregistrationSynced"¿
+MobStoreFileOperationLog!
+package_name (	RpackageName'
+result (2.MobStoreResultRresult0
+	operation (2.MobStoreOperationR	operation&
+file_size_bytes (RfileSizeBytes"L
+ChannelConfigFetchStats1
+result (2.ChannelConfigFetchResultRresult"∞
+DevicePowerState1
+	operation (2.PowerSaveOperationR	operation5
+charging_state (2.ChargingStateRchargingState#
+battery_level (RbatteryLevel0
+low_power_percentage (RlowPowerPercentage+
+is_power_save_mode (RisPowerSaveMode.
+is_power_save_mode_2 (RisPowerSaveMode2"P
+
+CorpusInfo!
+package_name (	RpackageName
+corpus_name (	R
+corpusName"˜
+	TaskStats1
+running_tasks (2.RunningTaskRrunningTasksA
+recent_finished_tasks (2.FinishedTaskRrecentFinishedTasksH
+aggregated_task_stats (2.AggregatedTaskStatsRaggregatedTaskStats*
+total_duration_ms (RtotalDurationMs"û
+IndexInitStatsE
+full_index_init_status (2.IndexInitStatusRfullIndexInitStatusE
+lite_index_init_status (2.IndexInitStatusRliteIndexInitStatus"≈
+CompactionStats
+trigger (B™Rtrigger
+status (B™Rstatus&
+error_count (B™R
+errorCountJ
+all_docs_indexed_with_hit_score (B™RallDocsIndexedWithHitScore"≠
+MddFileGroupStatusX
+file_group_download_status (2.MddFileGroupDownloadStatusRfileGroupDownloadStatusA
+group_added_timestamp_seconds (RgroupAddedTimestampSecondsK
+"group_downloaded_timestamp_seconds (RgroupDownloadedTimestampSeconds-
+days_since_last_log (RdaysSinceLastLog"Ë
+MddServiceApiCallLog 
+api (2.MddServiceApiRapi,
+result (2.MddServiceApiResultRresult,
+client_info (2.ClientInfoR
+clientInfo(
+queue_latency_ms (RqueueLatencyMs(
+total_latency_ms (RtotalLatencyMs"s
+PushNotificationBatchLogW
+notifications_by_account (2.IdentityChannelNotificationsRnotificationsByAccount":
+DeviceStorageState$
+is_storage_low (RisStorageLow"÷
+UsageReportsSlurpStats3
+usage_reports_ok_count (RusageReportsOkCount;
+usage_reports_failed_count (RusageReportsFailedCount#
+indexed_count (RindexedCount%
+rejected_count (RrejectedCount"7
+MdhChannelEvent$
+channel (2
+.ChannelIdRchannel";
+IndexRestorationStats"
+status (2
+.Enum_cehhRstatus"ç
+MddStorageStats_
+data_download_file_group_stats (2.DataDownloadFileGroupStatsRdataDownloadFileGroupStats/
+total_bytes_used (B™RtotalBytesUsedD
+downloaded_group_bytes_used (B™RdownloadedGroupBytesUsed/
+total_mdd_bytes_used (RtotalMddBytesUsedB
+total_mdd_directory_bytes_used (RtotalMddDirectoryBytesUsed-
+days_since_last_log (RdaysSinceLastLog"j
+MddExpirationStats>
+expiration_count_type (2
+.Enum_cegkRexpirationCountType
+count (Rcount"´
+MddNetworkUsageStats7
+group_stats (2.FileGroupNetworkUsageR
+groupStats(
+total_wifi_bytes (RtotalWifiBytes0
+total_cellular_bytes (RtotalCellularBytes"v
+PackageNameAndIcingVersionProto0
+icing_module_version (RicingModuleVersion!
+package_name (	RpackageName"Ç
+ProtoDataStoreLog1
+hashed_data_store_uri (	RhashedDataStoreUriB
+daily_access_sample (2.DailyAccessSampleRdailyAccessSampleX
+multi_app_broadcast_timeout (2.MultiAppBroadcastTimeoutRmultiAppBroadcastTimeoutX
+multi_app_broadcast_success (2.MultiAppBroadcastSuccessRmultiAppBroadcastSuccessB
+client_package_scan (2.ClientPackageScanRclientPackageScan"∆
+RequestQueueStats1
+errors (2.RequestQueueErrorB™Rerrors&
+num_full_shards (RnumFullShards*
+num_requests_read (RnumRequestsRead*
+drain_duration_ms (RdrainDurationMs"§
+MddNetworkSavingsE
+file_group_stats (2.DataDownloadFileGroupStatsRfileGroupStats6
+savings_type (2.NetworkSavingsTypeRsavingsType$
+full_file_size (RfullFileSize0
+downloaded_file_size (RdownloadedFileSize
+file_id (	RfileId
+delta_index (R
+deltaIndex"ß
+MddDownloadResultLog.
+result (2.MddDownloadResultCodeRresult_
+data_download_file_group_stats (2.DataDownloadFileGroupStatsRdataDownloadFileGroupStats"~
+MddGetFileGroupsByFilterLog_
+data_download_file_group_stats (2.DataDownloadFileGroupStatsRdataDownloadFileGroupStats"Œ
+MddAndroidSharingLog-
+event (2.MddAndroidSharingEventRevent&
+file_group_name (	RfileGroupName9
+file_group_version_number (RfileGroupVersionNumber
+file_id (	RfileId%
+lease_acquired (RleaseAcquired*
+lease_expiry_date (RleaseExpiryDate
+build_id (RbuildId
+
+variant_id	 (	R	variantId"§
+MddDownloadLatency4
+download_attempt_count (RdownloadAttemptCount.
+download_latency_ms (RdownloadLatencyMs(
+total_latency_ms (RtotalLatencyMs"Ï
+KvPrefsMigrationDiagnostic!
+feature_name (	RfeatureName/
+	operation (2.KvPrefsOperationR	operation0
+result (2.KvPrefsComparisonResultRresultH
+content_comparison (2.KvPrefsContentComparisonRcontentComparison"
+STQueryOpStats"
+NativeQueryLatencyStats"◊
+IapiCallStats!
+package_name (	RpackageName,
+	operation (2.IapiOperationR	operation-
+
+error_code (2.IapiErrorCodeR	errorCode(
+app_version_code (RappVersionCode
+	num_items (RnumItems,
+client_gms_version (RclientGmsVersion2
+thing_types (2
+.ThingTypeB™R
+thingTypes
+
+latency_ms (R	latencyMs"ç
+UpdateIndexStats!
+package_name (	RpackageName*
+source (2.UpdateIndexSourceRsource*
+result (2.UpdateIndexResultRresult"ƒ
+CorpusStats#
+num_documents (RnumDocuments0
+documents_size_bytes (RdocumentsSizeBytes2
+num_deleted_documents (RnumDeletedDocuments?
+deleted_documents_size_bytes (RdeletedDocumentsSizeBytes!
+package_name (	RpackageName
+corpus_name (	R
+corpusName%
+is_deactivated (RisDeactivated"W
+IndexedCorpusInfo!
+package_name (	RpackageName
+corpus_name (	R
+corpusName"ã
+	ChannelId6
+
+footprints (2.FootprintsChannelIdH R
+footprints<
+registration (2.RegistrationChannelIdH RregistrationB
+oneof0"Ù
+DownSyncStats
+duration_us (R
+durationUs.
+response_size_bytes (RresponseSizeBytes!
+change_count (RchangeCountH
+!response_size_without_delta_bytes (RresponseSizeWithoutDeltaBytes%
+reset_received	 (RresetReceived"«
+UpSyncStats
+duration_us (R
+durationUs,
+request_size_bytes (RrequestSizeBytes!
+change_count (RchangeCountF
+ request_size_without_delta_bytes (RrequestSizeWithoutDeltaBytes"z
+ChargingState
+is_charging (R
+isCharging"
+is_plugged_ac (RisPluggedAc$
+is_plugged_usb (RisPluggedUsb"J
+RunningTask
+task (2.TaskKeyRtask
+
+elapsed_ms (R	elapsedMs"|
+FinishedTask
+task (2.TaskKeyRtask
+duration_ms (R
+durationMs-
+time_since_start_ms (RtimeSinceStartMs"|
+AggregatedTaskStats
+task (2.TaskKeyRtask
+	run_count (RrunCount*
+total_duration_ms (RtotalDurationMs"e
+
+ClientInfo!
+package_name (	RpackageName4
+client_library_version (RclientLibraryVersion"Z
+IdentityChannelNotifications:
+notifications (2.ChannelNotificationRnotifications"§
+FileGroupNetworkUsageE
+file_group_stats (2.DataDownloadFileGroupStatsRfileGroupStats
+
+wifi_bytes (R	wifiBytes%
+cellular_bytes (RcellularBytes"ª
+DailyAccessSample1
+hashed_data_store_uri (	RhashedDataStoreUri)
+day_start_time_ms (RdayStartTimeMs
+sample_rate (R
+sampleRate'
+sampler_version (RsamplerVersion"ì
+MultiAppBroadcastTimeout#
+package_count (RpackageCount3
+unresponsive_packages (	RunresponsivePackages
+
+timeout_ms (R	timeoutMs"^
+MultiAppBroadcastSuccess#
+package_count (RpackageCount
+
+latency_ms (R	latencyMs"å
+ClientPackageScan6
+installed_package_count (RinstalledPackageCount8
+unsigned_google_packages (	RunsignedGooglePackagesH
+!get_installed_packages_latency_us (RgetInstalledPackagesLatencyUs;
+signature_check_latency_us (RsignatureCheckLatencyUs"˛
+KvPrefsContentComparison?
+num_keys_only_in_shared_prefs (RnumKeysOnlyInSharedPrefsE
+ num_keys_only_in_proto_datastore (RnumKeysOnlyInProtoDatastore*
+num_keys_matching (RnumKeysMatching.
+num_keys_mismatched (RnumKeysMismatched"m
+FootprintsChannelId
+corpus (Rcorpus
+	data_type (RdataType!
+sync_variant (RsyncVariant"
+RegistrationChannelId"T
+TaskKey&
+	task_name (2	.TaskNameRtaskName!
+package_name (	RpackageName"Z
+ChannelNotification)
+
+channel_id (2
+.ChannelIdR	channelId
+ignored (Rignored*â
+PowerSaveOperation
+POWERSAVEOPERATION_UNSET_0 
+
+UPDATE	
+PATCH
+
+REMOVE
+TRIM_MAX_ROWS	
+BATCH
+REQUEST_QUEUED*;
+RankingStrategy
+RANKINGSTRATEGY_UNSET_0 
+ST_SORT*\
+StorageStatus
+StorageStatus_OK 
+NO_TRIMMABLE
+NO_SYNC
+INDEX_DESIGN_LIMIT*Ä
+KvPrefsOperation
+KVPREFSOPERATION_UNSET_0 
+KvPrefsOperation_READ
+KvPrefsOperation_WRITE
+CONTENTS_COMPARISON*f
+KvPrefsComparisonResult#
+KVPREFSCOMPARISONRESULT_UNSET_0 	
+MATCH
+MISMATCH
+	EXCEPTION*Ù
+MddAndroidSharingEvent
+ENUM_CEGC_0 
+ENUM_CEGC_1
+ENUM_CEGC_2
+ENUM_CEGC_3
+ENUM_CEGC_4
+ENUM_CEGC_5
+ENUM_CEGC_6
+ENUM_CEGC_7
+ENUM_CEGC_8
+ENUM_CEGC_9	
+ENUM_CEGC_10
+
+ENUM_CEGC_11
+ENUM_CEGC_12
+ENUM_CEGC_13
+ENUM_CEGC_14
+ENUM_CEGC_15
+ENUM_CEGC_16
+ENUM_CEGC_17
+ENUM_CEGC_18
+ENUM_CEGC_19
+ENUM_CEGC_20
+ENUM_CEGC_21
+ENUM_CEGC_22
+ENUM_CEGC_23
+ENUM_CEGC_24
+ENUM_CEGC_25
+ENUM_CEGC_26*r
+MddServiceApi
+MDDSERVICEAPI_UNSET_0 
+GET_FILE_GROUP
+ACTIVATE_FILE_GROUP
+DEACTIVATE_FILE_GROUP*¥
+MddServiceApiResult
+MDDSERVICEAPIRESULT_UNSET_0 
+MddServiceApiResult_SUCCESS
+API_DISABLED
+FILE_GROUP_NOT_FOUND
+CALLER_NOT_OWNER
+SET_ACTIVATION_FAILED	*V
+NetworkSavingsType
+NETWORKSAVINGSTYPE_UNSET_0 
+COMPRESS	
+DELTA
+ZIP*ì
+	Enum_cegk
+ENUM_CEGK_0 
+ENUM_CEGK_1
+ENUM_CEGK_2
+ENUM_CEGK_3
+ENUM_CEGK_4
+ENUM_CEGK_5
+ENUM_CEGK_6
+ENUM_CEGK_7*k
+MddFileGroupDownloadStatus&
+"MDDFILEGROUPDOWNLOADSTATUS_UNSET_0 
+COMPLETE
+PENDING
+
+FAILED*J
+ChannelAccessResult
+CHANNELACCESSRESULT_UNSET_0 
+PASS
+FAIL*k
+ChannelAccessType
+CHANNELACCESSTYPE_UNSET_0 
+ChannelAccessType_READ
+ChannelAccessType_WRITE*q
+MobStoreOperation
+MOBSTOREOPERATION_UNSET_0 
+OPEN_FOR_READ
+OPEN_FOR_WRITE
+
+DELETE
+
+RENAME*á
+MobStoreResult
+MOBSTORERESULT_UNSET_0 
+MobStoreResult_SUCCESS
+MALFORMED_URI
+ACCESS_DENIED
+FILE_NOT_FOUND
+CLIENT_DIED#
+MobStoreResult_FEATURE_DISABLED
+DELETE_FAILED
+CONFIG_ERROR
+NOT_GOOGLE_SIGNED	
+RENAME_FAILED
+*Ï
+RequestQueueError
+REQUESTQUEUEERROR_UNSET_0 
+INVALID_SHARD_NAME
+FILE_DELETE_FAILED
+INVALID_SHARD_FORMAT
+SHARD_OPEN_FAILED
+CRC_MISMATCH
+SHARD_READ_FAILED
+WORK_DIR_MISSING
+WORK_DIR_LIST_FAILED*`
+	Enum_cehh
+ENUM_CEHH_0 
+ENUM_CEHH_1
+ENUM_CEHH_2
+ENUM_CEHH_3
+ENUM_CEHH_4*d
+InternalCorpusType
+NONE 
+APPS
+CONTACTS
+
+PHONES
+
+EMAILS
+POSTALS
+SMS*B
+	QueryType
+QueryType_QUERY 
+QUERY_UNIVERSAL
+SUGGEST*Ë
+TimedOperation
+INIT 
+	POST_INIT
+INIT_CPU
+
+INIT_PREFS
+INIT_UPGRADE
+INIT_NATIVE
+INIT_AUTHENTICATE
+INIT_READ_RESOURCES 
+CONTEXTUAL_SUGGESTIONS_FETCH
+CORPUS_STATS_CALCULATION	
+SMS_CORPUS_PROCESS_NEW_SMS
+
+SMS_CORPUS_PROCESS_NEW_MMS*
+&SMS_CORPUS_PROCESS_READ_STATUS_CHANGES 
+SMS_CORPUS_PROCESS_DELETIONS*Ä
+IapiOperation
+CONTENT_UPDATE 
+CONTENT_REMOVE
+CONTENT_REMOVE_ALL
+ACTION_START
+
+ACTION_END
+CONTENT_UPDATE_TAGS
+CONTENT_GET
+CONTENT_SEARCH
+CONTENT_PATCH"
+CONTENT_MUTATE_REQUEST_INVALID	
+CONTENT_REMOVE_TYPES
+*⁄
+IapiErrorCode
+NO_ERROR 
+GENERIC_ERROR
+INVALID_INDEXABLE
+SEQUENCE_TABLE_FULL
+INTERNAL_ERROR
+CLIENT_DISCONNECTED,
+(INVALID_INDEXABLE_OVER_MAX_NESTING_DEPTH+
+'INVALID_INDEXABLE_UNSUPPORTED_DATA_TYPE+
+'INVALID_INDEXABLE_STRING_VALUE_TOO_LONG)
+%INVALID_INDEXABLE_STRING_KEY_TOO_LONG	.
+*INVALID_INDEXABLE_TOO_MANY_REPEATED_VALUES
+,
+(INVALID_INDEXABLE_SAME_AS_FIELD_REPEATED%
+!INVALID_INDEXABLE_INVALID_WEB_URL/
++INVALID_INDEXABLE_METADATA_AT_NON_TOP_LEVEL%
+!INVALID_INDEXABLE_TOO_MANY_FIELDS(
+$INVALID_INDEXABLE_INTENT_NOT_HANDLED,
+(INVALID_INDEXABLE_MISSING_REQUIRED_FIELD,
+(INVALID_INDEXABLE_INVALID_REPEATED_FIELD
+IapiErrorCode_NOT_ALLOWED
+INVALID_ARGUMENT_NULL
+INVALID_ARGUMENT_TOO_MANY
+INVALID_ARGUMENT_URI
+INVALID_INDEXABLE_TOO_LARGE!
+INVALID_ARGUMENT_URI_TOO_LONG
+CALL_IN_PROGRESS
+INVALID_ACTION_EVENT_STATUS
+INVALID_QUERY_TEXT
+INVALID_QUERY_TYPES
+INVALID_QUERY_NO_INDEX/
++INVALID_INDEXABLE_INVALID_TYPE_AT_TOP_LEVEL
+IapiErrorCode_NO_PERMISSION
+INVALID_INDEXABLE_BAD_PATCH
+INVALID_REQUEST 
+FEATURE_OFF!$
+ INVALID_INDEXABLE_BAD_PARCELABLE"#
+INVALID_INDEXABLE_INVALID_SCOPE#%
+!INVALID_INDEXABLE_INVALID_ACCOUNT$(
+$INVALID_INDEXABLE_UNPAIRED_SURROGATE%
+INVALD_ACTION_URL_MISMATCH&)
+%INVALID_ARGUMENT_CHECK_SEQUENCE_TABLE+
+TEMPORARY_REDIRECT2#
+IapiErrorCode_PROTO_PARSE_ERROR3%
+!IapiErrorCode_ERROR_URI_NOT_FOUND4 
+IapiErrorCode_ERROR_DOCSTORE5(
+$IapiErrorCode_ERROR_TAG_CAP_EXCEEDED6%
+!IapiErrorCode_ERROR_INVALID_SEQNO75
+1IapiErrorCode_ERROR_IDC_TOO_MANY_RECURSIONS_DEPTH8,
+(IapiErrorCode_ERROR_UPDATING_DELETED_DOC9*
+&IapiErrorCode_ERROR_INDEX_LEXICON_FULL:+
+'IapiErrorCode_ERROR_INDEXING_EMBEDDINGS;
+PATCH_DISABLED<
+NATIVE_INDEX_EXCEPTION=/
++IapiErrorCode_ERROR_CONVERTING_THING_TO_DOC>0
+,IapiErrorCode_ERROR_DOCSTORE_NOT_INITIALIZED?)
+%IapiErrorCode_ERROR_DOCSTORE_IO_ERROR@'
+#IapiErrorCode_ERROR_TOO_MANY_DOCIDSA*µ
+UpdateIndexResult
+UNKNOWN_RESULT 
+SERVICE_STARTED
+FLAG_DISABLED
+PACKAGE_STOPPED
+PACKAGE_DISABLED
+PACKAGE_MISSING
+START_SERVICE_FAILED#
+UpdateIndexResult_NO_PERMISSION
+	THROTTLED!
+UpdateIndexResult_NOT_ALLOWED	
+BROADCAST_SENT
+
+START_SERVICE_UNKNOWN_ERROR*Õ
+UpdateIndexSource
+UpdateIndexSource_UNKNOWN 
+PERIODIC
+ONE_OFF
+DEBUG_UI
+ONE_OFF_REASON_INSTALL
+ONE_OFF_REASON_REBUILD
+DEBUG_UI_REASON_REFRESH
+DEBUG_UI_REASON_REBUILD*F
+IndexInitStatus
+INDEXINITSTATUS_UNSET_0 
+IndexInitStatus_OK*á
+MddDownloadResultCode%
+!MddDownloadResultCode_UNSPECIFIED !
+MddDownloadResultCode_SUCCESS
+UNKNOWN_ERROR
+ANDROID_DOWNLOADER_UNKNOWNd
+ANDROID_DOWNLOADER_CANCELEDe&
+"ANDROID_DOWNLOADER_INVALID_REQUESTf!
+ANDROID_DOWNLOADER_HTTP_ERRORg$
+ ANDROID_DOWNLOADER_REQUEST_ERRORh*
+&ANDROID_DOWNLOADER_RESPONSE_OPEN_ERRORi+
+'ANDROID_DOWNLOADER_RESPONSE_CLOSE_ERRORj'
+#ANDROID_DOWNLOADER_NETWORK_IO_ERRORk$
+ ANDROID_DOWNLOADER_DISK_IO_ERRORl(
+$ANDROID_DOWNLOADER_FILE_SYSTEM_ERRORm'
+#ANDROID_DOWNLOADER_UNKNOWN_IO_ERRORn"
+ANDROID_DOWNLOADER_OAUTH_ERRORo
+ANDROID_DOWNLOADER2_ERROR»
+GROUP_NOT_FOUND_ERROR¨(
+#DOWNLOAD_MONITOR_NOT_PROVIDED_ERROR≠
+INSECURE_URL_ERRORÆ
+LOW_DISK_ERRORØ$
+UNABLE_TO_CREATE_FILE_URI_ERROR∞ 
+SHARED_FILE_NOT_FOUND_ERROR±
+MALFORMED_FILE_URI_ERROR≤4
+/UNABLE_TO_CREATE_MOBSTORE_RESPONSE_WRITER_ERROR≥+
+&UNABLE_TO_VALIDATE_DOWNLOAD_FILE_ERROR¥$
+DOWNLOADED_FILE_NOT_FOUND_ERRORµ,
+'DOWNLOADED_FILE_CHECKSUM_MISMATCH_ERROR∂1
+,UNABLE_TO_SERIALIZE_DOWNLOAD_TRANSFORM_ERROR∑ 
+DOWNLOAD_TRANSFORM_IO_ERROR∏'
+"FINAL_FILE_CHECKSUM_MISMATCH_ERRORπ-
+(DELTA_DOWNLOAD_BASE_FILE_NOT_FOUND_ERROR∫#
+DELTA_DOWNLOAD_DECODE_IO_ERRORª&
+!UNABLE_TO_UPDATE_FILE_STATE_ERRORº*
+%UNABLE_TO_UPDATE_GROUP_METADATA_ERRORΩ.
+)UNABLE_TO_UPDATE_FILE_MAX_EXPIRATION_DATEæ,
+'UNABLE_SHARE_FILE_BEFORE_DOWNLOAD_ERRORø+
+&UNABLE_SHARE_FILE_AFTER_DOWNLOAD_ERROR¿'
+"UNABLE_TO_REMOVE_SYMLINK_STRUCTURE¡'
+"UNABLE_TO_CREATE_SYMLINK_STRUCTURE¬!
+UNABLE_TO_RESERVE_FILE_ENTRY√#
+INVALID_INLINE_FILE_URL_SCHEMEƒ
+MALFORMED_DOWNLOAD_URL≈$
+UNSUPPORTED_DOWNLOAD_URL_SCHEME∆
+INLINE_FILE_IO_ERROR«#
+MISSING_INLINE_DOWNLOAD_PARAMS»
+MISSING_INLINE_FILE_SOURCE…'
+"CUSTOM_FILEGROUP_VALIDATION_FAILED 5
+0MANIFEST_FILE_GROUP_POPULATOR_INVALID_FLAG_ERRORêH
+CMANIFEST_FILE_GROUP_POPULATOR_CONTENT_CHANGED_DURING_DOWNLOAD_ERRORë<
+7MANIFEST_FILE_GROUP_POPULATOR_PARSE_MANIFEST_FILE_ERRORí=
+8MANIFEST_FILE_GROUP_POPULATOR_DELETE_MANIFEST_FILE_ERRORì4
+/MANIFEST_FILE_GROUP_POPULATOR_METADATA_IO_ERRORî
+GDD_INVALID_ACCOUNT–
+GDD_INVALID_AUTH_TOKEN—
+GDD_FAIL_IN_SYNC_RUNNER“-
+(GDD_INVALID_ELEMENT_COMBINATION_RECEIVED”,
+'GDD_INVALID_INLINE_PAYLOAD_ELEMENT_DATA‘,
+'GDD_INVALID_CURRENT_ACTIVE_ELEMENT_DATA’*
+%GDD_INVALID_NEXT_PENDING_ELEMENT_DATA÷0
++GDD_CURRENT_ACTIVE_GROUP_HAS_NO_INLINE_FILE◊'
+"GDD_FAIL_TO_ADD_NEXT_PENDING_GROUPÿ)
+$GDD_MISSING_ACCOUNT_FOR_PRIVATE_SYNCŸ#
+GDD_FAIL_IN_SYNC_RUNNER_PUBLIC⁄$
+GDD_FAIL_IN_SYNC_RUNNER_PRIVATE€
+GDD_PUBLIC_SYNC_SUCCESS‹
+GDD_PRIVATE_SYNC_SUCCESS›(
+#GDD_FAIL_TO_RETRIEVE_ZWIEBACK_TOKENﬁ*‹
+MdhAuthResult
+MdhAuthResult_UNDEFINED 
+AUTHENTICATED
+MdhAuthResult_IO_EXCEPTION
+AUTH_EXCEPTION#
+USER_RECOVERABLE_AUTH_EXCEPTION
+NETWORK_ERROR
+BAD_AUTHENTICATION
+AUTH_INTERNAL_ERROR*ñ
+ChannelConfigFetchResult&
+"ChannelConfigFetchResult_UNDEFINED $
+ ChannelConfigFetchResult_SUCCESS
+FAILURE)
+%ChannelConfigFetchResult_IO_EXCEPTION
+UNKNOWN_HOST_EXCEPTION(
+$ChannelConfigFetchResult_UNAVAILABLE.
+*ChannelConfigFetchResult_DEADLINE_EXCEEDED* 
+SyncTrigger
+SYNC_TRIGGER_UNKNOWN 
+SYNC_TRIGGER_MANUAL
+SYNC_TRIGGER_TIMER
+SYNC_TRIGGER_SUBSCRIPTION"
+SYNC_TRIGGER_PUSH_NOTIFICATION
+SYNC_TRIGGER_READ
+SYNC_TRIGGER_WRITE*Ù
+ChannelSyncResult
+ChannelSyncResult_UNDEFINED 
+ChannelSyncResult_SUCCESS
+EXECUTION_ERROR
+NOT_STARTED
+INTERRUPTED
+	CANCELLED
+CALL_CREDENTIALS_ERROR
+UNKNOWN_HOST
+UNSUPPORTED_PROTOCOL
+PENDING_LOCAL_CHANGES	
+CONNECT_EXCEPTION
+
+UNAUTHENTICATED!
+ChannelSyncResult_UNAVAILABLE'
+#ChannelSyncResult_DEADLINE_EXCEEDED*Ù
+NativeIndexResult
+NativeIndexResult_OK 
+DOCUMENT_TRIMMED
+INDEX_TOKENS_CLIPPED
+URI_REPLACED
+DOCUMENT_THING_MODIFIED'
+#NativeIndexResult_PROTO_PARSE_ERROR
+)
+%NativeIndexResult_ERROR_URI_NOT_FOUND$
+ NativeIndexResult_ERROR_DOCSTORE,
+(NativeIndexResult_ERROR_TAG_CAP_EXCEEDED)
+%NativeIndexResult_ERROR_INVALID_SEQNO9
+5NativeIndexResult_ERROR_IDC_TOO_MANY_RECURSIONS_DEPTH0
+,NativeIndexResult_ERROR_UPDATING_DELETED_DOC3
+/NativeIndexResult_ERROR_CONVERTING_THING_TO_DOC4
+0NativeIndexResult_ERROR_DOCSTORE_NOT_INITIALIZED-
+)NativeIndexResult_ERROR_DOCSTORE_IO_ERROR+
+'NativeIndexResult_ERROR_TOO_MANY_DOCIDS.
+*NativeIndexResult_ERROR_INDEX_LEXICON_FULL/
++NativeIndexResult_ERROR_INDEXING_EMBEDDINGS*≠
+QueryResponseStatus
+QUERYRESPONSESTATUS_UNSET_0 
+PARSE_ERROR
+TOO_LONG
+PARENS_NESTED_TOO_DEEP
+DATE_PARSE_ERROR
+DATE_RANGE_TOO_LARGE
+OVERLAP_L_PARSE_ERROR
+Q_PARSE_ERROR
+BINARY_LOGIC_PARSE_ERROR	
+TAG_PARSE_ERROR
+
+IN_L_PARSE_ERROR
+ST_SORT_PARSE_ERROR
+INIT_FAILED_ERROR
+UNIMPLEMENTED_ERROR
+AUTHORIZATION_ERROR
+NO_MATCHING_CORPORA_ERROR,
+(IS_PARSE_SECTION_RESTRICT_WITHOUT_STRING4
+0IS_PARSE_SECTION_RESTRICT_NEGATION_NOT_SUPPORTED#
+TRANSACTION_TOO_LARGE_EXCEPTION
+DEAD_OBJECT_EXCEPTION
+REMOTE_EXCEPTION
+NOT_EXECUTED
+RUNTIME_EXCEPTION
+OTHER_EXCEPTION
+CACHING_DISABLED_ERROR*«
+TaskName
+TaskName_UNKNOWN 
+SLURP_USAGE_REPORTS
+READ_UPDATED_ACCOUNTS
+APP_HISTORY_EVENT_UPLOAD+
+'CLEAR_APP_INDEXING_SEQUENCE_TABLES_TASK
+ON_SLEEP_ACTIONS
+INDEX_WORKER
+UPDATE_INDEX_INTERNALLY
+INIT_STATIC_CONTEXT
+CREATE_WORK_CONNECTION	$
+ CLEAR_USAGE_REPORT_DATA_INTERNAL
+
+DIAGNOSTIC_UPLOAD_CONTACTS
+UPDATE_APP_PARAMS
+REGISTER_CORPUS_INFO
+UNREGISTER_CORPUS
+SET_GLOBAL_SEARCH_INFO
+BLOCK_PACKAGES
+UNBLOCK_PACKAGES
+CLEAR_CORPUS_DATA
+GET_APP_INDEXING_SERVICE 
+GET_CLIENT_SERVICE_INTERFACE
+CHECK_CLIENT_RESOURCES
+SCHEDULE_INDEXING
+HANDLE_GCM_MESSAGE
+INIT_INDEX_MANAGER
+DESTROY_INDEX_MANAGER$
+ HANDLE_PACKAGE_MANAGER_BROADCAST
+HANDLE_DEVICE_STORAGE_OK
+HANDLE_GSERVICES_CHANGED
+COMMIT_INDEX
+FLUSH_INDEX
+REBUILD_INDEX
+COMPACT_INDEX 
+COMPACT_AND_PURGE_INDEX!
+INDEX_MAINTENANCE"!
+RETRY_FAILED_INDEXING_CORPORA#
+UPDATE_NATIVE_CONFIG$
+RESTORE_INDEX%#
+READ_CLIENT_INFO_FROM_RESOURCES&*
+&REPARSE_GLOBAL_SEARCH_SECTION_MAPPINGS'
+CLEAR_APP_DATA(
+LOG_API_TRACE_EVENTS)
+CONTENT_FETCH*
+CLEAR_DEBUG_UI_CACHE+
+CLEAR_USAGE_REPORT_DATA,
+
+DIAGNOSTIC-$
+ GET_APP_INDEXING_PACKAGE_DETAILS.
+GET_APP_INDEXING_PACKAGES/
+GET_STORAGE_STATS0%
+!REQUEST_APP_INDEXING_UPDATE_INDEX1
+CLEAR_CORPUS2
+DELETE_USAGE_REPORT3
+GET_CORPUS_INFO4
+GET_CORPUS_STATUS5
+ANNOTATE6
+REQUEST_INDEXING7
+GET_CURRENT_EXPERIMENT_IDS8
+GET_GLOBAL_SEARCH_SOURCES9
+GET_PENDING_EXPERIMENT_IDS:
+SET_EXPERIMENT_IDS; 
+SET_INCLUDE_IN_GLOBAL_SEARCH<)
+%GET_CORPUS_HANDLES_REGISTERED_FOR_IME=
+GET_IME_UPDATES>
+GET_NATIVE_API_INFO?
+GET_DOCUMENTS@
+GET_PHRASE_AFFINITYA
+GLOBAL_QUERYB
+QUERY_SUGGESTC
+TaskName_QUERYD
+
+BATCH_TASKE
+APP_INDEXING_MUTATEF
+APP_INDEXING_UPDATEG
+APP_INDEXING_PATCHH
+APP_INDEXING_REMOVEI
+APP_INDEXING_REMOVE_ALLJ
+APP_INDEXING_REMOVE_TYPESK
+APP_INDEXING_UPDATE_TAGSL
+APP_INDEXING_GETM
+APP_INDEXING_SEARCHN
+LOG_QUERY_STATSO
+LOG_ANNOTATION_API_STATSP'
+#APP_INDEXING_HANDLE_PACKAGE_REMOVALQ
+RETRIEVE_SLICER#
+APP_INDEXING_REPORT_USER_ACTIONS(
+$USER_ACTIONS_SYNC_DELETION_DOWNLOADST
+DRAIN_REQUEST_QUEUEU*
+&USER_ACTIONS_PUSH_NOTIFICATIONS_HANDLEV&
+"USER_ACTIONS_UPLOAD_ACCOUNT_CHANGEW*˝
+	ThingType
+ThingType_UNKNOWN 
+CONFIG_OVERRIDE	
+ALARM
+CONVERSATION
+DIGITAL_DOCUMENT
+DIGITAL_DOCUMENT_PERMISSION
+EMAIL_MESSAGE	
+EVENT
+	GEO_SHAPE
+LOCAL_BUSINESS	
+MESSAGE
+
+MUSIC_ALBUM
+MUSIC_GROUP
+MUSIC_PLAYLIST
+MUSIC_RECORDING
+NOTE_DIGITAL_DOCUMENT
+
+PERSON
+
+PHOTOGRAPH	
+PLACE!
+PRESENTATION_DIGITAL_DOCUMENT
+RESERVATION
+
+RESTAURANT 
+SPREADSHEET_DIGITAL_DOCUMENT
+STICKER
+STICKER_PACK
+	STOPWATCH
+TEXT_DIGITAL_DOCUMENT	
+THING	
+TIMER
+VIDEO_OBJECT
+AGGREGATE_RATING
+ALARM_INSTANCE
+ATTENDEE 
+STOPWATCH_LAP!
+POSTAL_ADDRESS"
+CONTACT#
+CONTEXTUAL_EVENT$
+MOBILE_APPLICATION%
+BOOK&
+	AUDIOBOOK'	
+MOVIE(
+	TV_SERIES)
+WEB_PAGE*
+GMM_VOICE_MODEL+
+
+ACTION,
+EXTRACTED_ENTITY-
+DATE.
+	DATE_TIME/
+
+FLIGHT0
+EXTRACTED_ENTITY_METADATA1
+CONTACT_POINT2
+STASH_RECORD3
+GPAY_TRANSACTION4
+GPAY_PRODUCTS_OR_SERVICES5
+
+GPAY_MONEY6*’
+UserActionNotificationResult,
+(UserActionNotificationResult_UNSPECIFIED 
+USAGE_REPORTING_DISABLED1
+-UserActionNotificationResult_FEATURE_DISABLED
+CLIENT_NOT_WHITELISTED
+USAGE_INFO_IS_EMPTY
+NO_IME_PACKAGES&
+"NO_IME_PACKAGE_WITH_INTENT_SERVICE%
+!THROTTLED_DUE_TO_PER_SECOND_QUOTA 
+THROTTLED_DUE_TO_DAILY_QUOTA 
+FAIL_TO_START_INTENT_SERVICE	.
+*UserActionNotificationResult_NO_PERMISSION
+
+NOTIFICATION_SENT,
+(UserActionNotificationResult_NOT_ALLOWED*
+&NO_IME_PACKAGE_WITH_BROADCAST_RECEIVER
+NOTIFICATION_BROADCAST
+NO_FIREBASE_USER_ACTIONS*2
+crah_a
+CRAH_A_0 
+CRAH_A_1
+CRAH_A_2*…
+cras_a
+CRAS_A_0 
+CRAS_A_1
+CRAS_A_2
+CRAS_A_3
+CRAS_A_4
+CRAS_A_5
+CRAS_A_6
+CRAS_A_7
+CRAS_A_8
+CRAS_A_9	
+	CRAS_A_10
+
+	CRAS_A_11
+	CRAS_A_12
+	CRAS_A_13
+	CRAS_A_14
+	CRAS_A_15
+	CRAS_A_16
+	CRAS_A_17
+	CRAS_A_18
+	CRAS_A_19
+	CRAS_A_20
+
+CRAS_A_100d*§
+crau_a
+CRAU_A_0 
+	CRAU_A_M1ˇˇˇˇˇˇˇˇˇ
+CRAU_A_1
+CRAU_A_2
+CRAU_A_3
+CRAU_A_4
+CRAU_A_5
+CRAU_A_6
+CRAU_A_7
+CRAU_A_8
+CRAU_A_9	
+	CRAU_A_10
+
+	CRAU_A_11
+	CRAU_A_12
+	CRAU_A_13
+	CRAU_A_14
+	CRAU_A_15
+	CRAU_A_16
+	CRAU_A_17Bí beditionspË
