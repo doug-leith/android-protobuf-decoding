@@ -14,7 +14,7 @@ import tempfile
 mypath = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(mypath)
 from decoding_helpers import decode_pb, decode_wbxml, decode_log_batch, decode_firebase_analytics, try_decode_pb_array, protoUnknownFieldsToString, protoToString, fieldIsSet, makeIter
-import gboard_pb3
+import gboard_named_pb  # LATIN_IME, from gboard_named.proto (old manual gboard.proto3 kept as gboard.proto3.backup)
 import activity_recognition_pb2
 
 
@@ -154,7 +154,7 @@ def decode_gboard_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
     f.write(bb)
     f.close()
     try:
-        decoded = subprocess.check_output("cat "+fname+" | protoc --decode=LatinIME_LogEntry -I='"+mypath+"' gboard.proto3",shell=True,stderr=subprocess.STDOUT, text=True)
+        decoded = subprocess.check_output("cat "+fname+" | protoc --decode=LatinIME_LogEntry -I='"+mypath+"' gboard_named.proto",shell=True,stderr=subprocess.STDOUT, text=True)
         grep=""
         if decoded is not None and terse:
             # just write out minimal event info
@@ -171,7 +171,7 @@ def decode_gboard_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
             return ""
         if Grep:
             try: 
-                gboard = gboard_pb3.LatinIME_LogEntry()
+                gboard = gboard_named_pb.LatinIME_LogEntry()
                 gboard.ParseFromString(bb)
                 packageName = "-NoPackageName"
                 wordInfo="-NoWordInfo"
@@ -185,7 +185,7 @@ def decode_gboard_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
                         if fieldIsSet(gboard.input_info.word_input_info.timeToEnterWord):
                             wordInfo=wordInfo+"+time:"+str(gboard.input_info.word_input_info.timeToEnterWord)                   
                 try:
-                    kevent=gboard_pb3.KeyboardEvent
+                    kevent=gboard_named_pb.KeyboardEvent
                     event=kevent.Name(gboard.keyboardEvent)
                 except:
                     event=str(gboard.keyboardEvent)
