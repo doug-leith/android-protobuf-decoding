@@ -20,6 +20,7 @@ import firebase_logbatch_pb2
 import locm_pb2
 from decode_raw import decode_raw, DecodeRawError  # in-process `protoc --decode_raw`
 from decode_named import decode_named, DecodeNamedError  # in-process `protoc --decode`
+import contextlib, importlib, io
 import datetime
 from mitmproxy.utils import strutils
 from mitmproxy import ctx
@@ -34,6 +35,20 @@ sys.path.append(mypath)
 
 #print(sys.version)
 #print(text_format.__file__)
+
+class ScriptDecodeError(Exception):
+    pass
+
+def run_decoder_script(module, data):
+    # what `python3 module.py FILE` printed, stdout and stderr together with newlines as check_output(text=True)
+    # returned them, but run in this process: the script's decode(data) with its output captured
+    out = io.StringIO(newline=None)
+    try:
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+            importlib.import_module(module).decode(data)
+    except Exception as e:
+        raise ScriptDecodeError("%s: %s: %s" % (module, type(e).__name__, e)) from e
+    return out.getvalue()
 
 def printBinaryString(string):
     for c in string:
@@ -535,17 +550,13 @@ def decode_firebase_analytics(bytes, verbose=True, debug=False):
         if debug:
             fname='/tmp/appmeas_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        return subprocess.check_output("python3 '"+mypath+"/app_measurement_decode.py' '"+fname+"'", 
-                                       shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        return run_decoder_script("app_measurement_decode", bytes)
         # pb = app_measurement_pb2.POST_body()
         # pb.ParseFromString(bytes)
         # return str(pb)
-    except subprocess.CalledProcessError as e:
+    except ScriptDecodeError as e:
         if verbose:
             print("***ERROR: ",e)
         return "Failed: "
@@ -614,16 +625,12 @@ def decode_log_batch(bytes, verbose=True, debug=False):
         if debug:
             fname='/tmp/batch_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        str = subprocess.check_output("python3 '"+mypath+"/logbatch_decode.py' '"+fname+"'", 
-                                      shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        str = run_decoder_script("logbatch_decode", bytes)
         # print(str)
         return(str)
-    except subprocess.CalledProcessError as e:        
+    except ScriptDecodeError as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -635,16 +642,12 @@ def decode_playstore(bytes, verbose=True, debug=False):
         if debug:
             fname='/tmp/playstore_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        str = subprocess.check_output("python3 '"+mypath+"/playstore_decode.py' '"+fname+"'", 
-                                      shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        str = run_decoder_script("playstore_decode", bytes)
         # print(str)
         return(str)
-    except subprocess.CalledProcessError as e:        
+    except ScriptDecodeError as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -656,19 +659,15 @@ def decode_playstore_response(bytes, verbose=True, debug=False):
         if debug:
             fname='/tmp/playstore_response_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
+            f.write(bytes)
+            f.close()
         # finsky_protobuf's are from // and https://github.com/mmcloughlin/finsky/tree/master/protobuf
         str = decode_named("Response.ResponseWrapper", "response.proto", bytes, mypath+"/finsky_protobuf")
         #print(str)
-        str = subprocess.check_output("python3 '"+mypath+"/playstoreresponse_decode.py' '"+fname+"'", 
-                                      shell=True, stderr=subprocess.STDOUT, text=True)
+        str = run_decoder_script("playstoreresponse_decode", bytes)
         #print(str)
         return(str)
-    except (subprocess.CalledProcessError, DecodeNamedError) as e:        
+    except (ScriptDecodeError, DecodeNamedError) as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"

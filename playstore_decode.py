@@ -120,49 +120,53 @@ def decode_playstoreevent(buf, verbose=True,debug=False):
         return "Failed"
 
 
-#f = open('/tmp/playstore_bytes', 'rb')
-if len(sys.argv)>1:
-    fname=sys.argv[1]
-else:
-    fname='/tmp/playstore_bytes'
-f = open(fname, 'rb')
-data = f.read()
-f.close()
-#print(decode_pb(data))
+def decode(data):
+    # prints what running this script on a file holding data prints
+    global logSourceName
+    #print(decode_pb(data))
 
-try:
-    decoded = decode_named("LogRequest", "playstore.proto", data)
-    # print out untidily ...
-    #print(decoded)
-
-    playstore = playstore_pb2.LogRequest()
-    playstore.ParseFromString(data)
-    #print(playstore)
-
-    # print out tidily ...
-    #print("*************")
-    #print("client_info {\n"+textwrap.indent(str(playstore.client_info),'   ')+"}")
-    print(protoToString("client_info", playstore.client_info))
-    logSourceName = str(playstore.LogSource.Name(playstore.log_source))
-    print("log_source: "+logSourceName)
-    print("request_time_ms: "+str(playstore.request_time_ms))
-    #print("play_logger_metrics {"+textwrap.indent(str(playstore.play_logger_metrics),'   ')+"}")
-    print(protoToString("play_logger_metrics", playstore.play_logger_metrics))
-    print("serverTimestamp: "+str(playstore.serverTimestamp))
-    print("google_ad_id: "+str(playstore.google_ad_id))
-    print("limit_ad_tracking: "+str(playstore.limit_ad_tracking))
     try:
-        # print out any other fields we might have missed
-        unknown = protoUnknownFieldsToString(playstore)
-        if len(unknown) > 0:
-            print(unknown)
-    except:
-        pass
+        decoded = decode_named("LogRequest", "playstore.proto", data)
+        # print out untidily ...
+        #print(decoded)
 
-    if playstore.serialized_log_events is not None:
-        print(decode_pb_array(logSourceName+" SERIALIZED LOG EVENT (decoded)", playstore.serialized_log_events, decode_playstoreevent))
+        playstore = playstore_pb2.LogRequest()
+        playstore.ParseFromString(data)
+        #print(playstore)
 
-except Exception as e:
-    print("***ERROR: ",e)
-    traceback.print_exc(file=sys.stdout)
+        # print out tidily ...
+        #print("*************")
+        #print("client_info {\n"+textwrap.indent(str(playstore.client_info),'   ')+"}")
+        print(protoToString("client_info", playstore.client_info))
+        logSourceName = str(playstore.LogSource.Name(playstore.log_source))
+        print("log_source: "+logSourceName)
+        print("request_time_ms: "+str(playstore.request_time_ms))
+        #print("play_logger_metrics {"+textwrap.indent(str(playstore.play_logger_metrics),'   ')+"}")
+        print(protoToString("play_logger_metrics", playstore.play_logger_metrics))
+        print("serverTimestamp: "+str(playstore.serverTimestamp))
+        print("google_ad_id: "+str(playstore.google_ad_id))
+        print("limit_ad_tracking: "+str(playstore.limit_ad_tracking))
+        try:
+            # print out any other fields we might have missed
+            unknown = protoUnknownFieldsToString(playstore)
+            if len(unknown) > 0:
+                print(unknown)
+        except:
+            pass
 
+        if playstore.serialized_log_events is not None:
+            print(decode_pb_array(logSourceName+" SERIALIZED LOG EVENT (decoded)", playstore.serialized_log_events, decode_playstoreevent))
+
+    except Exception as e:
+        print("***ERROR: ",e)
+        traceback.print_exc(file=sys.stdout)
+
+if __name__ == "__main__":
+    if len(sys.argv)>1:
+        fname=sys.argv[1]
+    else:
+        fname='/tmp/playstore_bytes'
+    f = open(fname, 'rb')
+    data = f.read()
+    f.close()
+    decode(data)

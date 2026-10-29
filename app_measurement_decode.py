@@ -29,65 +29,69 @@ code2str = {}
 for i in range(len(b)):
     code2str[b[i]] = a[i]
 
-try:
+def decode(data):
+    # prints what running this script on a file holding data prints
+    try:
+        decoded = decode_named("POST_body", "app_measurement.proto3", data)
+
+        for code in code2str.keys():
+            decoded = decoded.replace('"'+code+'"', '"'+code+'"'+' // '+code2str[code])
+
+        if True:  # for easy grepping
+            try:
+                firebase_bytes = data
+                firebase = app_measurement_pb2.POST_body()
+                firebase.ParseFromString(firebase_bytes)
+                for b in makeIter(firebase.body):
+                    #print(b.event)
+                    for e in makeIter(b.event):
+                        if e.event_code == "_vs":
+                            print("+++FIREBASE_ANALYTICS screen_view", e.event_timestamp, b.package_name, b.firebase_instance_id)
+                            for ei in e.event_info:
+                                if ei.setting_code == "_sc":
+                                    if b.cookie:
+                                        cookie=str(b.cookie)
+                                    else:
+                                        cookie="<empty>"
+                                    print("+++FIREBASE_ANALYTICS screen_view details", e.event_timestamp, b.package_name, b.firebase_instance_id, ei.data_str, cookie)
+                        elif e.event_code == "_f":
+                            print("+++FIREBASE_ANALYTICS first_open", e.event_timestamp, b.package_name, b.firebase_instance_id)
+                        elif e.event_code == "_ab":
+                            print("+++FIREBASE_ANALYTICS app_background", e.event_timestamp, b.package_name, b.firebase_instance_id)
+                        elif e.event_code == "_e":
+                            print("+++FIREBASE_ANALYTICS user_engagement", e.event_timestamp, b.package_name, b.firebase_instance_id)
+            except Exception as e:
+                print("grep failed:")
+                print(repr(e))
+        if False:  # terse
+            # just write out minimal event info
+            lines = decoded.split('\n')
+            out = ""
+            for s in lines:
+                m = re.search(' event_timestamp: ([0-9]+)', s)
+                if m:
+                    out = out+" "+m.group(1)
+                elif re.search('package_name', s):
+                    out = out+s
+                elif re.search('event {', s):
+                    out = out+"\n"
+                elif re.search('event_code', s):
+                    out = out+s
+                elif re.search('Activity', s):
+                    out = out+s
+            print(out)
+        else:
+            print(decoded)
+
+    except DecodeNamedError as e:
+        print("***ERROR: ",e)
+
+if __name__ == "__main__":
     if len(sys.argv)>1:
         fname=sys.argv[1]
     else:
         fname='/tmp/appmeas_bytes'
     f = open(fname, 'rb')
-    decoded = decode_named("POST_body", "app_measurement.proto3", f.read())
+    data = f.read()
     f.close()
-
-    for code in code2str.keys():
-        decoded = decoded.replace('"'+code+'"', '"'+code+'"'+' // '+code2str[code])
-
-    if True:  # for easy grepping
-        try:
-            f = open(fname, 'rb')
-            firebase_bytes = f.read()
-            f.close()
-            firebase = app_measurement_pb2.POST_body()
-            firebase.ParseFromString(firebase_bytes)
-            for b in makeIter(firebase.body):
-                #print(b.event)
-                for e in makeIter(b.event):
-                    if e.event_code == "_vs":
-                        print("+++FIREBASE_ANALYTICS screen_view", e.event_timestamp, b.package_name, b.firebase_instance_id)
-                        for ei in e.event_info:
-                            if ei.setting_code == "_sc":
-                                if b.cookie:
-                                    cookie=str(b.cookie)
-                                else:
-                                    cookie="<empty>"
-                                print("+++FIREBASE_ANALYTICS screen_view details", e.event_timestamp, b.package_name, b.firebase_instance_id, ei.data_str, cookie)
-                    elif e.event_code == "_f":
-                        print("+++FIREBASE_ANALYTICS first_open", e.event_timestamp, b.package_name, b.firebase_instance_id)
-                    elif e.event_code == "_ab":
-                        print("+++FIREBASE_ANALYTICS app_background", e.event_timestamp, b.package_name, b.firebase_instance_id)
-                    elif e.event_code == "_e":
-                        print("+++FIREBASE_ANALYTICS user_engagement", e.event_timestamp, b.package_name, b.firebase_instance_id)
-        except Exception as e:
-            print("grep failed:")
-            print(repr(e))
-    if False:  # terse
-        # just write out minimal event info
-        str = decoded.split('\n')
-        out = ""
-        for s in str:
-            m = re.search(' event_timestamp: ([0-9]+)', s)
-            if m:
-                out = out+" "+m.group(1)
-            elif re.search('package_name', s):
-                out = out+s
-            elif re.search('event {', s):
-                out = out+"\n"
-            elif re.search('event_code', s):
-                out = out+s
-            elif re.search('Activity', s):
-                out = out+s
-        print(out)
-    else:
-        print(decoded)
-
-except DecodeNamedError as e:
-    print("***ERROR: ",e)
+    decode(data)

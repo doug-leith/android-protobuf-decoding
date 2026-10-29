@@ -17,7 +17,7 @@ import pytz
 mypath = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(mypath)
 from decode_named import decode_named, DecodeNamedError  # in-process `protoc --decode`
-from decoding_helpers import decode_pb, decode_wbxml, decode_log_batch, decode_firebase_analytics, try_decode_pb_array, protoUnknownFieldsToString, protoToString, fieldIsSet, makeIter
+from decoding_helpers import run_decoder_script, ScriptDecodeError, decode_pb, decode_wbxml, decode_log_batch, decode_firebase_analytics, try_decode_pb_array, protoUnknownFieldsToString, protoToString, fieldIsSet, makeIter
 import gboard_named_pb  # LATIN_IME, from gboard_named.proto (old manual gboard.proto3 kept as gboard.proto3.backup)
 import icing_named_pb  # ICING, from icing_named.proto (generated from the GMS 21.48.15 APK)
 import activity_recognition_pb2
@@ -501,17 +501,13 @@ def decode_tron(bytes, verbose=True, terse=False, debug=False):
         if debug:
             fname='/tmp/tron_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
+            f.write(bytes)
+            f.close()
         #decoded = subprocess.check_output("protoc --decode=\"TronRequest\" -I='"+mypath+"' tron.proto  </tmp/tron_bytes", shell=True, stderr=subprocess.STDOUT, text=True)
-        decoded = subprocess.check_output("python3 '"+mypath+"/tron_decode.py' '"+fname+"'", 
-                                      shell=True, stderr=subprocess.STDOUT, text=True)
+        decoded = run_decoder_script("tron_decode", bytes)
         #print("TRON decoded="+decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:        
+    except ScriptDecodeError as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -600,80 +596,84 @@ def decode_scoobymessage(bytes, verbose=True, terse=False, Grep=True, debug=Fals
             print("***ERROR: ",e)
         return "Failed"
 
-if len(sys.argv)>1:
-    fname=sys.argv[1]
-else:
-    fname='/tmp/batch_bytes'
-f = open(fname, 'rb')
-data = f.read()
-f.close()
-#print(decode_pb(data))
+def decode(data):
+    # prints what running this script on a file holding data prints
+    #print(decode_pb(data))
 
-try:
-    logbatch = logbatch_pb2.ClearcutLoggerEvents()
-    logbatch.ParseFromString(data)
-    for i in range(len(logbatch.inner)):
-        inner = logbatch.inner[i]
-        # just output dialer events, ignore the rest
-        #if inner.logSourceName == "ANDROID_DIALER":
-        #    try_decode_pb_array(None, inner.logEntry, decode_dialer_pb, verbose=False)
-        # just output messages events, ignore the rest
-        #if inner.logSourceName == "ANDROID_MESSAGING":
-        #    try_decode_pb_array(None, inner.logEntry, decode_messaging_pb, verbose=False)
-        #continue
-        print("logBatchInner "+str(i)+" {")
-        #print("header{\n"+textwrap.indent(str(inner.header),'   ')+"}")
-        print(protoToString("header", inner.header))
-        if "androidID" in str(inner.header):
-            androidID = True
-        else:
-            androidID = False
-        print("currentTimeMillis: "+str(inner.currentTimeMillis))
-        print("pseudonymousIdToken: "+inner.pseudonymousIdToken)
-        print("elapsedTime: "+str(inner.elapsedTime))
-        print("qosTier: "+str(inner.qosTier))
-        print("deviceStatus{\n"+textwrap.indent(str(inner.deviceStatus),'   ')+"}")
-        # print out any other fields we might have missed
-        unknown = protoUnknownFieldsToString(inner)
-        if len(unknown) > 0:
-            print(unknown)
+    try:
+        logbatch = logbatch_pb2.ClearcutLoggerEvents()
+        logbatch.ParseFromString(data)
+        for i in range(len(logbatch.inner)):
+            inner = logbatch.inner[i]
+            # just output dialer events, ignore the rest
+            #if inner.logSourceName == "ANDROID_DIALER":
+            #    try_decode_pb_array(None, inner.logEntry, decode_dialer_pb, verbose=False)
+            # just output messages events, ignore the rest
+            #if inner.logSourceName == "ANDROID_MESSAGING":
+            #    try_decode_pb_array(None, inner.logEntry, decode_messaging_pb, verbose=False)
+            #continue
+            print("logBatchInner "+str(i)+" {")
+            #print("header{\n"+textwrap.indent(str(inner.header),'   ')+"}")
+            print(protoToString("header", inner.header))
+            if "androidID" in str(inner.header):
+                androidID = True
+            else:
+                androidID = False
+            print("currentTimeMillis: "+str(inner.currentTimeMillis))
+            print("pseudonymousIdToken: "+inner.pseudonymousIdToken)
+            print("elapsedTime: "+str(inner.elapsedTime))
+            print("qosTier: "+str(inner.qosTier))
+            print("deviceStatus{\n"+textwrap.indent(str(inner.deviceStatus),'   ')+"}")
+            # print out any other fields we might have missed
+            unknown = protoUnknownFieldsToString(inner)
+            if len(unknown) > 0:
+                print(unknown)
 
-        if True:  #tag log source name with whether androidID is set in header
-            if not androidID:
-                print("logSourceName: "+inner.logSourceName+' (anon)') 
+            if True:  #tag log source name with whether androidID is set in header
+                if not androidID:
+                    print("logSourceName: "+inner.logSourceName+' (anon)') 
+                else:
+                    print("logSourceName: "+inner.logSourceName)
             else:
                 print("logSourceName: "+inner.logSourceName)
-        else:
-            print("logSourceName: "+inner.logSourceName)
-        #try_decode_pb_array("logEntry", inner.logEntry, decode_pb)   
-        if inner.logSourceName == "ANDROID_MESSAGING":
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_messaging_pb, verbose=True, debug=False) )  
-        elif inner.logSourceName == "ANDROID_DIALER":
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_dialer_pb, verbose=True, debug=False))
-        elif inner.logSourceName == "LATIN_IME":
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_gboard_pb, verbose=True, debug=False))
-        elif inner.logSourceName == "ICING":
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_icing_pb, verbose=True, debug=False))
-        elif inner.logSourceName == "WESTWORLD" or inner.logSourceName == "ANONYMOUS_WESTWORLD":
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_westworld, verbose=True, debug=False))
-        elif inner.logSourceName == "LB_AS" or inner.logSourceName == "LB_CFG":
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_lockbox, verbose=True, debug=False))
-        elif inner.logSourceName == "TRON":
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_tron, verbose=True, debug=False))
-            #print('logEntry:')
-            #res=decode_tron(inner.logEntry) 
-            #if res=="Failed":
-        elif inner.logSourceName == "ACTIVITY_RECOGNITION":
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_AR, verbose=True, debug=False))
-        elif inner.logSourceName == "NETSTATS":
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_netstats, verbose=True, debug=False))
-        elif inner.logSourceName == "SCOOBY_EVENTS":
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_scoobyevents, verbose=True, debug=False))
-        elif inner.logSourceName == "SCOOBY_MESSAGE_LOG":
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_scoobymessage, verbose=True, debug=False))
-        else:
-            print(try_decode_pb_array("logEntry", inner.logEntry, decode_pb, verbose=True, debug=False))
-        print("}")
-except Exception as e:
-    pprint("***ERROR: ",e)
+            #try_decode_pb_array("logEntry", inner.logEntry, decode_pb)   
+            if inner.logSourceName == "ANDROID_MESSAGING":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_messaging_pb, verbose=True, debug=False) )  
+            elif inner.logSourceName == "ANDROID_DIALER":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_dialer_pb, verbose=True, debug=False))
+            elif inner.logSourceName == "LATIN_IME":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_gboard_pb, verbose=True, debug=False))
+            elif inner.logSourceName == "ICING":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_icing_pb, verbose=True, debug=False))
+            elif inner.logSourceName == "WESTWORLD" or inner.logSourceName == "ANONYMOUS_WESTWORLD":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_westworld, verbose=True, debug=False))
+            elif inner.logSourceName == "LB_AS" or inner.logSourceName == "LB_CFG":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_lockbox, verbose=True, debug=False))
+            elif inner.logSourceName == "TRON":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_tron, verbose=True, debug=False))
+                #print('logEntry:')
+                #res=decode_tron(inner.logEntry) 
+                #if res=="Failed":
+            elif inner.logSourceName == "ACTIVITY_RECOGNITION":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_AR, verbose=True, debug=False))
+            elif inner.logSourceName == "NETSTATS":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_netstats, verbose=True, debug=False))
+            elif inner.logSourceName == "SCOOBY_EVENTS":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_scoobyevents, verbose=True, debug=False))
+            elif inner.logSourceName == "SCOOBY_MESSAGE_LOG":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_scoobymessage, verbose=True, debug=False))
+            else:
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_pb, verbose=True, debug=False))
+            print("}")
+    except Exception as e:
+        pprint("***ERROR: ",e)
 
+if __name__ == "__main__":
+    if len(sys.argv)>1:
+        fname=sys.argv[1]
+    else:
+        fname='/tmp/batch_bytes'
+    f = open(fname, 'rb')
+    data = f.read()
+    f.close()
+    decode(data)

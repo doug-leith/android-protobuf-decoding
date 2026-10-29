@@ -362,14 +362,18 @@ def decode_tron_pb(data, verbose=True, debug=False):
         return "Failed"
 
 
-#f = open('/tmp/tron_bytes', 'rb')
-if len(sys.argv)>1:
-    fname=sys.argv[1]
-else:
-    fname='/tmp/tron_bytes'
-f = open(fname, 'rb')
-data = f.read()
-f.close()
-res=try_decode_pb_array("tron event", data, decode_tron_pb, verbose=True, debug=False)
-#print(decode_pb(data))
-print(res)
+def decode(data):
+    # prints what running this script on a file holding data prints
+    res=try_decode_pb_array("tron event", data, decode_tron_pb, verbose=True, debug=False)
+    #print(decode_pb(data))
+    print(res)
+
+if __name__ == "__main__":
+    if len(sys.argv)>1:
+        fname=sys.argv[1]
+    else:
+        fname='/tmp/tron_bytes'
+    f = open(fname, 'rb')
+    data = f.read()
+    f.close()
+    decode(data)
