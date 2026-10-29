@@ -12,7 +12,7 @@ sys.path.append(mypath)
 from decoding_helpers import decode_pb, decode_pb_array, protoUnknownFieldsToString, protoToString, makeIter, fieldIsSet
 
 
-def decode_playstoreevent(buf, verbose=False,debug=False):
+def decode_playstoreevent(buf, verbose=True,debug=False):
 
     try:
         if debug:
@@ -78,14 +78,14 @@ def decode_playstoreevent(buf, verbose=False,debug=False):
                                 if fieldIsSet(playstorelogevent.search.query):
                                     grep=grep+"+++PLAYSTORE search "+playstorelogevent.search.query+"\n"
                         except Exception as e:
-                            print(e)
+                            print("***ERROR: ",e)
                     elif (logSourceName == "WESTINGHOUSE"): 
                         try: 
                             ext = subprocess.check_output("protoc --decode=\"WestinghouseEvent\" -I='"+mypath+"' playstore.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
                         except Exception as e:
-                            print(e)
+                            print("***ERROR: ",e)
                 except Exception as e:
-                    print(e)
+                    print("***ERROR: ",e)
                     ext = decode_pb(logevent.source_extension)
             else:
                 ext = decode_pb(logevent.source_extension)
@@ -100,8 +100,11 @@ def decode_playstoreevent(buf, verbose=False,debug=False):
             #print(logevent.type_of_event, int(logevent.type_of_event) in typeOfEvent.keys())
             type_of_event = str(logevent.type_of_event)
             if len(logevent.type_of_event)>0:
-                if int(logevent.type_of_event) in typeOfEvent.keys():
-                    type_of_event = typeOfEvent[int(logevent.type_of_event)]                
+                try:
+                    if logevent.type_of_event in str(typeOfEvent.keys()):
+                        type_of_event = typeOfEvent[int(logevent.type_of_event)]   
+                except Exception as e:
+                    print("***ERROR: ",e)             
             decoded = decoded+"\ntype_of_event: "+type_of_event
             decoded = decoded+"\ntimezone_offset_seconds: "+str(logevent.timezone_offset_seconds)
             decoded = decoded+"\nClient Info {\n"+protoToString("client_ve",logevent.client_ve)
@@ -116,10 +119,9 @@ def decode_playstoreevent(buf, verbose=False,debug=False):
         else:
             decoded = decoded_logevent
         return(grep+decoded)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 
@@ -166,6 +168,6 @@ try:
         print(decode_pb_array(logSourceName+" SERIALIZED LOG EVENT (decoded)", playstore.serialized_log_events, decode_playstoreevent))
 
 except Exception as e:
-    print(repr(e))
+    print("***ERROR: ",e)
     traceback.print_exc(file=sys.stdout)
 

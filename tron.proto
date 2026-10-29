@@ -7495,6 +7495,8 @@ message TronRequest {
     	// Index of action on notification for notification tapped
     	// 1 is for EMAIL, 2 is for PHONE, 3 is for ADDRESS, 4 is for URL, 0 is for OTHER for Text selection "assist" menu item
     	// 1 is for SCREEN_ON, 2 is for SCREEN_OFF for Assist gesture triggered
+    	// 1 is KEYCODE_SOFT_LEFT , 2 is KEYCODE_SOFT_RIGHT, 3 is KEYCODE_HOME , 4 is KEYCODE_BACK
+    	// 1 is ORIENTATION_PORTRAIT, 2 is ORIENTATION_LANDSCAPE
     	// CameraEvent enum for camera event
     	optional int32 tronEventSubType=6;  // g
 
@@ -7505,8 +7507,11 @@ message TronRequest {
     	optional string notificationTag=11;  //l 
     	optional string base64MessageDigest=12;  //m
     	message TronAccountInfo { // ccus
-    		optional int32 numAccounts=1;
+    		optional int32 numAccounts=1;  // number of accounts with swaa=on & swaa_dl=on
+    		optional bool optInUsageReportingEnabled=2;  // always set true wnen numAccounts=0
     		optional int32 accountIndex=3;
+    		optional bool canUploadDeviceInformation=4;
+    		optional bool canUploadSupplementalWebAndAppActivity=6; 
     	}
     	optional TronAccountInfo accountInfo=13; //n
     	//optional int32 notificationShadeIndex=14; //o

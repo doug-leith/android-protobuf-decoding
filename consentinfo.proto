@@ -1,0 +1,26 @@
+syntax = "proto2";
+
+enum BoolVal {
+	NotSet=0;
+	False=1;
+	True=2;
+}
+
+message ConsentInformation {
+optional BoolVal checkboxEnabled=1; // usage and diagnostics setting
+optional BoolVal checkboxGooglePlayServicesVersionValid=2; // OptInGMSCoreVersion >= new_checkbox_gms_core_version_bound=11200000 (so v old), but OptInGMSCoreVersion=-1 when optInUsageReportingEnabled=false, so optInGooglePlayServicesVersionValid always false when optInUsageReportingEnabled=false
+optional BoolVal supplWebAndApp=3;  // google account dashboard setting: web & app activity subsetting "Incl Chrome history and activity from sites, apps and devices that use Google services"
+optional BoolVal supplWebAndApp_DeviceLevel=4; 
+optional BoolVal deviceInfo=5;        // a google account dashboard setting, but not sure which one.
+optional BoolVal deviceInfo_DeviceLevel=6;
+optional BoolVal platform_mnop=7;  // a phenotype setting, defaults to false
+optional BoolVal optInPlayPass=8;  // likely google play pass https://support.google.com/googleplay/answer/9473027?hl=en
+optional BoolVal checkboxFromSetupWizard=9;  // not sure what this is
+optional BoolVal multiUserCheckbox=10;  // true if all users have usage and diagnostics on, else false.  
+}
+
+message ConsentInformationWrapper {
+	optional ConsentInformation consentInformation=1;
+	repeated int32 whitelistKeys=2 [packed=true];
+	optional int32 userCount=15;
+}

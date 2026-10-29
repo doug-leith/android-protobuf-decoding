@@ -1,9 +1,21 @@
 syntax = 'proto2';
 
-message TronFieldConfigList {
-	message TronFieldConfig {
-		optional int32 key=1;
-		optional int32 tag =2;
-	}
+message TronFieldConfig {
+	optional int32 key=1;
+	optional int32 tag =2;
+}
+message TronFieldConfigWrapper {
 	repeated TronFieldConfig tronFieldConfig=1;
+}
+message TronFieldConfigList {
+	optional TronFieldConfigWrapper tronFieldConfigWrapper=1;	
+}
+
+message TronViewRateList {
+	message TronViewRate {
+		optional int32 start=1;
+		optional int32 end =2;
+		optional float rate=3;
+	}
+	repeated TronViewRate tronViewRate=1;
 }

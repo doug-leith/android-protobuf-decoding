@@ -358,7 +358,7 @@ def decode_tron_pb(data, verbose=True, debug=False):
         return res
     except Exception as e:
         if verbose:
-            print(repr(e))
+            print("***ERROR: ",e)
         return "Failed"
 
 

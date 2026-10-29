@@ -198,7 +198,7 @@ def printRequest(url, request):
                 buf = base64.urlsafe_b64decode(val)
                 print("Decoded "+q+" query parameter:\n", decode_pb(buf,verbose=True,debug=False))
             except Exception as e:
-                print(e)
+                print("***ERROR: ",e)
 
     # handlers for known google post data formats
     request_decoders={
@@ -298,9 +298,9 @@ def printResponse(url, response, verboseResponse=False):
                 print(responseData[:1000],"<truncated>")
 
     
-from mitm_protobuf import format_pbuf
-import difflib
-def decode_pb(bb, verbose=False, debug=False):
+#from mitm_protobuf import format_pbuf
+#import difflib
+def decode_pb(bb, verbose=True, debug=False):
     # try to decode a protobuf without knowing the schema, usually works fine
     # but there can be ambiguity in encoding and so result may not be quite what we'd
     # like e.g. an embedded protobuf might be parsed as a bytes field.
@@ -327,9 +327,9 @@ def decode_pb(bb, verbose=False, debug=False):
         '''
         return res
     except subprocess.CalledProcessError as e:  
-        res=""
+        res=""        
         if verbose:
-            res=str(e.output)+"\n"
+            res="***ERROR: "+str(e.output)+"\n"
             res=res+str(e)+"\n"
             return "Failed to parse input\n"+res
         return "Failed"
@@ -357,10 +357,11 @@ def decode_pb_array(name, buf, decoder, verbose=False, debug=False):
     while (pos < len(buf)):
         try:
             msg_len, new_pos = _DecodeVarint32(buf[pos:len(buf)], 0)
-        except:
+        except Exception as e:
             # pretty bad if this happens, just dump out the binary and exit
             #print()"Problem decoding Varint32 in protobuf array.  Raw POST data is:")
             #printBinaryString(orig)
+            print("***ERROR decoding Varint32: ",e)
             return("Problem decoding Varint32 in protobuf array.  Raw POST data is:\n"+str(orig))
         #if msg_len <= 0:  # shouldn't happen
         #    raise Exception("decode_pb_array(): msg_len <= 0 ("+str(msg_len)+")")
@@ -408,9 +409,9 @@ def protoUnknownFieldsToString(pb, verbose=True):
     try:
         # try to use newer unknown fields API
         printer._PrintUnknownFields(UnknownFieldSet(pb))
-    except Exception as e:
+    except Exception as e:    
         if verbose:
-            print("In protoUnknownFieldsToString couldn't get UnknownFieldSet: ",e)
+            print("***ERROR In protoUnknownFieldsToString couldn't get UnknownFieldSet: ",e)
     #old API
     #printer._PrintUnknownFields(pb.UnknownFields())
     result = out.getvalue()
@@ -449,7 +450,7 @@ def decodeCerts(certchain):
             try:
                 res=res+"\t"+property+":"+str(getattr(cert,property))+"\n"
             except Exception as e:
-                print(e)
+                print("***ERROR: ",e)
         try:
             res=res+"\t"+"public key:"+str(cert.public_key().public_bytes(
                 encoding=serialization.Encoding.PEM,format=serialization.PublicFormat.SubjectPublicKeyInfo))+"\n"
@@ -471,7 +472,7 @@ def decode_signedcerts(payload):
             res = res +decodeCerts(cert)
         return res
     except Exception as e:
-        #print(e)
+        print("***ERROR: ",e)
         return str(response)
 
 def decode_eek(payload):
@@ -505,6 +506,7 @@ def decode_gRPC(data,decoder,tag="POST Body (gRPC decoded)"):
             #print(repr(e))
             #print("compressed ",compressed, "length", length, "data len ",len(orig_data),len(data))
             #print("Invalid gRPC message: ",(orig_data,))
+            #print("***ERROR: ",e)
             return "Invalid gRPC message: "+str(orig_data)
         res=res+try_decode_pb_array(tag, message, decoder)+"\n"
         data = data[5+length:]
@@ -546,12 +548,11 @@ def decode_firebase_analytics(bytes, verbose=True, debug=False):
         # return str(pb)
     except subprocess.CalledProcessError as e:
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed: "
 
 
-def decode_firebase_logbatch_event(bytes, verbose=False, grep=True, debug=False):
+def decode_firebase_logbatch_event(bytes, verbose=True, grep=True, debug=False):
     try:
         if debug:
             fname='/tmp/firebaselogbatch_bytes'
@@ -569,13 +570,11 @@ def decode_firebase_logbatch_event(bytes, verbose=False, grep=True, debug=False)
                 if fieldIsSet(firebase.traceMetric) and firebase.traceMetric.name:
                     decoded =decoded +'+++FIREBASE_BATCH '+str(firebase.traceMetric.clientStartTimeis)+" "+str(firebase.applicationInfo.androidAppInfo.packageName)+" "+str(firebase.applicationInfo.appInstanceId)+" "+str(firebase.traceMetric.name)+"\n"
             except Exception as e:
-                print("firebase grep failed:\n")
-                print(repr(e))
+                print("***ERROR firebase grep: ",e)
         return decoded
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 def decode_firebase_logbatch(postData, verbose=True):
@@ -611,8 +610,7 @@ def decode_firebase_logbatch(postData, verbose=True):
             count = count+1
         return res
     except Exception as e:
-        print("JSON decoding failed:")
-        print(repr(e))
+        print("***ERROR JSON decoding: ",e)
 
 def decode_log_batch(bytes, verbose=True, debug=False):
     # partially decodes POST payload from https://play.googleapis.com/log/batch endpoint
@@ -629,10 +627,9 @@ def decode_log_batch(bytes, verbose=True, debug=False):
                                       shell=True, stderr=subprocess.STDOUT, text=True)
         # print(str)
         return(str)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 
@@ -651,10 +648,9 @@ def decode_playstore(bytes, verbose=True, debug=False):
                                       shell=True, stderr=subprocess.STDOUT, text=True)
         # print(str)
         return(str)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 
@@ -676,14 +672,13 @@ def decode_playstore_response(bytes, verbose=True, debug=False):
                                       shell=True, stderr=subprocess.STDOUT, text=True)
         #print(str)
         return(str)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 
-def decode_checkin(bytes, verbose=False, debug=False):
+def decode_checkin(bytes, verbose=True, debug=False):
     try:
         #f = open('/tmp/checkin_bytes', 'wb')
         if debug:
@@ -698,14 +693,13 @@ def decode_checkin(bytes, verbose=False, debug=False):
         #decoded = subprocess.check_output("protoc --decode=\"AndroidCheckinRequest\" -I='"+mypath+"' checkin_chrome.proto  </tmp/checkin_bytes", shell=True, stderr=subprocess.STDOUT, text=True)
         #print(decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:       
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 
-def decode_checkin_response(bytes, verbose=False, debug=False):
+def decode_checkin_response(bytes, verbose=True, debug=False):
     try:
         #f = open('/tmp/checkin_resp_bytes', 'wb')
         if debug:
@@ -722,12 +716,11 @@ def decode_checkin_response(bytes, verbose=False, debug=False):
         return(decoded)
     except subprocess.CalledProcessError as e:
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 
-def decode_deviceKeyRequest(bytes, verbose=False, debug=False):
+def decode_deviceKeyRequest(bytes, verbose=True, debug=False):
     try:
         #f = open('/tmp/devicekey_bytes', 'wb')
         if debug:
@@ -741,13 +734,12 @@ def decode_deviceKeyRequest(bytes, verbose=False, debug=False):
         decoded = subprocess.check_output("protoc --decode=\"DeviceKeyRequest\" -I='"+mypath+"' devicekeyrequest.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
         #print(decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
-def decode_deviceKeyResponse(bytes, verbose=False, debug=False):
+def decode_deviceKeyResponse(bytes, verbose=True, debug=False):
     try:
         #f = open('/tmp/devicekey_bytes', 'wb')
         if debug:
@@ -761,10 +753,9 @@ def decode_deviceKeyResponse(bytes, verbose=False, debug=False):
         decoded = subprocess.check_output("protoc --decode=\"DeviceKeyResponse\" -I='"+mypath+"' devicekeyrequest.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
         #print(decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 def decode_locm(data, verbose=True, debug=False):
@@ -803,14 +794,21 @@ def decode_locm(data, verbose=True, debug=False):
         decoded = subprocess.check_output("protoc --decode=\"LocRequest\" -I='"+mypath+"' locm.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
         #print(decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
+def get_expt_name():
+    if ctx.options.expt_name:
+        # allows to run on multiple files without creating clashes
+        expt_name = ctx.options.expt_name
+    else:
+        expt_name=""
+    return str(expt_name)
+
 kollektomat_count=0
-def decode_kollektomatproto(bytes, verbose=False, debug=False, Grep=True, saveData=True):
+def decode_kollektomatproto(bytes, verbose=True, debug=False, Grep=True, saveData=True):
     try:
         if debug:
             global kollektomat_count
@@ -834,14 +832,9 @@ def decode_kollektomatproto(bytes, verbose=False, debug=False, Grep=True, saveDa
                     continue
                 if not request.locRequest.signals:
                     continue
-                if ctx.options.expt_name:
-                    # allows to run on multiple files without creating clashes
-                    expt_name = ctx.options.expt_name
-                else:
-                    expt_name=""
                 for signals in request.locRequest.signals:
                     if fieldIsSet(signals.gpsInfo) and signals.gpsInfo.latLong:
-                        fname='/tmp/kollektomat_gpslocs'+expt_name
+                        fname='/tmp/kollektomat_gpslocs'+get_expt_name()
                         f = open(fname, 'a')
                         print("lat: ",float(signals.gpsInfo.latLong.lat)/1.0e7, " long: ", float(signals.gpsInfo.latLong.long)/1.0e7, "gpsTime: ", signals.gpsInfo.gpsTime, ' ', end='', file=f)
                         if fieldIsSet(signals.gpsInfo.speed):
@@ -849,7 +842,7 @@ def decode_kollektomatproto(bytes, verbose=False, debug=False, Grep=True, saveDa
                         print(file=f)
                         f.close()
                     elif fieldIsSet(signals.wifiSignals) and signals.wifiSignals.wifiSignal:
-                        fname='/tmp/kollektomat_wifilocs'+expt_name
+                        fname='/tmp/kollektomat_wifilocs'+get_expt_name()
                         f = open(fname, 'a')
                         print(int(signals.wifiSignals.timestamp),' ', end='', file=f)
                         for wifi in signals.wifiSignals.wifiSignal:
@@ -876,16 +869,14 @@ def decode_kollektomatproto(bytes, verbose=False, debug=False, Grep=True, saveDa
                         grep=grep+s.replace(" ", "")+" "
                 grep=grep+"\n"
             except Exception as e:
-                print("AKOLLEKTOMAT grep failed:")
-                print(e)
+                print("***ERROR KOLLEKTOMAT grep: ",e)
         return grep+decoded
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
-def decode_kollektomat(postData, verbose=False, debug=False):
+def decode_kollektomat(postData, verbose=True, debug=False):
     #print("raw: ",postData)
     return(decode_gRPC(postData,decode_kollektomatproto))
 
@@ -911,9 +902,8 @@ def decodeBase64ZippedProto(header):
         unzipped = zlib.decompress(buf, 32 + zlib.MAX_WBITS)
         return decode_pb(unzipped)
     except Exception as e:
-        print(e)
+        print("***ERROR: ",e)
         return "Failed"
-
 
 def decodeXGoogXSpatula(header, debug=False):
     buf = urlsafe_decodeBase64(header)
@@ -931,23 +921,30 @@ def decodeXGoogXSpatula(header, debug=False):
     return("Decoded x-goog-spatula header:\n"+decoded)
     #return(decoded)
 
-def decodeAuthBearerHeader(header, debug=False):
+def decodeAuthBearerHeader(header, verbose=True, debug=False):
     # example: ya29.m.CqkEASf-AWiMjE32vF2w15AemCtG9oEVKMmZb0nTui52upWAWK5BdGGWTH56eclQbzl7z_3WJQo-B7a8MvQUpKT3mFenAl_P8Sj87WZG74IA6D7VHv77c2D998XR3h3GusC_Z1r87prVJPvZYcknxec8BsJZteObEGtb3zoUu-7_3w87SyynzLFM852uVKkOi5EO60Xtqg9ti6Cdo1hyHOECiDk6j6_dgTkZzhnzHPsMJsd9F9Db-oLuk2ffF6Y4Q924wzLA_6ZTqiGbJZrIt7FOVMCOwwzVsRfsqclRAx-ICGqAl-GvUbVP5TxQdiLdVzwI5-HIk00G_Ap4MgD7X-XbTFjTL5eaWtbbR9YJ4HX6xchgraf1fEqDOYVzHC3kHLXWdttPh1pvMrCGHs9n7wYCzVjR_jr5KeoP2RK066lqDcdCSg-RfT08qxWDLmFeNJur8gBC6HiqqzrDgdU01TxwI9xUAiK5Lm2zS-eCFUISo4NK421xUHdNe_eFY4WrDij6-TXkyzZN4LZ0mvz91ec9b0vL19frdJq9pl2riuxrixlb2ZxMv0WuE9jL0vj3aiVLRvuQxtScmn8XN0O8EYZVTPjIbu9cnghV4UEqMunY5fHpmhfMUDSfURG_mvR8AWMuqP5IC9BeWmDrgTbEuOnIsQGvGhB53XLO3mKN2tanptCj2BWuj6oN0k7wSUus9hLrhC6vFuyHMnYdf4nxwjmuuN4f6pJhCY460xIMCAESBgoBMxDRHBgFGiBAuva1FdbuSY0ohuHtc0CktKXibIqksqQO1SGn9r24eiICCAEqK2FDZ1lLQVlrU0FSSVNGUUhHWDJNaVl6X3ZTdDVKTmdINURHY0FfYm8tdlE
-    buf = urlsafe_decodeBase64(header[7:])
-    if debug:
-        fname='/tmp/intermediatetoken_bytes'
-        f = open(fname, 'wb')
-    else:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        fname=f.name
-    f.write(buf)
-    f.close()
-    decoded = subprocess.check_output("protoc --decode=\"IntermediateToken\" -I='"+mypath+"' intermediatetoken.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
-    return("Decoded Auth Bearer header:\n"+decoded)
-
+    try:
+        buf = urlsafe_decodeBase64(header[7:])
+        if debug:
+            fname='/tmp/intermediatetoken_bytes'
+            f = open(fname, 'wb')
+        else:
+            f = tempfile.NamedTemporaryFile(delete=False)
+            fname=f.name
+        f.write(buf)
+        f.close()
+        decoded = subprocess.check_output("protoc --decode=\"IntermediateToken\" -I='"+mypath+"' intermediatetoken.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        return("Decoded Auth Bearer header:\n"+decoded)
+    except Exception as e:
+        if verbose:
+            print("***ERROR: decoding Auth Bearer header: ",e)
+        
+heterodyne_count=0
 def decodeHeterodyneResponse(buf, verbose=True, debug=False):
     if debug:
-        fname='/tmp/heterodyneresponse_bytes'
+        global heterodyne_count
+        fname='/tmp/heterodyneresponse_bytes'+get_expt_name()+str(heterodyne_count)
+        heterodyne_count=heterodyne_count+1
         f = open(fname, 'wb')
     else:
         f = tempfile.NamedTemporaryFile(delete=False)
@@ -957,10 +954,9 @@ def decodeHeterodyneResponse(buf, verbose=True, debug=False):
     try:
         decoded = subprocess.check_output("protoc --decode=\"HeterodyneResponse\" -I='"+mypath+"' exptsandconfigs_response.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
         return("Decoded heterodyne response:\n"+decoded)
-    except subprocess.CalledProcessError as e:  
+    except subprocess.CalledProcessError as e:         
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e) 
         print("Failed to decode heterodyne response, raw response:")
         printBinaryString(buf)
 
@@ -977,10 +973,9 @@ def decodeHeterodyneRequest(buf, verbose=True, debug=False):
     try:
         decoded = subprocess.check_output("protoc --decode=\"HeterodyneRequest\" -I='"+mypath+"' exptsandconfigs_request.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
         return("Decoded heterodyne request:\n"+decoded)
-    except subprocess.CalledProcessError as e:  
+    except subprocess.CalledProcessError as e:         
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e) 
         print("Failed to decode heterodyne request, raw request:")
         printBinaryString(buf)
 
@@ -999,10 +994,10 @@ def decodeFLRequestRequest(buf, verbose=True, debug=False):
         decoded = subprocess.check_output("protoc --decode=\"google.internal.federatedml.v2.ClientStreamMessage\" -I='"+mypath+"/federated_learning_protos' federated_api.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
         #print("Decoded FL request:\n", decoded)
         return decoded
-    except subprocess.CalledProcessError as e:  
+    except subprocess.CalledProcessError as e:
+         
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR FLRequest: ",e) 
             #print("Failed to decode FLRequest, raw request:")
             #printBinaryString(buf)
         return "Failed"
@@ -1029,10 +1024,9 @@ def decode_wbxml(buf, verbose=True, debug=False):
         xml = f.read()
         f.close()
         return xml
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 
@@ -1051,7 +1045,7 @@ def decode_bond(buf, debug=False):
     try:
         return subprocess.check_output("./onedrive -i "+fname, shell=True, stderr=subprocess.STDOUT, text=True)
     except Exception as e:
-        print(e)
+        print("***ERROR: ",e)
         return "Failed"
 
 def bytes_to_escaped_str(

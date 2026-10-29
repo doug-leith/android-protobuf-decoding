@@ -32,7 +32,7 @@ message HeterodyneResponse { //cfkr
 			optional bool boolVal=3;
 			optional float floatVal=4;
 			optional string stringVal=5;
-			//optional google.protobuf.Any blob=6; // its a protobuf
+			optional bytes blob=6; // its a protobuf
 			optional bool valueIsSet=7;
 			optional int32 flagType=8;
 			optional FlagValueType valueType=9;

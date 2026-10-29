@@ -9,6 +9,8 @@ import os
 import re
 import dumper
 import tempfile
+from datetime import datetime
+import pytz
 
 # add folder where this script is to python search path (so can find helpers)
 mypath = os.path.dirname(os.path.realpath(__file__))
@@ -19,7 +21,7 @@ import icing_named_pb  # ICING, from icing_named.proto (generated from the GMS 2
 import activity_recognition_pb2
 
 
-def decode_messaging_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
+def decode_messaging_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
     if debug:
         fname='/tmp/message_bytes'
         f = open(fname, 'wb')
@@ -40,7 +42,12 @@ def decode_messaging_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
                 for s in res:
                     m = re.match('timestamp: ([0-9]+)', s)
                     if m and not ts:
-                        out = out+m.group(1)+" "
+                        tstamp=int(m.group(1))
+                        out = out+str(tstamp)+" "
+                        grep = grep+str(tstamp)+" "
+                        date=datetime.utcfromtimestamp(tstamp/1000)
+                        date_str = date.astimezone(pytz.FixedOffset(0)).strftime('%d/%m/%Y_%H:%M:%S.%f_%z')
+                        grep = grep+date_str+" "
                         ts = True
                     elif re.search('eventType', s):
                         out = out+s
@@ -75,17 +82,15 @@ def decode_messaging_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
                     print(out)
                     return ""
             except Exception as e:
-                print("ANDROID_MESSAGING grep failed:")
-                print(e)
+                print("***ERROR ANDROID_MESSAGING grep: ",e)
         return grep+decoded
-    except subprocess.CalledProcessError as e: 
+    except subprocess.CalledProcessError as e:         
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 
-def decode_dialer_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
+def decode_dialer_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
     if debug:
         fname='/tmp/dialer_bytes'
         f = open(fname, 'wb')
@@ -107,7 +112,12 @@ def decode_dialer_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
                     m = re.match('timestamp: ([0-9]+)', s)
                     if m and not ts:
                         #print(m.groups())
-                        out = out+m.group(1)+" "
+                        tstamp=int(m.group(1))
+                        out = out+str(tstamp)+" "
+                        grep = grep+str(tstamp)+" "
+                        date=datetime.utcfromtimestamp(tstamp/1000)
+                        date_str = date.astimezone(pytz.FixedOffset(0)).strftime('%d/%m/%Y_%H:%M:%S.%f_%z')
+                        grep = grep+date_str+" "
                         ts = True
                     elif re.search('impressionEvent', s):
                         out = out+s
@@ -135,17 +145,15 @@ def decode_dialer_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
                     print(out)
                     return ""
             except Exception as e:
-                print("ANDROID_DIALER grep failed:")
-                print(e)
+                print("***ERROR ANDROID_DIALER grep: ",e)
         return grep+decoded
     except subprocess.CalledProcessError as e:
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 
-def decode_gboard_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
+def decode_gboard_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
     if debug:
         fname='/tmp/gboard_bytes'
         f = open(fname, 'wb')
@@ -192,13 +200,11 @@ def decode_gboard_pb(bb, verbose=False, terse=False, Grep=True, debug=False):
                     event=str(gboard.keyboardEvent)
                 grep="+++LATIN_IME %s %s %s %s %s\n"%(gboard.currentTimeMillis,gboard.elapsedRealtime,event,packageName,wordInfo)
             except Exception as e:
-                print("LATIN_IME grep failed:")
-                print(e)
+                print("***ERROR LATIN_IME grep: ",e)
         return grep+decoded
     except subprocess.CalledProcessError as e: 
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR LATIN_IME: ",e)
         return "Failed"
 
 
@@ -321,8 +327,7 @@ def printAtomInfo(t, a, strhash, westworld):
                 print("+++WESTWORLD_NETWORKREPORT", t, l.transport_type, success)
 
     except Exception as e:
-        print("printAtom failed:")
-        print(repr(e))
+        print("***ERROR printAtom failed: ",e)
         traceback.print_exc(file=sys.stdout)
         print('----')
         print(a)
@@ -340,6 +345,11 @@ def grep_westworld(bytes):
         westworld = stats_log_pb2.WestworldRequest()
         westworld.ParseFromString(bytes)
         # print interesting content in a way that's easy to grep out of log file
+        for kv in westworld.keyValuePair:
+            if kv.key == "CONSENT_INFO":
+                print("CONSENT_INFO (decoded):")
+                print(subprocess.check_output("echo \""+kv.value+"\" | base64 -D | protoc --decode=\"ConsentInformationWrapper\" -I='"+mypath+"' consentinfo.proto", shell=True, stderr=subprocess.STDOUT, text=True))
+
         for w in makeIter(westworld.statsLogMetricsReport):
             if not w.configMetricsReportList:
                 return
@@ -360,8 +370,7 @@ def grep_westworld(bytes):
                                 print("+++WESTWORLD_STRINGS", s, res)
                                 strhashes[res] = s   # mapping from hash to string
                             except Exception as e:
-                                print("SMHasher failed:")
-                                print(repr(e))
+                                print("***ERROR SMHasher failed: ",e)
                 if bootTimeNanos<0:
                     print("ERROR: bootTimeNanos not set by WESTWORLD!")
                 # now walk through the events
@@ -381,7 +390,7 @@ def grep_westworld(bytes):
                                             for elapsed_time in aa.aggregated_atom_info.elapsed_timestamp_nanos:
                                                 printAtom(elapsed_time+bootTimeNanos, aa.atom, None, westworld)
                                 except Exception as e:
-                                    print("event metrics failed:"); print(repr(e))
+                                    print("***ERROR event metrics failed: ",e)
                                     print("---"); print(aa); print("---")
                             elif m.gauge_metrics and m.gauge_metrics.data:
                                 try:
@@ -405,13 +414,12 @@ def grep_westworld(bytes):
                                                         for elapsed_time in b.elapsed_timestamp_nanos:
                                                             printAtom(elapsed_time+bootTimeNanos, c, strhash, westworld)
                                 except Exception as e:
-                                    print("gauge metrics failed:"); print(repr(e))
+                                    print("***ERROR gauge metrics failed: ",e)
                                     print("---"); print(aa); print("---")
     except Exception as e:
-        print('grep westworld failed:')
-        print(e)
+        print("***ERROR WESTWORLD grep: ",e)
 
-def decode_westworld(bytes, verbose=False, terse=False, grep=True, debug=False):
+def decode_westworld(bytes, verbose=True, terse=False, grep=True, debug=False):
     try:
         if debug:
             fname='/tmp/westworld_bytes'
@@ -426,14 +434,13 @@ def decode_westworld(bytes, verbose=False, terse=False, grep=True, debug=False):
         if grep:
             grep_westworld(bytes)
         return(decoded)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 
-def decode_lockbox(bytes, verbose=False, terse=False, Grep=True, debug=False):
+def decode_lockbox(bytes, verbose=True, terse=False, Grep=True, debug=False):
     try:
         if debug:
             fname='/tmp/lockbox_bytes'
@@ -451,15 +458,18 @@ def decode_lockbox(bytes, verbose=False, terse=False, Grep=True, debug=False):
             # print interesting content in a way that's easy to grep out of log file
             for l in lockbox.lockboxUsageReport:
                 print("+++LOCKBOX", l.timestamp, lockbox.EventType.Name(l.eventType), l.packageName, l.className)
+            for kv in lockbox.keyValuePair:
+                if kv.key == "CONSENT_INFO":
+                    print("CONSENT_INFO (decoded):")
+                    print(subprocess.check_output("echo \""+kv.value+"\" | base64 -D | protoc --decode=\"ConsentInformationWrapper\" -I='"+mypath+"' consentinfo.proto", shell=True, stderr=subprocess.STDOUT, text=True))
         return(decoded)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 
-def decode_AR(bytes, verbose=False, terse=False, Grep=True, debug=False):
+def decode_AR(bytes, verbose=True, terse=False, Grep=True, debug=False):
     try:
         if debug:
             fname='/tmp/AR_bytes'
@@ -496,13 +506,11 @@ def decode_AR(bytes, verbose=False, terse=False, Grep=True, debug=False):
                             aaa=ar.activityTransitionEvent.newActivity1
                             print("+++ACTIVITY_RECOGNITION_TRANSITION", aa.timeMillis, aaa.activity, aaa.confidence)
             except Exception as e:
-                print("Failed grepping AR:")
-                print(repr(e))
+                print("***ERROR AR grep: ",e)
         return(decoded)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
 
@@ -522,13 +530,12 @@ def decode_tron(bytes, verbose=True, terse=False, debug=False):
                                       shell=True, stderr=subprocess.STDOUT, text=True)
         #print("TRON decoded="+decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
-def decode_netstats(bytes, verbose=False, terse=False, debug=False):
+def decode_netstats(bytes, verbose=True, terse=False, debug=False):
     try:
         if debug:
             fname='/tmp/netstats_bytes'
@@ -541,13 +548,12 @@ def decode_netstats(bytes, verbose=False, terse=False, debug=False):
         decoded = subprocess.check_output("protoc --decode=\"NetstatsRequest\" -I='"+mypath+"' netstats.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
         #print(decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:        
         if verbose:
-            print(e.output)
-            print(e)
+            print("***ERROR: ",e)
         return "Failed"
 
-def decode_scoobyevents(bytes, verbose=False, terse=False, Grep=True, debug=False):
+def decode_scoobyevents(bytes, verbose=True, terse=False, Grep=True, debug=False):
     try:
         if debug:
             fname='/tmp/scoobyevents_bytes'
@@ -558,27 +564,35 @@ def decode_scoobyevents(bytes, verbose=False, terse=False, Grep=True, debug=Fals
         f.write(bytes)
         f.close()
         decoded = subprocess.check_output("protoc --decode=\"ScoobyEventsRequest\" -I='"+mypath+"' scoobyevents.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        decoded_alt = subprocess.check_output("protoc --decode=\"AltScoobyEventsRequest\" -I='"+mypath+"' scoobyevents.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
         #print(decoded)
         grep=""
         if (decoded is not None) and Grep:
             grep="+++SCOOBY_EVENTS ";
             res = decoded.split('\n')
             try:
+                found = False
                 for s in res:
                     if re.search('phoneNumber', s):
                         grep=grep+s.replace(" ", "")
+                        found=True
+                if not found:
+                    # try alt protobuf format
+                    res_alt = decoded_alt.split('\n')
+                    for s in res:
+                        if re.search('phoneNumber', s):
+                            grep=grep+s.replace(" ", "")
                 grep=grep+"\n"
             except Exception as e:
-                print("SCOOBY_EVENTS grep failed:")
-                print(e)
+                print("***ERROR SCOOBY_EVENTS grep: ",e)
                 return "Failed"
         return grep+decoded
     except subprocess.CalledProcessError as e:
-        #print(e.output)
-        #print(e)
+        if verbose:
+            print("***ERROR: ",e)
         return "Failed"
 
-def decode_scoobymessage(bytes, verbose=False, terse=False, Grep=True, debug=False):
+def decode_scoobymessage(bytes, verbose=True, terse=False, Grep=True, debug=False):
     try:
         if debug:
             fname='/tmp/scoobymessageevents_bytes'
@@ -600,13 +614,12 @@ def decode_scoobymessage(bytes, verbose=False, terse=False, Grep=True, debug=Fal
                         grep=grep+s.replace(" ", "")
                 grep=grep+"\n"
             except Exception as e:
-                print("SCOOBY_MESSAGE_LOG grep failed:")
-                print(e)
+                print("***ERROR SCOOBY_MESSAGE_LOG grep: ",e)
                 return "Failed"
         return grep+decoded
     except subprocess.CalledProcessError as e:
-        #print(e.output)
-        #print(e)
+        if verbose:
+            print("***ERROR: ",e)
         return "Failed"
 
 if len(sys.argv)>1:
@@ -684,5 +697,5 @@ try:
             print(try_decode_pb_array("logEntry", inner.logEntry, decode_pb, verbose=True, debug=False))
         print("}")
 except Exception as e:
-    print(e)
+    pprint("***ERROR: ",e)
 

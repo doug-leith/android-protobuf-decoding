@@ -87,5 +87,4 @@ try:
         print(decoded)
 
 except subprocess.CalledProcessError as e:
-    print(e.output)
-    print(e)
+    print("***ERROR: ",e)
