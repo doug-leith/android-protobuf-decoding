@@ -125,3 +125,4 @@ mitmdump --flow-detail 0 -s decoding_helpers.py -nr mitmdump-file
 where mitmdump-file is a packet trace file recorded using e.g. mitmdump -w mitmdump-file
 
 - decoding_helpers.py also includes helper functions for decoding which can be called directly (the same code doubles up as a mitmproxy addon and as a set of helper functions)
+- decode_raw.py decodes protobufs without a schema in-process, with the same output as `protoc --decode_raw` (running protoc once per message was most of the addon's run time). check_decode_raw.py compares the two byte for byte on saved payloads plus fuzzed ones; rerun it after a protoc upgrade: `python3 check_decode_raw.py --protoc protoc FOLDER_OF_PAYLOADS`
