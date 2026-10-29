@@ -9,12 +9,14 @@ import os
 import re
 import dumper
 import tempfile
+import base64
 from datetime import datetime
 import pytz
 
 # add folder where this script is to python search path (so can find helpers)
 mypath = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(mypath)
+from decode_named import decode_named, DecodeNamedError  # in-process `protoc --decode`
 from decoding_helpers import decode_pb, decode_wbxml, decode_log_batch, decode_firebase_analytics, try_decode_pb_array, protoUnknownFieldsToString, protoToString, fieldIsSet, makeIter
 import gboard_named_pb  # LATIN_IME, from gboard_named.proto (old manual gboard.proto3 kept as gboard.proto3.backup)
 import icing_named_pb  # ICING, from icing_named.proto (generated from the GMS 21.48.15 APK)
@@ -25,13 +27,10 @@ def decode_messaging_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
     if debug:
         fname='/tmp/message_bytes'
         f = open(fname, 'wb')
-    else:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        fname=f.name
-    f.write(bb)
-    f.close()
+        f.write(bb)
+        f.close()
     try:
-        decoded = subprocess.check_output("cat "+fname+" | protoc --decode=AndroidMessaging_LogEntry -I='"+mypath+"' android_messaging.proto3",shell=True,stderr=subprocess.STDOUT, text=True)
+        decoded = decode_named("AndroidMessaging_LogEntry", "android_messaging.proto3", bb)
         grep=""
         if decoded is not None and (Grep or terse):
             # just write out minimal event info, handy for getting an overview of a sequence of events
@@ -84,7 +83,7 @@ def decode_messaging_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
             except Exception as e:
                 print("***ERROR ANDROID_MESSAGING grep: ",e)
         return grep+decoded
-    except subprocess.CalledProcessError as e:         
+    except DecodeNamedError as e:         
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -94,13 +93,10 @@ def decode_dialer_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
     if debug:
         fname='/tmp/dialer_bytes'
         f = open(fname, 'wb')
-    else:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        fname=f.name
-    f.write(bb)
-    f.close()
+        f.write(bb)
+        f.close()
     try:
-        decoded = subprocess.check_output("cat "+fname+" | protoc --decode=AndroidDialer_LogEntry -I='"+mypath+"' android_dialer.proto3",shell=True,stderr=subprocess.STDOUT, text=True)
+        decoded = decode_named("AndroidDialer_LogEntry", "android_dialer.proto3", bb)
         grep=""
         if decoded is not None and (Grep or terse):
             # just write out minimal event info
@@ -147,7 +143,7 @@ def decode_dialer_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
             except Exception as e:
                 print("***ERROR ANDROID_DIALER grep: ",e)
         return grep+decoded
-    except subprocess.CalledProcessError as e:
+    except DecodeNamedError as e:
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -157,13 +153,10 @@ def decode_gboard_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
     if debug:
         fname='/tmp/gboard_bytes'
         f = open(fname, 'wb')
-    else:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        fname=f.name
-    f.write(bb)
-    f.close()
+        f.write(bb)
+        f.close()
     try:
-        decoded = subprocess.check_output("cat "+fname+" | protoc --decode=LatinIME_LogEntry -I='"+mypath+"' gboard_named.proto",shell=True,stderr=subprocess.STDOUT, text=True)
+        decoded = decode_named("LatinIME_LogEntry", "gboard_named.proto", bb)
         grep=""
         if decoded is not None and terse:
             # just write out minimal event info
@@ -202,7 +195,7 @@ def decode_gboard_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
             except Exception as e:
                 print("***ERROR LATIN_IME grep: ",e)
         return grep+decoded
-    except subprocess.CalledProcessError as e: 
+    except DecodeNamedError as e: 
         if verbose:
             print("***ERROR LATIN_IME: ",e)
         return "Failed"
@@ -214,13 +207,10 @@ def decode_icing_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
     if debug:
         fname='/tmp/icing_bytes'
         f = open(fname, 'wb')
-    else:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        fname=f.name
-    f.write(bb)
-    f.close()
+        f.write(bb)
+        f.close()
     try:
-        decoded = subprocess.check_output("cat "+fname+" | protoc --decode=Icing_LogEntry -I='"+mypath+"' icing_named.proto",shell=True,stderr=subprocess.STDOUT, text=True)
+        decoded = decode_named("Icing_LogEntry", "icing_named.proto", bb)
         grep=""
         if Grep:
             try:
@@ -235,7 +225,7 @@ def decode_icing_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
             except Exception as e:
                 print("***ERROR ICING grep: ",e)
         return grep+decoded
-    except subprocess.CalledProcessError as e:
+    except DecodeNamedError as e:
         if verbose:
             print("***ERROR ICING: ",e)
         return "Failed"
@@ -348,7 +338,7 @@ def grep_westworld(bytes):
         for kv in westworld.keyValuePair:
             if kv.key == "CONSENT_INFO":
                 print("CONSENT_INFO (decoded):")
-                print(subprocess.check_output("echo \""+kv.value+"\" | base64 -D | protoc --decode=\"ConsentInformationWrapper\" -I='"+mypath+"' consentinfo.proto", shell=True, stderr=subprocess.STDOUT, text=True))
+                print(decode_named("ConsentInformationWrapper", "consentinfo.proto", base64.b64decode(kv.value)))
 
         for w in makeIter(westworld.statsLogMetricsReport):
             if not w.configMetricsReportList:
@@ -424,17 +414,14 @@ def decode_westworld(bytes, verbose=True, terse=False, grep=True, debug=False):
         if debug:
             fname='/tmp/westworld_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"android.os.statsd.WestworldRequest\" -I='"+mypath+"' stats_log.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        decoded = decode_named("android.os.statsd.WestworldRequest", "stats_log.proto", bytes)
         #print(decoded)
         if grep:
             grep_westworld(bytes)
         return(decoded)
-    except subprocess.CalledProcessError as e:        
+    except DecodeNamedError as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -445,12 +432,9 @@ def decode_lockbox(bytes, verbose=True, terse=False, Grep=True, debug=False):
         if debug:
             fname='/tmp/lockbox_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"LockboxRequest\" -I='"+mypath+"' lockbox.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        decoded = decode_named("LockboxRequest", "lockbox.proto", bytes)
         #print(decoded)
         if Grep:
             lockbox = lockbox_pb2.LockboxRequest()
@@ -461,9 +445,9 @@ def decode_lockbox(bytes, verbose=True, terse=False, Grep=True, debug=False):
             for kv in lockbox.keyValuePair:
                 if kv.key == "CONSENT_INFO":
                     print("CONSENT_INFO (decoded):")
-                    print(subprocess.check_output("echo \""+kv.value+"\" | base64 -D | protoc --decode=\"ConsentInformationWrapper\" -I='"+mypath+"' consentinfo.proto", shell=True, stderr=subprocess.STDOUT, text=True))
+                    print(decode_named("ConsentInformationWrapper", "consentinfo.proto", base64.b64decode(kv.value)))
         return(decoded)
-    except subprocess.CalledProcessError as e:        
+    except (DecodeNamedError, ValueError) as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -474,12 +458,9 @@ def decode_AR(bytes, verbose=True, terse=False, Grep=True, debug=False):
         if debug:
             fname='/tmp/AR_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"ActivityRecognitionRequest\" -I='"+mypath+"' activity_recognition.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        decoded = decode_named("ActivityRecognitionRequest", "activity_recognition.proto", bytes)
         #print(decoded)
         if Grep:
             try: 
@@ -508,7 +489,7 @@ def decode_AR(bytes, verbose=True, terse=False, Grep=True, debug=False):
             except Exception as e:
                 print("***ERROR AR grep: ",e)
         return(decoded)
-    except subprocess.CalledProcessError as e:        
+    except DecodeNamedError as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -540,15 +521,12 @@ def decode_netstats(bytes, verbose=True, terse=False, debug=False):
         if debug:
             fname='/tmp/netstats_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"NetstatsRequest\" -I='"+mypath+"' netstats.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        decoded = decode_named("NetstatsRequest", "netstats.proto", bytes)
         #print(decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:        
+    except DecodeNamedError as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -558,12 +536,9 @@ def decode_scoobyevents(bytes, verbose=True, terse=False, Grep=True, debug=False
         if debug:
             fname='/tmp/scoobyevents_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"ScoobyEventsRequest\" -I='"+mypath+"' scoobyevents.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        decoded = decode_named("ScoobyEventsRequest", "scoobyevents.proto", bytes)
         #print(decoded)
         grep=""
         if (decoded is not None) and Grep:
@@ -578,8 +553,8 @@ def decode_scoobyevents(bytes, verbose=True, terse=False, Grep=True, debug=False
                 if not found:
                     # try alt protobuf format (events in field 1, seen in some older measurements)
                     try:
-                        decoded_alt = subprocess.check_output("protoc --decode=\"AltScoobyEventsRequest\" -I='"+mypath+"' scoobyevents.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
-                    except subprocess.CalledProcessError:
+                        decoded_alt = decode_named("AltScoobyEventsRequest", "scoobyevents.proto", bytes)
+                    except DecodeNamedError:
                         decoded_alt = ""
                     res_alt = decoded_alt.split('\n')
                     for s in res_alt:
@@ -593,7 +568,7 @@ def decode_scoobyevents(bytes, verbose=True, terse=False, Grep=True, debug=False
                 print("***ERROR SCOOBY_EVENTS grep: ",e)
                 return "Failed"
         return grep+decoded
-    except subprocess.CalledProcessError as e:
+    except DecodeNamedError as e:
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -603,12 +578,9 @@ def decode_scoobymessage(bytes, verbose=True, terse=False, Grep=True, debug=Fals
         if debug:
             fname='/tmp/scoobymessageevents_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"ScoobyEventsRequest\" -I='"+mypath+"' scoobymessageevents.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        decoded = decode_named("ScoobyEventsRequest", "scoobymessageevents.proto", bytes)
         #print(decoded)
         grep=""
         if (decoded is not None) and Grep:
@@ -623,7 +595,7 @@ def decode_scoobymessage(bytes, verbose=True, terse=False, Grep=True, debug=Fals
                 print("***ERROR SCOOBY_MESSAGE_LOG grep: ",e)
                 return "Failed"
         return grep+decoded
-    except subprocess.CalledProcessError as e:
+    except DecodeNamedError as e:
         if verbose:
             print("***ERROR: ",e)
         return "Failed"

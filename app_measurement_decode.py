@@ -8,6 +8,7 @@ import re
 mypath = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(mypath)
 import app_measurement_pb2
+from decode_named import decode_named, DecodeNamedError  # in-process `protoc --decode`
 
 
 def makeIter(tt):
@@ -33,7 +34,9 @@ try:
         fname=sys.argv[1]
     else:
         fname='/tmp/appmeas_bytes'
-    decoded = subprocess.check_output("protoc --decode=\"POST_body\" -I='"+mypath+"' app_measurement.proto3  <"+fname,shell=True,stderr=subprocess.STDOUT, text=True)
+    f = open(fname, 'rb')
+    decoded = decode_named("POST_body", "app_measurement.proto3", f.read())
+    f.close()
 
     for code in code2str.keys():
         decoded = decoded.replace('"'+code+'"', '"'+code+'"'+' // '+code2str[code])
@@ -86,5 +89,5 @@ try:
     else:
         print(decoded)
 
-except subprocess.CalledProcessError as e:
+except DecodeNamedError as e:
     print("***ERROR: ",e)

@@ -9,6 +9,7 @@ import traceback
 
 mypath = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(mypath)
+from decode_named import decode_named, DecodeNamedError  # in-process `protoc --decode`
 from decoding_helpers import decode_pb, decode_pb_array, protoUnknownFieldsToString, protoToString, makeIter, fieldIsSet
 
 
@@ -18,12 +19,9 @@ def decode_playstoreevent(buf, verbose=True,debug=False):
         if debug:
             fname='/tmp/logevent_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(buf)
-        f.close()
-        decoded_logevent = subprocess.check_output("protoc --decode=\"LogEvent\" -I='"+mypath+"' playstore.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(buf)
+            f.close()
+        decoded_logevent = decode_named("LogEvent", "playstore.proto", buf)
         #print(decoded_logevent)
         logevent = playstore_pb2.LogEvent()
         logevent.ParseFromString(buf)
@@ -33,15 +31,12 @@ def decode_playstoreevent(buf, verbose=True,debug=False):
             if debug:
                 fname='/tmp/ext_bytes'
                 f = open(fname, 'wb')
-            else:
-                f = tempfile.NamedTemporaryFile(delete=False)
-                fname=f.name
-            f.write(logevent.source_extension)
-            f.close()
+                f.write(logevent.source_extension)
+                f.close()
             if (fieldIsSet(logSourceName) and logSourceName in ["MARKET","WESTINGHOUSE"]):
                 try:
                     if (logSourceName == "MARKET"):  # "MARKET", decode as PlayStoreLogEvent
-                        ext = subprocess.check_output("protoc --decode=\"PlayStoreLogEvent\" -I='"+mypath+"' playstore.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+                        ext = decode_named("PlayStoreLogEvent", "playstore.proto", logevent.source_extension)
                         try:
                             playstorelogevent = playstore_pb2.PlayStoreLogEvent()
                             playstorelogevent.ParseFromString(logevent.source_extension)
@@ -81,7 +76,7 @@ def decode_playstoreevent(buf, verbose=True,debug=False):
                             print("***ERROR: ",e)
                     elif (logSourceName == "WESTINGHOUSE"): 
                         try: 
-                            ext = subprocess.check_output("protoc --decode=\"WestinghouseEvent\" -I='"+mypath+"' playstore.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+                            ext = decode_named("WestinghouseEvent", "playstore.proto", logevent.source_extension)
                         except Exception as e:
                             print("***ERROR: ",e)
                 except Exception as e:
@@ -119,7 +114,7 @@ def decode_playstoreevent(buf, verbose=True,debug=False):
         else:
             decoded = decoded_logevent
         return(grep+decoded)
-    except subprocess.CalledProcessError as e:        
+    except DecodeNamedError as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -136,7 +131,7 @@ f.close()
 #print(decode_pb(data))
 
 try:
-    decoded = subprocess.check_output("protoc --decode=\"LogRequest\" -I='"+mypath+"' playstore.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+    decoded = decode_named("LogRequest", "playstore.proto", data)
     # print out untidily ...
     #print(decoded)
 

@@ -19,6 +19,7 @@ import warnings
 import firebase_logbatch_pb2
 import locm_pb2
 from decode_raw import decode_raw, DecodeRawError  # in-process `protoc --decode_raw`
+from decode_named import decode_named, DecodeNamedError  # in-process `protoc --decode`
 import datetime
 from mitmproxy.utils import strutils
 from mitmproxy import ctx
@@ -555,12 +556,9 @@ def decode_firebase_logbatch_event(bytes, verbose=True, grep=True, debug=False):
         if debug:
             fname='/tmp/firebaselogbatch_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"FirelogEvent\" -I='"+mypath+"' firebase_logbatch.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        decoded = decode_named("FirelogEvent", "firebase_logbatch.proto", bytes)
         if grep:
             try:
                 firebase = firebase_logbatch_pb2.FirelogEvent()
@@ -570,7 +568,7 @@ def decode_firebase_logbatch_event(bytes, verbose=True, grep=True, debug=False):
             except Exception as e:
                 print("***ERROR firebase grep: ",e)
         return decoded
-    except subprocess.CalledProcessError as e:        
+    except DecodeNamedError as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -664,13 +662,13 @@ def decode_playstore_response(bytes, verbose=True, debug=False):
         f.write(bytes)
         f.close()
         # finsky_protobuf's are from // and https://github.com/mmcloughlin/finsky/tree/master/protobuf
-        str = subprocess.check_output("protoc --decode=\"Response.ResponseWrapper\" -I='"+mypath+"/finsky_protobuf' response.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        str = decode_named("Response.ResponseWrapper", "response.proto", bytes, mypath+"/finsky_protobuf")
         #print(str)
         str = subprocess.check_output("python3 '"+mypath+"/playstoreresponse_decode.py' '"+fname+"'", 
                                       shell=True, stderr=subprocess.STDOUT, text=True)
         #print(str)
         return(str)
-    except subprocess.CalledProcessError as e:        
+    except (subprocess.CalledProcessError, DecodeNamedError) as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -682,16 +680,13 @@ def decode_checkin(bytes, verbose=True, debug=False):
         if debug:
             fname='/tmp/checkin_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"CheckinRequest\" -I='"+mypath+"' checkin.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        decoded = decode_named("CheckinRequest", "checkin.proto", bytes)
         #decoded = subprocess.check_output("protoc --decode=\"AndroidCheckinRequest\" -I='"+mypath+"' checkin_chrome.proto  </tmp/checkin_bytes", shell=True, stderr=subprocess.STDOUT, text=True)
         #print(decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:       
+    except DecodeNamedError as e:       
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -703,16 +698,13 @@ def decode_checkin_response(bytes, verbose=True, debug=False):
         if debug:
             fname='/tmp/checkin_resp_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"CheckinResponse\" -I='"+mypath+"' checkin.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        decoded = decode_named("CheckinResponse", "checkin.proto", bytes)
         #decoded = subprocess.check_output("protoc --decode=\"AndroidCheckinResponse\" -I='"+mypath+"' checkin_chrome.proto  </tmp/checkin_resp_bytes", shell=True, stderr=subprocess.STDOUT, text=True)
         #print(decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:
+    except DecodeNamedError as e:
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -724,15 +716,12 @@ def decode_deviceKeyRequest(bytes, verbose=True, debug=False):
         if debug:
             fname='/tmp/devicekey_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"DeviceKeyRequest\" -I='"+mypath+"' devicekeyrequest.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        decoded = decode_named("DeviceKeyRequest", "devicekeyrequest.proto", bytes)
         #print(decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:        
+    except DecodeNamedError as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -743,15 +732,12 @@ def decode_deviceKeyResponse(bytes, verbose=True, debug=False):
         if debug:
             fname='/tmp/devicekey_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"DeviceKeyResponse\" -I='"+mypath+"' devicekeyrequest.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(bytes)
+            f.close()
+        decoded = decode_named("DeviceKeyResponse", "devicekeyrequest.proto", bytes)
         #print(decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:        
+    except DecodeNamedError as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -759,12 +745,6 @@ def decode_deviceKeyResponse(bytes, verbose=True, debug=False):
 def decode_locm(data, verbose=True, debug=False):
     try:
         #f = open('/tmp/locm_bytes', 'wb')
-        if debug:
-            fname='/tmp/locm_bytes'
-            f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
         # read header.  
         # writeShort(2), writeByte(0), <length><string1>, writeLong(0L), <length><string2>
         # string1="location,2023,android,gms,en_US", string2="g" 
@@ -787,12 +767,15 @@ def decode_locm(data, verbose=True, debug=False):
         posn=posn+3 # string "g" \x00\x01g
         # what follows is a gzipped protobuf
         message = zlib.decompress(data[posn:], 32+zlib.MAX_WBITS)
-        f.write(message)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"LocRequest\" -I='"+mypath+"' locm.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        if debug:
+            fname='/tmp/locm_bytes'
+            f = open(fname, 'wb')
+            f.write(message)
+            f.close()
+        decoded = decode_named("LocRequest", "locm.proto", message)
         #print(decoded)
         return(decoded)
-    except subprocess.CalledProcessError as e:        
+    except DecodeNamedError as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -813,13 +796,10 @@ def decode_kollektomatproto(bytes, verbose=True, debug=False, Grep=True, saveDat
             fname='/tmp/kollektomat_bytes_'+str(kollektomat_count)
             kollektomat_count = kollektomat_count + 1
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(bytes)
-        f.close()
+            f.write(bytes)
+            f.close()
         #print(fname)
-        decoded = subprocess.check_output("protoc --decode=\"KollektomatRequest\" -I='"+mypath+"' locm.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        decoded = decode_named("KollektomatRequest", "locm.proto", bytes)
         #print(decoded)
         if saveData:
             # save location data
@@ -869,7 +849,7 @@ def decode_kollektomatproto(bytes, verbose=True, debug=False, Grep=True, saveDat
             except Exception as e:
                 print("***ERROR KOLLEKTOMAT grep: ",e)
         return grep+decoded
-    except subprocess.CalledProcessError as e:        
+    except DecodeNamedError as e:        
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -910,12 +890,9 @@ def decodeXGoogXSpatula(header, debug=False):
     if debug:
         fname='/tmp/spatula_bytes'
         f = open(fname, 'wb')
-    else:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        fname=f.name
-    f.write(buf)
-    f.close()
-    decoded = subprocess.check_output("protoc --decode=\"GoogleSpatulaHeader\" -I='"+mypath+"' spatula.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        f.write(buf)
+        f.close()
+    decoded = decode_named("GoogleSpatulaHeader", "spatula.proto", buf)
     return("Decoded x-goog-spatula header:\n"+decoded)
     #return(decoded)
 
@@ -926,12 +903,9 @@ def decodeAuthBearerHeader(header, verbose=True, debug=False):
         if debug:
             fname='/tmp/intermediatetoken_bytes'
             f = open(fname, 'wb')
-        else:
-            f = tempfile.NamedTemporaryFile(delete=False)
-            fname=f.name
-        f.write(buf)
-        f.close()
-        decoded = subprocess.check_output("protoc --decode=\"IntermediateToken\" -I='"+mypath+"' intermediatetoken.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+            f.write(buf)
+            f.close()
+        decoded = decode_named("IntermediateToken", "intermediatetoken.proto", buf)
         return("Decoded Auth Bearer header:\n"+decoded)
     except Exception as e:
         if verbose:
@@ -944,15 +918,12 @@ def decodeHeterodyneResponse(buf, verbose=True, debug=False):
         fname='/tmp/heterodyneresponse_bytes'+get_expt_name()+str(heterodyne_count)
         heterodyne_count=heterodyne_count+1
         f = open(fname, 'wb')
-    else:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        fname=f.name
-    f.write(buf)
-    f.close()
+        f.write(buf)
+        f.close()
     try:
-        decoded = subprocess.check_output("protoc --decode=\"HeterodyneResponse\" -I='"+mypath+"' exptsandconfigs_response.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        decoded = decode_named("HeterodyneResponse", "exptsandconfigs_response.proto", buf)
         return("Decoded heterodyne response:\n"+decoded)
-    except subprocess.CalledProcessError as e:         
+    except DecodeNamedError as e:         
         if verbose:
             print("***ERROR: ",e) 
         print("Failed to decode heterodyne response, raw response:")
@@ -963,36 +934,30 @@ def decodeHeterodyneRequest(buf, verbose=True, debug=False):
     if debug:
         fname='/tmp/heterodynereq_bytes'
         f = open(fname, 'wb')
-    else:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        fname=f.name
-    f.write(buf)
-    f.close()
+        f.write(buf)
+        f.close()
     try:
-        decoded = subprocess.check_output("protoc --decode=\"HeterodyneRequest\" -I='"+mypath+"' exptsandconfigs_request.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        decoded = decode_named("HeterodyneRequest", "exptsandconfigs_request.proto", buf)
         return("Decoded heterodyne request:\n"+decoded)
-    except subprocess.CalledProcessError as e:         
+    except DecodeNamedError as e:         
         if verbose:
             print("***ERROR: ",e) 
         print("Failed to decode heterodyne request, raw request:")
         printBinaryString(buf)
 
 def decodeFLRequestRequest(buf, verbose=True, debug=False):
+    #fname='/tmp/fl_bytes'
+    #f = open(fname, 'wb')
     if debug:
         fname='/tmp/fl_bytes'
         f = open(fname, 'wb')
-    else:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        fname=f.name
-    #fname='/tmp/fl_bytes'
-    #f = open(fname, 'wb')
-    f.write(buf)
-    f.close()
+        f.write(buf)
+        f.close()
     try:
-        decoded = subprocess.check_output("protoc --decode=\"google.internal.federatedml.v2.ClientStreamMessage\" -I='"+mypath+"/federated_learning_protos' federated_api.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+        decoded = decode_named("google.internal.federatedml.v2.ClientStreamMessage", "federated_api.proto", buf, mypath+"/federated_learning_protos")
         #print("Decoded FL request:\n", decoded)
         return decoded
-    except subprocess.CalledProcessError as e:
+    except DecodeNamedError as e:
          
         if verbose:
             print("***ERROR FLRequest: ",e) 
