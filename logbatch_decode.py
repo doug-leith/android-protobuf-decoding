@@ -564,7 +564,6 @@ def decode_scoobyevents(bytes, verbose=True, terse=False, Grep=True, debug=False
         f.write(bytes)
         f.close()
         decoded = subprocess.check_output("protoc --decode=\"ScoobyEventsRequest\" -I='"+mypath+"' scoobyevents.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
-        decoded_alt = subprocess.check_output("protoc --decode=\"AltScoobyEventsRequest\" -I='"+mypath+"' scoobyevents.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
         #print(decoded)
         grep=""
         if (decoded is not None) and Grep:
@@ -577,11 +576,18 @@ def decode_scoobyevents(bytes, verbose=True, terse=False, Grep=True, debug=False
                         grep=grep+s.replace(" ", "")
                         found=True
                 if not found:
-                    # try alt protobuf format
+                    # try alt protobuf format (events in field 1, seen in some older measurements)
+                    try:
+                        decoded_alt = subprocess.check_output("protoc --decode=\"AltScoobyEventsRequest\" -I='"+mypath+"' scoobyevents.proto  <"+fname, shell=True, stderr=subprocess.STDOUT, text=True)
+                    except subprocess.CalledProcessError:
+                        decoded_alt = ""
                     res_alt = decoded_alt.split('\n')
-                    for s in res:
+                    for s in res_alt:
                         if re.search('phoneNumber', s):
                             grep=grep+s.replace(" ", "")
+                            found=True
+                    if found:
+                        decoded = decoded_alt
                 grep=grep+"\n"
             except Exception as e:
                 print("***ERROR SCOOBY_EVENTS grep: ",e)
