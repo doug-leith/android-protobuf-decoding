@@ -1,0 +1,685 @@
+edition = "2023";
+
+// Google Play services' sensor-collection upload: the request of
+// google.internal.android.location.kollektomat.v1.KollektomatService/Offer
+// (android-context-data.googleapis.com, gRPC). It carries an lbs.GLocRequest in a
+// google.protobuf.Any: Wi-Fi scans (BSSID, RSSI, frequency, SSID hash), cell scans,
+// location fixes, raw sensor samples (accelerometer, gyroscope, magnetometer,
+// barometer, ...), GNSS satellite status and raw GNSS measurements, screen/charging
+// and Bluetooth events. Schema from GMS 24.06.16 (Pixel 8 Sep 2024 factory image,
+// dex 8 and 9; obfuscated class names in comments). Names are from the code that
+// fills each field (GLocRequestComposer dvwd and the scanners in
+// com.google.android.location.collectionlib); "estimated name" marks each with its
+// evidence. Unnamed messages keep their class name, unnamed fields are f<number>.
+
+option features.utf8_validation = NONE;
+
+// request of google.internal.android.location.kollektomat.v1.KollektomatService/Offer (dvmk.b: method descriptor built with esqb/esqc)
+message KollektomatOfferRequest {  // esqb
+  AnyGLocRequest payload = 1;  // estimated name (high): google.protobuf.Any (ezgz) holding the GLocRequest bytes; dxdb sets type_url type.googleapis.com/lbs.GLocRequest
+  repeated string collector = 2;  // estimated name (high): dxdb: PASSIVE_COLLECTOR / BURST_COLLECTOR / SENSOR_COLLECTOR lower-cased ("sensor_collector"); the Earthquake Alerts path (dxlr.b) sends "gls-indoor-upload"
+}
+
+// google.protobuf.Any (ezgz) with its value typed as the GLocRequest it carries
+message AnyGLocRequest {
+  string type_url = 1;  // "type.googleapis.com/lbs.GLocRequest"
+  GLocRequest value = 2;
+}
+
+// the Any payload, type_url type.googleapis.com/lbs.GLocRequest; built by the sensor collector's GLocRequestComposer dvwd (and by the passive/burst collectors, dvzp)
+message GLocRequest {  // esaq
+  Header header = 1;  // estimated name (high): erzb built in dvwd.J()
+  repeated ClientId client = 2;  // estimated name (high): eryx "sglclt/<package>"
+  erzf f3 = 3;
+  repeated LocationSignals signals = 4;  // estimated name (medium): LocRequest.signals in locm.proto; dvwd adds one LocationSignals per chunk
+  UploadInfo upload_info = 6;  // estimated name (medium): esar built per chunk in dvwd.y()
+}
+
+// dvwd.J()
+message Header {  // erzb
+  string version = 1;  // estimated name (medium): constant "1.0" (dvwd.J())
+  string build_fingerprint = 2;  // estimated name (high): dvwx.a = "android/" + Build.FINGERPRINT; the Earthquake Alerts path (dxlr.e) sends Build.MANUFACTURER, BRAND/DEVICE or FINGERPRINT as a flag says
+  string gls_id = 3;  // estimated name (low): locm.proto's glsID; not set by this build's composer
+  string locale = 5;  // estimated name (high): Locale.getDefault().toString()
+  string gms_version = 9;  // estimated name (low): dxlr.e (Earthquake Alerts): Integer.toString(albd.f()), a cached GMS build int (akww.a)
+  string timezone = 11;  // estimated name (high): TimeZone.getDefault().getID()
+  AudioConfig audio_config = 12;  // estimated name (medium): erze from dvwd.B()/C(), only when raw audio is collected
+  string gnss_hardware_model = 13;  // estimated name (high): LocationManager.getGnssHardwareModelName() (hgg.b), "no_gnss_hardware" or "unknown" otherwise
+}
+
+// dvwd.J(): String.format("%s/%s", "sglclt", packageName)
+message ClientId {  // eryx
+  string name = 1;  // estimated name (high): "sglclt/" + Context.getPackageName()
+}
+
+message erzf {  // erzf
+  string f1 = 1;
+}
+
+// one collection: cell, Wi-Fi, location fix and the sensor trace (same message as LocRequest.Location in locm.proto)
+message LocationSignals {  // eryu
+  CellScan cell_scan = 1;  // estimated name (high): eryp (locm.proto cellSignals)
+  WifiScan wifi_scan = 2;  // estimated name (high): esam (locm.proto wifiSignals)
+  Location location = 3;  // estimated name (high): erza (locm.proto gpsInfo)
+  eryv f4 = 4;
+  repeated int32 payload_type = 6 [features.repeated_field_encoding = EXPANDED];  // estimated name (low): dxlr.e adds 6 with an Earthquake Alerts record in field 7
+  repeated bytes payload = 7;  // estimated name (medium): dxlr.e: serialized eryg (Earthquake Alerts "ResRep" record built in dxoe: three Locations, times, flags)
+  SensorTrace sensor_trace = 9;  // estimated name (high): esad, set in dvwd.f() when any scanner list is non-empty
+  int32 f10 = 10;
+  sint64 f14 = 14;
+  erxx f18 = 18;
+  ActivityRecognitionResult activity = 19;  // estimated name (high): erww from activity recognition (locm.proto detectedActivities)
+  int32 skipped_accelerometer_samples = 20;  // estimated name (medium): dvwd.y(): count of accelerometer events dropped by SensorScanner for being < 10 ms after the previous one (z())
+  int32 skipped_gyroscope_samples = 21;  // estimated name (medium): dvwd.y(): count of gyroscope events < 6.67 ms after the previous one (A())
+  CollectionInfo collection_info = 99;  // estimated name (medium): eryt (dydx.a, dvwd.H)
+}
+
+// dvwd.y(): one per uploaded chunk
+message UploadInfo {  // esar
+  int64 request_time_ms = 1;  // estimated name (high): dvwd.G(): wall-clock ms (elapsedRealtime + boot offset) when the chunk was closed
+  string session_id = 2;  // estimated name (high): "@" + [flag ndp_ln + "-"] + UUID.randomUUID(), one per collection; Earthquake Alerts: "@" or "@debug." + UUID
+  int32 chunk_number = 3;  // estimated name (high): dvwd.y(): 1, 2, ... for each chunk, 0 for the last one (x(): collection finished)
+  int64 collection_start_time_ms = 4;  // estimated name (high): dvwe.g() (first elapsedRealtime) + boot offset: wall-clock start of the collection
+}
+
+// dvwd.B()/C()
+message AudioConfig {  // erze
+  AudioSource audio_source = 1;  // estimated name (high): dvwd.B: "Audio source: %d is not valid.", erzd = MediaRecorder.AudioSource 0-9
+  int32 f2 = 2;
+  int32 f3 = 3;
+  int32 f4 = 4;
+  int32 f5 = 5;
+}
+
+// dvwd.g(), dvzp.C()
+message CellScan {  // eryp
+  CellInfo primary_cell = 1;  // estimated name (high): serving cell (locm.proto primaryCell)
+  int64 time_ms = 2;  // estimated name (high): dvwd.g(): elapsedRealtime ms - collection start; dvzp: absolute ms
+  repeated CellInfo neighbor_cells = 3;  // estimated name (high): dwct.g neighbours (locm.proto neighbor)
+}
+
+// dvwd.w(List<ScanResult>, List<RangingResult>)
+message WifiScan {  // esam
+  int64 time_ms = 1;  // estimated name (high): scan time (elapsedRealtime ms) - collection start
+  repeated WifiAccessPoint access_point = 2;  // estimated name (high): one per ScanResult
+  int64 rtt_time_ms = 6;  // estimated name (medium): time of the RangingResults list - collection start, set when one is passed
+}
+
+// dwbi.c(Location, source, time), dvzp.C()
+message Location {  // erza
+  LatLngE7 lat_lng = 1;  // estimated name (high): Location.getLatitude/getLongitude
+  int32 accuracy_m = 3;  // estimated name (high): (int) Location.getAccuracy()
+  int64 time_ms = 6;  // estimated name (high): dvwd.E: elapsedRealtime ms - collection start; dvzp: bish.g()
+  LocationSource source = 8;  // estimated name (high): dvwd.E: provider "gps" -> 0, "fused" -> 5, other -> 15; dvzp: 0
+  int32 altitude_m = 10;  // estimated name (high): (int) Location.getAltitude()
+  int32 bearing_deg = 13;  // estimated name (high): (int) Location.getBearing()
+  float speed_mps = 16;  // estimated name (high): Location.getSpeed()
+  bool battery_charging = 17;  // estimated name (low): locm.proto's name; dvzp sets it from a collector boolean (BurstCollector this.m)
+  float altitude_m_float = 23;  // estimated name (high): (float) Location.getAltitude()
+}
+
+message eryv {  // eryv
+  erzi f3 = 3;
+}
+
+// the collected signals; each repeated field is one scanner, filled by the GLocRequestComposer method named in its note
+message SensorTrace {  // esad
+  int64 start_offset_ns = 1;  // estimated name (medium): dvwe.a(): ns from the collection start to this chunk's first sample; each scanner's first sample is relative to it
+  repeated OrientationSample orientation = 2;  // estimated name (high): TYPE_ORIENTATION samples (dvwd.r)
+  repeated AccelerometerSample accelerometer = 3;  // estimated name (high): TYPE_ACCELEROMETER samples (dvwd.b)
+  repeated GyroscopeSample gyroscope = 4;  // estimated name (high): TYPE_GYROSCOPE samples (dvwd.m)
+  repeated MagneticFieldSample magnetic_field = 5;  // estimated name (high): TYPE_MAGNETIC_FIELD samples (dvwd.q)
+  repeated CellScan cell_scan = 6;  // estimated name (high): dvwd.g()
+  repeated WifiScan wifi_scan = 7;  // estimated name (high): dvwd.w()
+  repeated Location location = 8;  // estimated name (high): dvwd.E(Location): GPS / fused fixes (esac.a)
+  MagneticFieldSample geomagnetic_field_model = 9;  // estimated name (high): dvwd.D() from dvwi: new GeomagneticField(lat, lng, alt, now) getX/Y/Z/Declination at the first GPS fix
+  repeated erxu f10 = 10;
+  repeated BarometerSample barometer = 11;  // estimated name (high): TYPE_PRESSURE samples (dvwd.d)
+  repeated UncalibratedMagneticFieldSample uncalibrated_magnetic_field = 12;  // estimated name (high): TYPE_MAGNETIC_FIELD_UNCALIBRATED samples (dvwd.v)
+  repeated LightSample light = 13;  // estimated name (high): TYPE_LIGHT samples (dvwd.p)
+  repeated ProximitySample proximity = 14;  // estimated name (high): TYPE_PROXIMITY samples (dvwd.s)
+  repeated SoundFeatures sound_features = 15;  // estimated name (high): dvwd.t()
+  repeated HeartRateSample heart_rate = 16;  // estimated name (high): TYPE_HEART_RATE samples (dvwd.o)
+  repeated StepCounterSample step_counter = 17;  // estimated name (high): TYPE_STEP_COUNTER samples (dvwd.u)
+  repeated DeviceStateEvent device_state = 18;  // estimated name (high): dvwd.i()
+  repeated GnssMeasurementsRecord gnss_measurements = 19;  // estimated name (high): dvwd.j(GnssMeasurementsEvent)
+  repeated BluetoothDeviceEvent bluetooth_device = 20;  // estimated name (high): dvwd.F()
+  repeated BluetoothAdapterStateEvent bluetooth_adapter_state = 21;  // estimated name (high): dvwd.e()
+  repeated HeartPpgSample heart_ppg = 23;  // estimated name (high): sensor type 65541 samples (dvwd.n)
+  repeated RawAudioFrame raw_audio = 24;  // estimated name (high): dvwd.h()
+  int32 gyroscope_sampling_period_us = 25;  // estimated name (medium): dvwd.H(): RealCollectorConfig.a(GYROSCOPE), the SensorDelay set by dwaw.R() (10000 in the captures)
+  repeated GnssStatusRecord gnss_status = 26;  // estimated name (high): dvwd.l(GnssStatus)
+  int32 wifi_scan_delay_ms = 27;  // estimated name (high): dvwd.H(): flsd.b() = flag sensor_collection_wifi_scan_delay_ms (default 2000)
+}
+
+message erxx {  // erxx
+  erxz f5 = 5;
+  erxv f8 = 8;
+}
+
+// dvzp.C(): activity recognition result dvjc (same as LocRequest.Location.DetectedActivityWrappper in locm.proto)
+message ActivityRecognitionResult {  // erww
+  uint64 time_ms = 1;  // estimated name (high): dvjc.c + clock offset (locm.proto timestamp)
+  repeated DetectedActivity detected_activity = 2;  // estimated name (high): dvjc.a list
+  int32 detector_info_id = 3;  // estimated name (low): dvjc.d; locm.proto's name
+}
+
+// dvwd.H(), dvzp.C()
+message CollectionInfo {  // eryt
+  int32 trigger = 1;  // estimated name (medium): dwaw.S(): 14 ON_FOOT seen in the last 30 s, 22 IN_VEHICLE, 20 forced, 23 other; BurstCollector 6/8/9/10/17/19
+  repeated string experiment_tag = 5;  // estimated name (low): flag ndp_ln (dydx.a), also the session id's prefix
+  int32 burst_config_value = 8;  // estimated name (low): dvzp.C i2 = this.b.t().a()
+  CollectionFlags flags = 9;  // estimated name (high): eryq
+}
+
+// dvwd.g() (CellLocation), dwcq.a() (CellInfo* via dwct subclasses built in dxcs/dxfc)
+message CellInfo {  // eryo
+  int32 lac = 1;  // estimated name (high): GsmCellLocation.getLac(), CDMA getNetworkId(), dwcy/dwco .a
+  int32 cell_id = 2;  // estimated name (high): getCid() / getBaseStationId() / CellIdentityLte.getCi()
+  int32 mnc = 3;  // estimated name (high): network operator substring(3), CDMA systemId
+  int32 mcc = 4;  // estimated name (high): network operator substring(0,3)
+  int32 signal_strength_dbm = 5;  // estimated name (high): dwcq: CellSignalStrength.getDbm() (-9999 = not set)
+  int32 age_ms = 6;  // estimated name (medium): dwct.e(): collection time - CellInfo.getTimestampMillis()
+  int32 timing_advance = 7;  // estimated name (high): CellSignalStrengthLte.getTimingAdvance() (dxcs -> dwdd.k)
+  int32 primary_scrambling_code = 8;  // estimated name (medium): dwcy.j (locm.proto comment PrimaryScramblingCode = 8)
+  LatLngE7 f9 = 9;
+  CollectorRadioType radio_type = 10;  // estimated name (high): dwcq/dvwd: 3 GSM, 4 CDMA, 5 WCDMA, 6 LTE, 7 NR
+  int32 physical_cell_id = 11;  // estimated name (high): CellIdentityLte/Nr.getPci() (dwdd.a, dwdg.a)
+  int32 tracking_area_code = 12;  // estimated name (high): CellIdentityLte/Nr.getTac() (dwdd.j, dwdg.j)
+  int64 nr_cell_id = 13;  // estimated name (high): CellIdentityNr.getNci() (dwdg.k)
+}
+
+// one ScanResult, dvwd.w() and dvzp.C()
+message WifiAccessPoint {  // esak
+  string f1_empty = 1;  // estimated name (low): esak.b() always sets "" (required field kept for old servers)
+  int32 channel = 3;  // estimated name (high): dwea.c: esva.a(frequency) (2412 MHz -> 1, 5240 -> 48)
+  int32 rssi_legacy = 4;  // estimated name (medium): dvzp: dwef.i() rssi (locm.proto rssi = 4); the sensor collector uses field 9
+  int64 bssid = 8;  // estimated name (high): esva.b(ScanResult.BSSID): the MAC address as a 48-bit integer
+  sint32 rssi_dbm = 9;  // estimated name (high): ScanResult.level
+  WifiBand band = 11;  // estimated name (medium): dwea.c: 1 when the frequency is 5035-5990 MHz
+  int32 age_ms = 12;  // estimated name (medium): dvzp: |scan time - AP time|
+  repeated WifiRttRanging rtt = 19;  // estimated name (high): RangingResult for this BSSID
+  uint32 ssid_hash = 23;  // estimated name (high): dwea.a(SSID): low 16 bits of Guava farmHashFingerprint64 (efxp) of the SSID; the SSID itself is not sent
+  int32 frequency_mhz = 25;  // estimated name (high): ScanResult.frequency
+  WifiResponderLocation responder_location = 26;  // estimated name (high): RangingResult.getUnverifiedResponderLocation()
+  WifiInterworking interworking = 27;  // estimated name (high): information element 107
+}
+
+// dwbi.c: dkof.l(getLatitude()), dkof.l(getLongitude()) (degrees * 1e7)
+message LatLngE7 {  // eryw
+  sfixed32 lat_e7 = 1;  // estimated name (high): round(latitude * 1e7)
+  sfixed32 lng_e7 = 2;  // estimated name (high): round(longitude * 1e7)
+}
+
+message erzi {  // erzi
+  LatLngE7 f1 = 1;
+  LatLngE7 f2 = 2;
+}
+
+// dvwd.r(): TYPE_ORIENTATION (3)
+message OrientationSample {  // erzy
+  float azimuth = 1;  // estimated name (high): SensorEvent.values[0]
+  float pitch = 2;  // estimated name (high): SensorEvent.values[1]
+  float roll = 3;  // estimated name (high): SensorEvent.values[2]
+  int32 accuracy = 4;  // estimated name (high): SensorEvent.accuracy, sent on the first sample and when it changes
+  int32 delta_us = 7;  // estimated name (high): dvwg: (timestamp - previous sample's timestamp) / 1000; first sample: from SensorTrace.start_offset_ns
+  int32 delta_ns_remainder = 8;  // estimated name (high): the same difference % 1000
+  int64 timestamp_ns = 9;  // estimated name (high): SensorEvent.timestamp (ns since boot), first sample of the chunk only
+  int64 elapsed_realtime_ns = 10;  // estimated name (high): SystemClock.elapsedRealtime() * 1e6 at delivery, first sample only
+}
+
+// dvwd.b(): SensorScanner sends Sensor.TYPE_ACCELEROMETER (1) here
+message AccelerometerSample {  // erzj
+  float x = 1;  // estimated name (high): SensorEvent.values[0]
+  float y = 2;  // estimated name (high): SensorEvent.values[1]
+  float z = 3;  // estimated name (high): SensorEvent.values[2]
+  int32 accuracy = 4;  // estimated name (high): SensorEvent.accuracy, sent on the first sample and when it changes
+  int32 delta_us = 7;  // estimated name (high): dvwg: (timestamp - previous sample's timestamp) / 1000; first sample: from SensorTrace.start_offset_ns
+  int32 delta_ns_remainder = 8;  // estimated name (high): the same difference % 1000
+  int64 timestamp_ns = 9;  // estimated name (high): SensorEvent.timestamp (ns since boot), first sample of the chunk only
+  int64 elapsed_realtime_ns = 10;  // estimated name (high): SystemClock.elapsedRealtime() * 1e6 at delivery, first sample only
+}
+
+// dvwd.m(): TYPE_GYROSCOPE (4)
+message GyroscopeSample {  // erzt
+  float x = 1;  // estimated name (high): SensorEvent.values[0]
+  float y = 2;  // estimated name (high): SensorEvent.values[1]
+  float z = 3;  // estimated name (high): SensorEvent.values[2]
+  int32 accuracy = 4;  // estimated name (high): SensorEvent.accuracy, sent on the first sample and when it changes
+  int32 delta_us = 7;  // estimated name (high): dvwg: (timestamp - previous sample's timestamp) / 1000; first sample: from SensorTrace.start_offset_ns
+  int32 delta_ns_remainder = 8;  // estimated name (high): the same difference % 1000
+  int64 timestamp_ns = 9;  // estimated name (high): SensorEvent.timestamp (ns since boot), first sample of the chunk only
+  int64 elapsed_realtime_ns = 10;  // estimated name (high): SystemClock.elapsedRealtime() * 1e6 at delivery, first sample only
+}
+
+// dvwd.q(): TYPE_MAGNETIC_FIELD (2); also dvwd.D() for the GeomagneticField model value
+message MagneticFieldSample {  // erzx
+  float x = 1;  // estimated name (high): SensorEvent.values[0]
+  float y = 2;  // estimated name (high): SensorEvent.values[1]
+  float z = 3;  // estimated name (high): SensorEvent.values[2]
+  int32 accuracy = 4;  // estimated name (high): SensorEvent.accuracy, sent on the first sample and when it changes
+  float declination_deg = 7;  // estimated name (high): GeomagneticField.getDeclination() (only in SensorTrace.geomagnetic_field_model)
+  int32 delta_us = 8;  // estimated name (high): dvwg: (timestamp - previous sample's timestamp) / 1000; first sample: from SensorTrace.start_offset_ns
+  int32 delta_ns_remainder = 9;  // estimated name (high): the same difference % 1000
+  int64 timestamp_ns = 10;  // estimated name (high): SensorEvent.timestamp (ns since boot), first sample of the chunk only
+  int64 elapsed_realtime_ns = 11;  // estimated name (high): SystemClock.elapsedRealtime() * 1e6 at delivery, first sample only
+}
+
+message erxu {  // erxu
+  int32 f1 = 1;
+  repeated erxt f2 = 2;
+}
+
+// dvwd.d(): TYPE_PRESSURE (6)
+message BarometerSample {  // erzk
+  float pressure_hpa = 1;  // estimated name (high): values[0] of TYPE_PRESSURE
+  int32 accuracy = 2;  // estimated name (high): SensorEvent.accuracy, sent on the first sample and when it changes
+  int32 delta_us = 3;  // estimated name (high): dvwg: (timestamp - previous sample's timestamp) / 1000; first sample: from SensorTrace.start_offset_ns
+  int32 delta_ns_remainder = 4;  // estimated name (high): the same difference % 1000
+  int64 timestamp_ns = 5;  // estimated name (high): SensorEvent.timestamp (ns since boot), first sample of the chunk only
+  int64 elapsed_realtime_ns = 6;  // estimated name (high): SystemClock.elapsedRealtime() * 1e6 at delivery, first sample only
+}
+
+// dvwd.v(): TYPE_MAGNETIC_FIELD_UNCALIBRATED (14), values[0..5]
+message UncalibratedMagneticFieldSample {  // esag
+  MagneticFieldSample sample = 1;  // estimated name (high): values[0..2] (uncalibrated x, y, z) with accuracy and timing, as a MagneticFieldSample
+  float bias_x = 2;  // estimated name (high): values[3] (hard-iron bias estimate)
+  float bias_y = 3;  // estimated name (high): values[4]
+  float bias_z = 4;  // estimated name (high): values[5]
+}
+
+// dvwd.p(): TYPE_LIGHT (5)
+message LightSample {  // erzw
+  float lux = 1;  // estimated name (high): values[0] of TYPE_LIGHT
+  int32 accuracy = 2;  // estimated name (high): SensorEvent.accuracy, sent on the first sample and when it changes
+  int32 delta_us = 3;  // estimated name (high): dvwg: (timestamp - previous sample's timestamp) / 1000; first sample: from SensorTrace.start_offset_ns
+  int32 delta_ns_remainder = 4;  // estimated name (high): the same difference % 1000
+  int64 timestamp_ns = 5;  // estimated name (high): SensorEvent.timestamp (ns since boot), first sample of the chunk only
+  int64 elapsed_realtime_ns = 6;  // estimated name (high): SystemClock.elapsedRealtime() * 1e6 at delivery, first sample only
+}
+
+// dvwd.s(): TYPE_PROXIMITY (8)
+message ProximitySample {  // erzz
+  float distance_cm = 1;  // estimated name (high): values[0] of TYPE_PROXIMITY
+  int32 accuracy = 2;  // estimated name (high): SensorEvent.accuracy, sent on the first sample and when it changes
+  int32 delta_us = 3;  // estimated name (high): dvwg: (timestamp - previous sample's timestamp) / 1000; first sample: from SensorTrace.start_offset_ns
+  int32 delta_ns_remainder = 4;  // estimated name (high): the same difference % 1000
+  int64 timestamp_ns = 5;  // estimated name (high): SensorEvent.timestamp (ns since boot), first sample of the chunk only
+  int64 elapsed_realtime_ns = 6;  // estimated name (high): SystemClock.elapsedRealtime() * 1e6 at delivery, first sample only
+}
+
+// dvwd.t(): features computed on-device from microphone audio by dvya (dvxy)
+message SoundFeatures {  // esae
+  repeated double frame_stats = 1 [features.repeated_field_encoding = EXPANDED];  // estimated name (medium): dvya: [mean power, zero-crossing rate (Hz, 44.1 kHz/1024 frame), power std dev, spectral entropy (bits)]
+  repeated double cepstral_coefficients = 2 [features.repeated_field_encoding = EXPANDED];  // estimated name (medium): dvya: 40 DCT coefficients of 40 filter-bank values (MFCC-like)
+  repeated double band_means = 3 [features.repeated_field_encoding = EXPANDED];  // estimated name (medium): dvya: dvxz.b (mean) per band
+  repeated double band_std_devs = 4 [features.repeated_field_encoding = EXPANDED];  // estimated name (medium): dvxz.c (standard deviation) per band
+  repeated double band_entropies = 5 [features.repeated_field_encoding = EXPANDED];  // estimated name (medium): dvxz.a (entropy, bits) per band
+  int32 time_ms = 6;  // estimated name (high): time - collection start
+}
+
+// dvwd.o(): TYPE_HEART_RATE (21)
+message HeartRateSample {  // erzv
+  float bpm = 1;  // estimated name (high): values[0] of TYPE_HEART_RATE
+  int32 accuracy = 2;  // estimated name (high): SensorEvent.accuracy, sent on the first sample and when it changes
+  int32 delta_us = 3;  // estimated name (high): dvwg: (timestamp - previous sample's timestamp) / 1000; first sample: from SensorTrace.start_offset_ns
+  int32 delta_ns_remainder = 4;  // estimated name (high): the same difference % 1000
+  int64 timestamp_ns = 5;  // estimated name (high): SensorEvent.timestamp (ns since boot), first sample of the chunk only
+  int64 elapsed_realtime_ns = 6;  // estimated name (high): SystemClock.elapsedRealtime() * 1e6 at delivery, first sample only
+}
+
+// dvwd.u(): TYPE_STEP_COUNTER (19)
+message StepCounterSample {  // esaf
+  float steps = 1;  // estimated name (high): values[0] of TYPE_STEP_COUNTER
+  int32 accuracy = 2;  // estimated name (high): SensorEvent.accuracy, sent on the first sample and when it changes
+  int32 delta_us = 3;  // estimated name (high): dvwg: (timestamp - previous sample's timestamp) / 1000; first sample: from SensorTrace.start_offset_ns
+  int32 delta_ns_remainder = 4;  // estimated name (high): the same difference % 1000
+  int64 timestamp_ns = 5;  // estimated name (high): SensorEvent.timestamp (ns since boot), first sample of the chunk only
+  int64 elapsed_realtime_ns = 6;  // estimated name (high): SystemClock.elapsedRealtime() * 1e6 at delivery, first sample only
+}
+
+// dvwd.i(): collectionlib/DeviceStateScanner (screen, unlock and charging broadcasts)
+message DeviceStateEvent {  // erzs
+  DeviceState state = 1;  // estimated name (high): DeviceStateScanner codes 1-7
+  int32 time_ms = 2;  // estimated name (high): elapsedRealtime - collection start
+}
+
+// dvwd.j(GnssMeasurementsEvent)
+message GnssMeasurementsRecord {  // erxr
+  int32 time_ms = 1;  // estimated name (high): elapsedRealtime - collection start
+  GnssMeasurementsEvent event = 3;  // estimated name (high): dvwh.a(GnssMeasurementsEvent)
+}
+
+// dvwd.F(): collectionlib/BluetoothDeviceScanner ACL_* broadcasts, dxgv (BluetoothDevice)
+message BluetoothDeviceEvent {  // erzm
+  string name = 1;  // estimated name (high): BluetoothDevice.getName()
+  int32 device_type = 2;  // estimated name (high): BluetoothDevice.getType()
+  int32 device_class = 3;  // estimated name (high): BluetoothClass.getDeviceClass()
+  int32 major_device_class = 4;  // estimated name (high): BluetoothClass.getMajorDeviceClass()
+  int32 bond_state = 5;  // estimated name (high): BluetoothDevice.getBondState()
+  string address = 6;  // estimated name (high): BluetoothDevice.getAddress() (MAC)
+  repeated string uuid = 7;  // estimated name (high): BluetoothDevice.getUuids()
+  BluetoothDeviceEventType event = 8;  // estimated name (high): ACL_CONNECTED 1, ACL_DISCONNECTED 2, ACL_DISCONNECT_REQUESTED 3
+  int32 time_ms = 9;  // estimated name (high): elapsedRealtime - collection start
+  string alias = 10;  // estimated name (high): BluetoothDevice.getAlias() (reflection)
+}
+
+// dvwd.e(): BluetoothDeviceScanner android.bluetooth.adapter.action.STATE_CHANGED
+message BluetoothAdapterStateEvent {  // erzp
+  BluetoothAdapterState state = 1;  // estimated name (high): EXTRA_STATE mapped by BluetoothDeviceScanner.a
+  BluetoothAdapterState previous_state = 2;  // estimated name (high): EXTRA_PREVIOUS_STATE
+  int32 time_ms = 3;  // estimated name (high): elapsedRealtime - collection start
+}
+
+// dvwd.n(): sensor type 65541 (dvxi HEART_PPG, 4 values)
+message HeartPpgSample {  // erzu
+  float value0 = 1;  // estimated name (medium): values[0] of sensor 65541
+  float value1 = 2;  // estimated name (medium): values[1]
+  float value2 = 3;  // estimated name (medium): values[2]
+  float value3 = 4;  // estimated name (medium): values[3]
+  int32 accuracy = 5;  // estimated name (high): SensorEvent.accuracy, sent on the first sample and when it changes
+  int32 delta_us = 6;  // estimated name (high): dvwg: (timestamp - previous sample's timestamp) / 1000; first sample: from SensorTrace.start_offset_ns
+  int32 delta_ns_remainder = 7;  // estimated name (high): the same difference % 1000
+  int64 timestamp_ns = 8;  // estimated name (high): SensorEvent.timestamp (ns since boot), first sample of the chunk only
+  int64 elapsed_realtime_ns = 9;  // estimated name (high): SystemClock.elapsedRealtime() * 1e6 at delivery, first sample only
+}
+
+// dvwd.h(float[] samples, time, channels)
+message RawAudioFrame {  // esab
+  repeated AudioChannelSamples channel = 1;  // estimated name (high): dvwd.h(): fArr de-interleaved into i channels
+  int32 time_ms = 2;  // estimated name (high): time - collection start
+}
+
+// dvwd.l(hfv = GnssStatus wrapper): one GnssStatus callback
+message GnssStatusRecord {  // erxs
+  int32 time_ms = 1;  // estimated name (high): elapsedRealtime - collection start
+  repeated GnssSatellite satellite = 2;  // estimated name (high): GnssStatus.getSatelliteCount() entries
+}
+
+message erxz {  // erxz
+  erya f5 = 5;
+  erxy f6 = 6;
+  erxw f7 = 7;
+}
+
+message erxv {  // erxv
+  erzi f4 = 4;
+}
+
+// dvzp.C(): dvje (type ordinal, confidence)
+message DetectedActivity {  // erwv
+  int32 activity = 1;  // estimated name (high): dvje.a.ordinal() (locm.proto ActivityEnum)
+  int32 confidence = 2;  // estimated name (high): dvje.b
+}
+
+// dwaw.R(), dvzp.C(): Phenotype flags of the collection
+message CollectionFlags {  // eryq
+  bool in_vehicle_trigger_enabled = 1;  // estimated name (medium): dwaw.E = flqy.l() = flag eivt, which enables the IN_VEHICLE trigger (22)
+  bool time_window_scheduling_enabled = 2;  // estimated name (low): flqy.n() = flag estwdt, which switches dwaw's schedule to trigger windows 14/22
+  bool f3_burst = 3;  // estimated name (low): dvzp.C always true
+  bool f4_burst = 4;  // estimated name (low): dvzp.C always false
+}
+
+// an android.net.wifi.rtt.RangingResult matched to the ScanResult by BSSID, dvwd.w() (decompiled as bad code, lines 2296-2700)
+message WifiRttRanging {  // esao
+  RttType rtt_type = 1;  // estimated name (medium): 1 when RangingResult.is80211mcMeasurement()
+  int64 f2 = 2;
+  int32 distance_mm = 7;  // estimated name (high): getDistanceMm()
+  int32 distance_std_dev_mm = 8;  // estimated name (high): getDistanceStdDevMm()
+  int32 rssi = 10;  // estimated name (high): getRssi()
+  int32 num_attempted_measurements = 13;  // estimated name (high): getNumAttemptedMeasurements()
+  int32 num_successful_measurements = 14;  // estimated name (high): getNumSuccessfulMeasurements()
+  int64 ranging_time_ms = 15;  // estimated name (high): getRangingTimestampMillis() - collection start
+}
+
+// RangingResult.getUnverifiedResponderLocation() (the AP's own LCI location), dvwd.w()
+message WifiResponderLocation {  // esai
+  float altitude = 1;  // estimated name (high): ResponderLocation.getAltitude() when altitude type is meters
+  int32 altitude_uncertainty_mm = 2;  // estimated name (high): getAltitudeUncertainty() * 1000
+  int32 latitude_e7 = 3;  // estimated name (high): getLatitude() * 1e7
+  int32 latitude_uncertainty_e7 = 4;  // estimated name (high): getLatitudeUncertainty() * 1e7
+  int32 longitude_e7 = 5;  // estimated name (high): getLongitude() * 1e7
+  int32 longitude_uncertainty_e7 = 6;  // estimated name (high): getLongitudeUncertainty() * 1e7
+  int32 datum = 7;  // estimated name (high): getDatum()
+  int32 expected_to_move = 8;  // estimated name (high): getExpectedToMove()
+  float floor_number = 9;  // estimated name (high): getFloorNumber()
+  float height_above_floor_m = 10;  // estimated name (high): getHeightAboveFloorMeters()
+  float height_above_floor_uncertainty_m = 11;  // estimated name (high): getHeightAboveFloorUncertaintyMeters()
+}
+
+// first 3 bytes of the ScanResult's information element id 107 (IEEE 802.11u Interworking: access network options, venue group, venue type), dvwd.w(), dwdv.a()
+message WifiInterworking {  // esah
+  int32 access_network_options = 1;  // estimated name (medium): byte 0 of IE 107 (802.11u)
+  int32 venue_group = 2;  // estimated name (medium): byte 1 of IE 107
+  int32 venue_type = 3;  // estimated name (medium): byte 2 of IE 107
+}
+
+message erxt {  // erxt
+  float f2 = 2;
+  float f3 = 3;
+  float f4 = 4;
+}
+
+// dvwh.a(GnssMeasurementsEvent)
+message GnssMeasurementsEvent {  // erxi
+  repeated GnssMeasurement measurement = 1;  // estimated name (high): getMeasurements()
+  GnssClock clock = 2;  // estimated name (high): getClock()
+}
+
+// dvwd.h(): one channel of a RawAudioFrame
+message AudioChannelSamples {  // esaa
+  repeated float sample = 1;  // estimated name (high): audio samples of one channel
+}
+
+// dvwd.l(): satellite i of the GnssStatus (hfv/hfw/hfx in classes.dex call GnssStatus getters)
+message GnssSatellite {  // erxp
+  int32 svid = 1;  // estimated name (high): GnssStatus.getSvid(i)
+  int32 constellation_type = 2;  // estimated name (high): getConstellationType(i)
+  float azimuth_deg = 3;  // estimated name (high): getAzimuthDegrees(i)
+  float elevation_deg = 4;  // estimated name (high): getElevationDegrees(i)
+  float cn0_dbhz = 5;  // estimated name (high): getCn0DbHz(i)
+  float baseband_cn0_dbhz = 6;  // estimated name (high): getBasebandCn0DbHz(i) (hfx)
+  float carrier_frequency_hz = 7;  // estimated name (high): getCarrierFrequencyHz(i) (hfw)
+  bool used_in_fix = 8;  // estimated name (high): usedInFix(i)
+  bool has_almanac_data = 9;  // estimated name (high): hasAlmanacData(i)
+  bool has_ephemeris_data = 10;  // estimated name (high): hasEphemerisData(i)
+}
+
+message erya {  // erya
+  erzi f1 = 1;
+}
+
+message erxy {  // erxy
+  LatLngE7 f1 = 1;
+}
+
+message erxw {  // erxw
+  LatLngE7 f2 = 2;
+}
+
+// dvwh.a(): one GnssMeasurement
+message GnssMeasurement {  // erxl
+  int32 svid = 1;  // estimated name (high): GnssMeasurement.getSvid()
+  int32 constellation_type = 2;  // estimated name (high): getConstellationType()
+  double time_offset_nanos = 3;  // estimated name (high): getTimeOffsetNanos()
+  int32 state = 4;  // estimated name (high): getState()
+  int64 received_sv_time_nanos = 5;  // estimated name (high): getReceivedSvTimeNanos()
+  int64 received_sv_time_uncertainty_nanos = 6;  // estimated name (high): getReceivedSvTimeUncertaintyNanos()
+  double cn0_dbhz = 7;  // estimated name (high): getCn0DbHz()
+  double pseudorange_rate_mps = 8;  // estimated name (high): getPseudorangeRateMetersPerSecond()
+  double pseudorange_rate_uncertainty_mps = 9;  // estimated name (high): getPseudorangeRateUncertaintyMetersPerSecond()
+  int32 accumulated_delta_range_state = 10;  // estimated name (high): getAccumulatedDeltaRangeState()
+  double accumulated_delta_range_m = 11;  // estimated name (high): getAccumulatedDeltaRangeMeters()
+  double accumulated_delta_range_uncertainty_m = 12;  // estimated name (high): getAccumulatedDeltaRangeUncertaintyMeters()
+  float carrier_frequency_hz = 13;  // estimated name (high): getCarrierFrequencyHz()
+  int64 carrier_cycles = 14;  // estimated name (low): not written; position and type (int64) match the deprecated getCarrierCycles()
+  double carrier_phase = 15;  // estimated name (low): not written; matches getCarrierPhase()
+  double carrier_phase_uncertainty = 16;  // estimated name (low): not written; matches getCarrierPhaseUncertainty()
+  MultipathIndicator multipath_indicator = 17;  // estimated name (high): getMultipathIndicator() via erxk
+  double snr_db = 18;  // estimated name (high): getSnrInDb()
+  double automatic_gain_control_level_db = 19;  // estimated name (high): getAutomaticGainControlLevelDb()
+  string code_type = 21;  // estimated name (high): getCodeType()
+  double full_inter_signal_bias_nanos = 22;  // estimated name (high): GMS 26.31.31 writer hczy (dex 13) -> ikyd field 22 = getFullInterSignalBiasNanos()
+  double full_inter_signal_bias_uncertainty_nanos = 23;  // estimated name (high): hczy/ikyd field 23
+  double satellite_inter_signal_bias_nanos = 24;  // estimated name (high): hczy/ikyd field 24
+  double satellite_inter_signal_bias_uncertainty_nanos = 25;  // estimated name (high): hczy/ikyd field 25
+  SatellitePvt satellite_pvt = 26;  // estimated name (medium): erxq has SatellitePvt's shape
+}
+
+// dvwh.a(): GnssMeasurementsEvent.getClock()
+message GnssClock {  // erxg
+  int32 leap_second = 1;  // estimated name (high): GnssClock.getLeapSecond()
+  int64 time_nanos = 2;  // estimated name (high): getTimeNanos()
+  int64 full_bias_nanos = 4;  // estimated name (high): getFullBiasNanos()
+  double bias_nanos = 5;  // estimated name (high): getBiasNanos()
+  double bias_uncertainty_nanos = 6;  // estimated name (high): getBiasUncertaintyNanos()
+  double drift_nanos_per_second = 7;  // estimated name (high): getDriftNanosPerSecond()
+  double drift_uncertainty_nanos_per_second = 8;  // estimated name (high): getDriftUncertaintyNanosPerSecond()
+  int32 hardware_clock_discontinuity_count = 9;  // estimated name (high): getHardwareClockDiscontinuityCount()
+  double time_uncertainty_nanos = 10;  // estimated name (high): getTimeUncertaintyNanos()
+  int64 elapsed_realtime_nanos = 11;  // estimated name (high): getElapsedRealtimeNanos()
+  double elapsed_realtime_uncertainty_nanos = 12;  // estimated name (high): getElapsedRealtimeUncertaintyNanos()
+}
+
+// estimated name (medium): fields match android.location.SatellitePvt one for one (PositionEcef, VelocityEcef, ClockInfo, iono, tropo, TOC, TOE, IODC, IODE, ephemeris source); not written by this build
+message SatellitePvt {  // erxq
+  PositionEcef position_ecef = 1;  // estimated name (medium)
+  VelocityEcef velocity_ecef = 2;  // estimated name (medium)
+  SatelliteClockInfo clock_info = 3;  // estimated name (medium)
+  double iono_delay_m = 4;  // estimated name (medium)
+  double tropo_delay_m = 5;  // estimated name (medium)
+  int64 time_of_clock_s = 6;  // estimated name (medium)
+  int64 time_of_ephemeris_s = 7;  // estimated name (medium)
+  int32 issue_of_data_clock = 8;  // estimated name (medium)
+  int32 issue_of_data_ephemeris = 9;  // estimated name (medium)
+  int32 ephemeris_source = 10;  // estimated name (medium)
+}
+
+// estimated name (medium): SatellitePvt.PositionEcef x, y, z, ureMeters
+message PositionEcef {  // erxn
+  double x_m = 1;  // estimated name (medium)
+  double y_m = 2;  // estimated name (medium)
+  double z_m = 3;  // estimated name (medium)
+  double ure_m = 4;  // estimated name (medium)
+}
+
+// estimated name (medium): SatellitePvt.VelocityEcef x, y, z, ureRateMetersPerSecond
+message VelocityEcef {  // erxo
+  double x_mps = 1;  // estimated name (medium)
+  double y_mps = 2;  // estimated name (medium)
+  double z_mps = 3;  // estimated name (medium)
+  double ure_rate_mps = 4;  // estimated name (medium)
+}
+
+// estimated name (medium): SatellitePvt.ClockInfo hardwareCodeBiasMeters, timeCorrectionMeters, clockDriftMetersPerSecond
+message SatelliteClockInfo {  // erxm
+  double hardware_code_bias_m = 1;  // estimated name (medium)
+  double time_correction_m = 2;  // estimated name (medium)
+  double clock_drift_mps = 3;  // estimated name (medium)
+}
+
+// eryn verifier allows -1, 3-7; values from dvwd.g() (TelephonyManager network type) and dwcq (dwct.h 1-5)
+enum CollectorRadioType {
+  RADIO_TYPE_UNSET = 0;
+  RADIO_TYPE_UNKNOWN = -1;
+  GSM = 3;
+  CDMA = 4;
+  WCDMA = 5;
+  LTE = 6;
+  NR = 7;
+}
+
+// eryz.a (R8-unboxed); dwbi.c(location, i, ...) stores i - 1: dvwd.E: gps 1, fused 6, other 16; dxlr.a (Earthquake Alerts): gps 1, network 33, other 16; others not seen in code
+enum LocationSource {
+  GPS = 0;
+  SOURCE_1 = 1;
+  SOURCE_2 = 2;
+  SOURCE_3 = 3;
+  SOURCE_4 = 4;
+  FUSED = 5;
+  OTHER_PROVIDER = 15;
+  SOURCE_16 = 16;
+  NETWORK = 32;
+  SOURCE_64 = 64;
+  SOURCE_128 = 128;
+  SOURCE_256 = 256;
+  SOURCE_512 = 512;
+  SOURCE_1024 = 1024;
+}
+
+// esaj verifier allows 1-3; dwea.c sets 1 for 5035-5990 MHz; 2 and 3 not set in this build
+enum WifiBand {
+  BAND_UNSET = 0;
+  BAND_5_GHZ = 1;
+  BAND_2 = 2;
+  BAND_3 = 3;
+}
+
+// esan verifier 0-2; dvwd.w: 1 when is80211mcMeasurement()
+enum RttType {
+  RTT_TYPE_0 = 0;
+  RTT_80211MC = 1;
+  RTT_TYPE_2 = 2;
+}
+
+// erxk.a(getMultipathIndicator()) - 1: GnssMeasurement.MULTIPATH_INDICATOR_*
+enum MultipathIndicator {
+  MULTIPATH_INDICATOR_UNKNOWN = 0;
+  MULTIPATH_INDICATOR_DETECTED = 1;
+  MULTIPATH_INDICATOR_NOT_DETECTED = 2;
+}
+
+// collectionlib/DeviceStateScanner
+enum DeviceState {
+  DEVICE_STATE_UNSET = 0;
+  SCREEN_OFF = 1;
+  SCREEN_ON = 2;
+  USER_PRESENT = 3;
+  NOT_CHARGING = 4;
+  CHARGING_USB = 5;
+  CHARGING_AC = 6;
+  CHARGING_OTHER = 7;
+}
+
+// BluetoothDeviceScanner.a(): STATE_OFF(10) 1, TURNING_OFF(13) 2, TURNING_ON(11) 3, ON(12) 4, other 0; erzo.a(x) - 1 keeps it
+enum BluetoothAdapterState {
+  ADAPTER_STATE_UNKNOWN = 0;
+  STATE_OFF = 1;
+  STATE_TURNING_OFF = 2;
+  STATE_TURNING_ON = 3;
+  STATE_ON = 4;
+}
+
+// erzl verifier 0-6; BluetoothDeviceScanner passes 2/3/4, dvwd.F stores i - 1
+enum BluetoothDeviceEventType {
+  EVENT_0 = 0;
+  ACL_CONNECTED = 1;
+  ACL_DISCONNECTED = 2;
+  ACL_DISCONNECT_REQUESTED = 3;
+  EVENT_4 = 4;
+  EVENT_5 = 5;
+  EVENT_6 = 6;
+}
+
+// erzd.a(i) - 1 keeps MediaRecorder.AudioSource 0-9
+enum AudioSource {
+  DEFAULT = 0;
+  MIC = 1;
+  VOICE_UPLINK = 2;
+  VOICE_DOWNLINK = 3;
+  VOICE_CALL = 4;
+  CAMCORDER = 5;
+  VOICE_RECOGNITION = 6;
+  VOICE_COMMUNICATION = 7;
+  REMOTE_SUBMIX = 8;
+  UNPROCESSED = 9;
+}
+
+// Fields left f<number>:
+//   esaq.3 (erzf.1): RealCollectorConfig.s, read only from the config's Parcel; nothing names it
+//   eryu.4 (eryv: {3: two LatLngE7}), eryu.18 (erxx: nested messages holding LatLngE7 pairs): not written by the collectors; written by other location code not decompiled; a LatLngE7 pair is likely a bounding box
+//   eryu.10 (dydx.a always sets 0), eryu.14 (dvzp: location elapsed-time arithmetic, meaning unclear)
+//   esad.10 (erxu: {1: int32, 2: repeated {2,3,4: float}}): no writer in dex 8
+//   erze.2-5: dvwd.B/C(int, int, int) parameters, no caller in dex 8 (raw audio not wired)
+//   esao.2: an int64 from the bad-code region of dvwd.w
+//   eryo.9 (LatLngE7): not written by dvwd/dwcq; probably a cell's location

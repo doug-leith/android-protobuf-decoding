@@ -1,5 +1,6 @@
 from google.protobuf.internal.decoder import _DecodeVarint32
 from google.protobuf import text_format
+from google.protobuf import message as protobuf_message
 from google.protobuf.unknown_fields import UnknownFieldSet # only present in recent versions of google module
 import subprocess
 import textwrap
@@ -822,6 +823,71 @@ def get_expt_name():
         expt_name=""
     return str(expt_name)
 
+GNSS_CONSTELLATIONS = {0: "UNKNOWN", 1: "GPS", 2: "SBAS", 3: "GLONASS", 4: "QZSS", 5: "BEIDOU", 6: "GALILEO", 7: "IRNSS"}  # GnssStatus.CONSTELLATION_*
+
+def kollektomat_utc(ms):
+    return datetime.datetime.fromtimestamp(ms/1000, datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
+def decode_glocrequest(req, decoded, Grep=True, saveData=True):
+    # the newer Offer payload, an lbs.GLocRequest (kollektomat_named.proto): Google Play services' sensor collector
+    # uploads a collection in chunks, all times in it are ms after the collection started
+    info = req.payload.value.upload_info
+    start = info.collection_start_time_ms
+    if saveData:
+        for signals in req.payload.value.signals:
+            trace = signals.sensor_trace
+            for loc in list(trace.location) + ([signals.location] if signals.HasField("location") else []):
+                if loc.HasField("lat_lng"):
+                    with open('/tmp/kollektomat_gpslocs'+get_expt_name(), 'a') as f:
+                        print("lat: ", loc.lat_lng.lat_e7/1.0e7, " long: ", loc.lat_lng.lng_e7/1.0e7, "gpsTime: ", start + loc.time_ms, ' ', end='', file=f)
+                        if loc.HasField("speed_mps"):
+                            print("speed: ", loc.speed_mps, end='', file=f)
+                        print(file=f)
+            for scan in list(trace.wifi_scan) + ([signals.wifi_scan] if signals.HasField("wifi_scan") else []):
+                with open('/tmp/kollektomat_wifilocs'+get_expt_name(), 'a') as f:
+                    print(start + scan.time_ms, ' ', end='', file=f)
+                    for ap in scan.access_point:
+                        print(ap.bssid, ap.rssi_dbm, ' ', end='', file=f)
+                    print(file=f)
+    if not Grep:
+        return decoded
+    counts, bssids, sats, used, locs = {}, set(), {}, 0, []
+    for signals in req.payload.value.signals:
+        trace = signals.sensor_trace
+        chunk_start = start + trace.start_offset_ns // 1000000
+        for fd, value in trace.ListFields():
+            if fd.label == fd.LABEL_REPEATED:
+                counts[fd.name] = counts.get(fd.name, 0) + len(value)
+        for scan in trace.wifi_scan:
+            counts["wifi_aps"] = counts.get("wifi_aps", 0) + len(scan.access_point)
+            bssids.update(ap.bssid for ap in scan.access_point)
+        for scan in trace.cell_scan:
+            counts["cells"] = counts.get("cells", 0) + 1 + len(scan.neighbor_cells)
+        for status in trace.gnss_status:
+            for sat in status.satellite:
+                c = GNSS_CONSTELLATIONS.get(sat.constellation_type, str(sat.constellation_type))
+                sats.setdefault(c, set()).add(sat.svid)
+                used += sat.used_in_fix
+        for rec in trace.gnss_measurements:
+            counts["gnss_raw_measurements"] = counts.get("gnss_raw_measurements", 0) + len(rec.event.measurement)
+        for loc in list(trace.location) + ([signals.location] if signals.HasField("location") else []):
+            locs.append("%.5f,%.5f(%dm)" % (loc.lat_lng.lat_e7/1.0e7, loc.lat_lng.lng_e7/1.0e7, loc.accuracy_m))
+        if trace.HasField("geomagnetic_field_model"):
+            locs.append("geomagnetic_field_model")
+    grep = "+++KOLLEKTOMAT %s session=%s chunk=%d collection_start=%s chunk_window=%s..%s" % (
+        ",".join(req.collector), info.session_id, info.chunk_number, kollektomat_utc(start), kollektomat_utc(chunk_start),
+        kollektomat_utc(info.request_time_ms))
+    triggers = [str(s.collection_info.trigger) for s in req.payload.value.signals if s.collection_info.HasField("trigger")]
+    if triggers:
+        grep += " trigger=" + ",".join(triggers)  # 14: started because activity recognition saw ON_FOOT (eryt.1 in kollektomat_named.proto)
+    grep += " " + " ".join("%s=%d" % kv for kv in counts.items())
+    if bssids:
+        grep += " unique_bssids=%d" % len(bssids)
+    if sats:
+        grep += " gnss_satellites=" + ",".join("%s:%d" % (c, len(s)) for c, s in sorted(sats.items())) + " used_in_fix=%d" % used
+    grep += " location=" + (" ".join(locs) if locs else "none")
+    return grep + "\n" + decoded
+
 kollektomat_count=0
 def decode_kollektomatproto(bytes, verbose=True, debug=False, Grep=True, saveData=True):
     try:
@@ -833,6 +899,15 @@ def decode_kollektomatproto(bytes, verbose=True, debug=False, Grep=True, saveDat
             f.write(bytes)
             f.close()
         #print(fname)
+        req = message_class("KollektomatOfferRequest", "kollektomat_named.proto")()
+        try:
+            req.ParseFromString(bytes)
+        except protobuf_message.DecodeError:  # not this format: the locm.proto decode below reports it
+            req = None
+        if req is not None and req.payload.type_url == "type.googleapis.com/lbs.GLocRequest":
+            decoded = decode_named("KollektomatOfferRequest", "kollektomat_named.proto", bytes)
+            return decode_glocrequest(req, decoded, Grep, saveData)
+        # older format (locm.proto)
         decoded = decode_named("KollektomatRequest", "locm.proto", bytes)
         #print(decoded)
         if saveData:
