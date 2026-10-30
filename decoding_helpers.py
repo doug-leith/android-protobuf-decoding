@@ -628,6 +628,7 @@ def decode_firebase_logbatch(postData, verbose=True):
         return res
     except Exception as e:
         print("***ERROR JSON decoding: ",e)
+        return res
 
 def decode_log_batch(bytes, verbose=True, debug=False):
     # partially decodes POST payload from https://play.googleapis.com/log/batch endpoint
@@ -784,7 +785,7 @@ def decode_locm(data, verbose=True, debug=False):
         decoded = decode_named("LocRequest", "locm.proto", message)
         #print(decoded)
         return(decoded)
-    except DecodeNamedError as e:        
+    except (DecodeNamedError, zlib.error, struct.error) as e:  # zlib, struct: a truncated or corrupted body
         if verbose:
             print("***ERROR: ",e)
         return "Failed"
@@ -892,17 +893,22 @@ def decodeBase64ZippedProto(header):
         print("***ERROR: ",e)
         return "Failed"
 
-def decodeXGoogXSpatula(header, debug=False):
-    buf = urlsafe_decodeBase64(header)
-    #try_decode_pb_array("Decoded x-goog-spatula header", buf, decode_pb)
-    #f = open('/tmp/spatula_bytes', 'wb')
-    if debug:
-        fname='/tmp/spatula_bytes'
-        f = open(fname, 'wb')
-        f.write(buf)
-        f.close()
-    decoded = decode_named("GoogleSpatulaHeader", "spatula.proto", buf)
-    return("Decoded x-goog-spatula header:\n"+decoded)
+def decodeXGoogXSpatula(header, verbose=True, debug=False):
+    try:
+        buf = urlsafe_decodeBase64(header)
+        #try_decode_pb_array("Decoded x-goog-spatula header", buf, decode_pb)
+        #f = open('/tmp/spatula_bytes', 'wb')
+        if debug:
+            fname='/tmp/spatula_bytes'
+            f = open(fname, 'wb')
+            f.write(buf)
+            f.close()
+        decoded = decode_named("GoogleSpatulaHeader", "spatula.proto", buf)
+        return("Decoded x-goog-spatula header:\n"+decoded)
+    except (ValueError, DecodeNamedError) as e:  # ValueError: not base64
+        if verbose:
+            print("***ERROR: decoding x-goog-spatula header: ",e)
+        return "Failed"
     #return(decoded)
 
 def decodeAuthBearerHeader(header, verbose=True, debug=False):
@@ -919,7 +925,8 @@ def decodeAuthBearerHeader(header, verbose=True, debug=False):
     except Exception as e:
         if verbose:
             print("***ERROR: decoding Auth Bearer header: ",e)
-        
+        return "Failed"
+
 heterodyne_count=0
 def decodeHeterodyneResponse(buf, verbose=True, debug=False):
     if debug:
@@ -937,6 +944,7 @@ def decodeHeterodyneResponse(buf, verbose=True, debug=False):
             print("***ERROR: ",e) 
         print("Failed to decode heterodyne response, raw response:")
         printBinaryString(buf)
+        return "Failed"
 
 
 def decodeHeterodyneRequest(buf, verbose=True, debug=False):
@@ -953,6 +961,7 @@ def decodeHeterodyneRequest(buf, verbose=True, debug=False):
             print("***ERROR: ",e) 
         print("Failed to decode heterodyne request, raw request:")
         printBinaryString(buf)
+        return "Failed"
 
 def decodeFLRequestRequest(buf, verbose=True, debug=False):
     #fname='/tmp/fl_bytes'
