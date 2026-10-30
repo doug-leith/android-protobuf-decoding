@@ -14,7 +14,8 @@
 #   compiled as ordinary messages, so a map parses as a repeated field
 # - a group field that arrives length-delimited is kept as an unknown field (python's parser rejects the
 #   message): it is renumbered to an unused field number before parsing and printed under its own number
-# - missing required fields give protoc's warning line before the message
+# - missing required fields give protoc's warning line before the message, an extension in a field path written
+#   as protoc writes it, "(full name)" (python's FindInitializationErrors leaves out the parentheses)
 import ctypes, io, os, subprocess, tempfile
 from google.protobuf import descriptor, descriptor_pb2, descriptor_pool, message_factory, text_format
 from google.protobuf import unknown_fields
@@ -217,6 +218,21 @@ class _Printer(text_format._Printer):
         else:
             super().PrintFieldValue(field, value)
 
+def _init_errors(m, prefix=""):
+    # paths of m's missing required fields, as protoc's ReflectionOps::FindInitializationErrors gives them
+    out = [prefix + fd.name for fd in m.DESCRIPTOR.fields
+           if fd.label == descriptor.FieldDescriptor.LABEL_REQUIRED and not m.HasField(fd.name)]
+    for fd, value in m.ListFields():
+        if fd.message_type is None:
+            continue
+        name = prefix + ("(%s)" % fd.full_name if fd.is_extension else fd.name)
+        if fd.label == descriptor.FieldDescriptor.LABEL_REPEATED:
+            for i, sub in enumerate(value):
+                out += _init_errors(sub, "%s[%d]." % (name, i))
+        else:
+            out += _init_errors(value, name + ".")
+    return out
+
 def message_class(message, proto, include=os.path.dirname(os.path.realpath(__file__))):
     # python class for message in proto (maps parse as repeated entries, see above)
     pool, _map_entries = _pool(include, proto)
@@ -239,7 +255,7 @@ def decode_named(message, proto, data, include=os.path.dirname(os.path.realpath(
         m.MergeFromString(data)
     except Exception as e:
         raise DecodeNamedError("Failed to parse input (%s --decode=%s): %s" % (proto, message, e))
-    missing = m.FindInitializationErrors()
+    missing = _init_errors(m)
     out = io.StringIO()
     if missing:
         out.write("warning:  Input message is missing required fields:  %s\n" % ", ".join(missing))
