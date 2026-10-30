@@ -1,7 +1,7 @@
 # Decoders for advert URL parameters:
 #   ms, dc_ms  AdShield click/impression signal (Play store app and the Google Mobile Ads SDK)
 #   attok      event attestation token added by the Google Mobile Ads SDK (see attok.proto)
-#   gref       opaque protobuf in the Play store intent:// link returned by www.google.com/aclk
+#   gref       protobuf in the Play store intent:// link returned by www.google.com/aclk (see gref.proto)
 # decode_url_params(url) returns the text to print, "" when the url carries none of these.  It never
 # raises: a value that is encrypted, or in a format we do not know, is reported as such.
 import base64, hashlib, os, re, struct, urllib.parse
@@ -271,7 +271,10 @@ def decode_gref(value):
         return "not base64: %r\n" % value[:80]
     if _fields(buf) is None:
         return "not a protobuf: %d bytes\n" % len(buf)
-    return _raw(buf)
+    try:
+        return decode_named("PlayAdReferrer", "gref.proto", buf)
+    except DecodeNamedError as e:
+        return "(could not decode as PlayAdReferrer: %s)\n%s" % (e, _raw(buf))
 
 # ---------------------------------------------------------------- url
 

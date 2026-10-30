@@ -1,0 +1,37 @@
+// gref parameter of the intent:// Play store link returned by www.google.com/aclk when a sponsored
+// app is clicked.  No app code parses it (the Play store sends the whole link back to Google), so
+// field names come from comparing the eight values in the Dec 2024 Pixel 7 captures, and fields with
+// no evident meaning are named by number.
+syntax = "proto2";
+
+message PlayAdReferrer {
+  optional Gclid gclid = 2;               // byte-identical to the gclid parameter of the same link
+  optional int64 advertised_app_id = 3;   // same for the same advertised app in both tests, differs between apps
+  optional PlayAdReferrerF4 f4 = 4;
+}
+
+message PlayAdReferrerF4 {
+  optional int64 f1 = 1;                  // 1 in all
+  optional int64 f3 = 3;                  // 19 in all
+  optional int64 f4 = 4;                  // 1 in all
+  optional int64 f6 = 6;                  // 1 in all
+  optional int64 f7 = 7;                  // 4 for search result ads, 3 for the one home page ad
+}
+
+// gclid: the Google Ads click id, base64url of this message
+message Gclid {
+  optional GclidBody body = 1;
+  optional int64 f2 = 2;                  // 2 in all
+  optional int64 f16382 = 16382;          // 1 in all
+}
+
+message GclidBody {
+  optional GclidDay day = 1;
+  optional bytes opaque = 2;              // 44 bytes; the first 5 are shared by all clicks on the same day
+  optional bytes f3 = 3;                  // 2 bytes, different for every click
+}
+
+message GclidDay {
+  optional int64 day_start_s = 1;         // midnight UTC of the day of the click
+  optional int64 f2 = 2;                  // same for all clicks on the same day (113 on 18 Dec, 98 on 20 Dec)
+}

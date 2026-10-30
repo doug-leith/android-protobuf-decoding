@@ -114,7 +114,7 @@ adparams_decode.py decodes these parameters in request urls and in location resp
 
 - ms (www.google.com/aclk and other advert links) and dc_ms (ad.doubleclick.net): the AdShield signal added to advert clicks and impressions. Values from the Google Play store app are decrypted and checked against the MD5 they carry. They hold touch, timing, uptime and battery measurements; ms_signal.proto is the decoded protobuf definition, with names from the app code where it shows them and from the observed values otherwise. Values produced by DroidGuard, by native code or by a different encoder build are reported as encrypted.
 - attok: the event attestation token the Google Mobile Ads SDK adds to in-app advert links. attok.proto is the decoded protobuf definition. A token sent signed but unencrypted is decoded, including the Google-signed integrity token inside it, which holds the Google Advertising Id. A Tink-encrypted token is reported with its key id.
-- gref: the protobuf in the intent:// Play store link returned by www.google.com/aclk. It contains the gclid of the same link.
+- gref: the protobuf in the intent:// Play store link returned by www.google.com/aclk. gref.proto is the decoded protobuf definition; no app code parses gref, so its names come from the captured values. It contains the gclid of the same link and an id for the advertised app.
 
 ## x-goog-spatula header
 
