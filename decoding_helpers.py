@@ -189,6 +189,8 @@ def printHeaders(flowheaders, type=""):
             res = decodeBase64ZippedProto(h['value'])
             if res != "Failed":
                 print("Decoded "+h['name']+" header:\n", res)
+            if h['name'].lower() == "x-ps-rh":
+                print(adparams_decode.decode_ps_rh_po_token(h['value']), end='')
         elif h['name'].lower() in ["x-dfe-encoded-targets", "x-gmm-client-bin", "x-geo-bin"]:
             val = h['value'] + '=='
             try:
@@ -257,6 +259,7 @@ def printRequest(url, request):
     'experimentsandconfigs/v1/getExperimentsAndConfigs': decodeHeterodyneRequest,
     'android.googleapis.com/auth/devicekey': decode_deviceKeyRequest,
     'deviceintegritytokens-pa.googleapis.com/v1/getAdEventToken': adparams_decode.decode_get_ad_event_token_request,
+    'deviceintegritytokens-pa.googleapis.com/v1/getPoIntegrityToken': adparams_decode.decode_get_po_integrity_token_request,
     'play.googleapis.com/play/log':decode_playstore,
     'firebaselogging-pa.googleapis.com/v1/firelog/legacy/batchlog':decode_firebase_logbatch,
     'firebaselogging.googleapis.com/v0cc/log/batch':decode_firebase_logbatch,
@@ -287,8 +290,9 @@ def printRequest(url, request):
                 break
         if not decoded:
             printUsingMimeType(postData,requestMimeType)
-        # DroidGuard results (checkin, adAttest, fdfe/sync, ...); the getAdEventToken decoder prints its own
-        if 'getAdEventToken' not in url:
+        # DroidGuard results (checkin, adAttest, fdfe/sync, ...); the getAdEventToken and getPoIntegrityToken
+        # decoders print their own
+        if 'getAdEventToken' not in url and 'getPoIntegrityToken' not in url:
             res = adparams_decode.decode_droidguard_results_in(postData)
             if res:
                 print(res, end='')
@@ -316,6 +320,7 @@ def printResponse(url, response, verboseResponse=False):
     'remoteprovisioning.googleapis.com/v1:signCertificates' : decode_signedcerts,
     'android.googleapis.com/auth/devicekey': decode_deviceKeyResponse,
     'deviceintegritytokens-pa.googleapis.com/v1/getAdEventToken': adparams_decode.decode_get_ad_event_token_response,
+    'deviceintegritytokens-pa.googleapis.com/v1/getPoIntegrityToken': adparams_decode.decode_get_po_integrity_token_response,
     'ProgramBlobService/DownloadBlob': decode_downloadblob_response,
     'VoilaTileService/FindTiles': decode_voilatile_response,
     }

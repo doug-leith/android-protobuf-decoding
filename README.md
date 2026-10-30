@@ -147,6 +147,11 @@ Each message contains a sequence of log events, which may be from different log 
 
 - GetAdEventTokenRequest and GetAdEventTokenResponse in attok.proto are the decoded protobuf definitions. About once a day Google Play Services sends its event attestation public key, the Google Advertising Id and a DroidGuard result, and gets back a Google-signed token holding the key, a timestamp and the Advertising Id. Every attok token (below) carries this signed token.
 
+## Google Play Services https://deviceintegritytokens-pa.googleapis.com/v1/getPoIntegrityToken and PO tokens
+
+- potoken.proto is the decoded protobuf definition of the request, the reply and the PO tokens made from it. About once a day Google Play Services sends a DroidGuard result and gets back an integrity token, encrypted to Google, with a lifetime. From it Google Play Services makes a PO token for each app that asks (e.g. YouTube, the Play store): the calling app's name, signing certificate hash and data, encrypted, plus part of the integrity token in clear, the same in every PO token until the next refresh.
+- The Play store sends its PO token in field 26 of the x-ps-rh header of its apps/contentSync and replicateLibrary requests; decoding_helpers.py decodes it after the header.
+
 ## AOSP https://remoteprovisioning.googleapis.com/v1/:signCertificates
 
 - decodes signed public keys response

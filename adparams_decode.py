@@ -2,6 +2,8 @@
 #   ms, dc_ms  AdShield click/impression signal (Play store app and the Google Mobile Ads SDK)
 #   attok      event attestation token added by the Google Mobile Ads SDK (see attok.proto)
 #   gref       protobuf in the Play store intent:// link returned by www.google.com/aclk (see gref.proto)
+# and for the attestation requests behind them: getAdEventToken, DroidGuard results in any request body
+# (droidguard.proto), getPoIntegrityToken and the PO tokens made from its reply (potoken.proto).
 # decode_url_params(url) returns the text to print, "" when the url carries none of these.  It never
 # raises: a value that is encrypted, or in a format we do not know, is reported as such.
 import base64, datetime, hashlib, os, re, struct, urllib.parse, zlib
@@ -229,9 +231,9 @@ def decode_ms(value, ai):
 
 # ---------------------------------------------------------------- attok
 
-def _named(message, buf):
+def _named(message, buf, proto="attok.proto"):
     try:
-        return decode_named(message, "attok.proto", buf)
+        return decode_named(message, proto, buf)
     except DecodeNamedError as e:
         return "(could not decode as %s: %s)\n%s" % (message, e, _raw(buf))
 
@@ -289,8 +291,11 @@ def decode_get_ad_event_token_request(buf):
     out += "public_key: %s\n" % req.public_key.hex()
     if req.HasField("ad_id"):
         out += "Google Advertising Id: %s\n" % _uuid(req.ad_id)
-    out += "droidguard_result:\n" + "".join("  " + l + "\n" for l in decode_droidguard_result(dg).splitlines())
+    out += "droidguard_result:\n" + _indent(decode_droidguard_result(dg))
     return out
+
+def _indent(text):
+    return "".join("  " + l + "\n" for l in text.splitlines())
 
 def decode_get_ad_event_token_response(buf):
     resp = _parse("GetAdEventTokenResponse", buf)
@@ -423,6 +428,90 @@ def decode_droidguard_results_in(body):
         return out
     except Exception as e:
         return "***ERROR decoding DroidGuard result: %r\n" % e
+
+# ---------------------------------------------------------------- PO tokens
+
+# getPoIntegrityToken: about once a day Google Play Services sends a DroidGuard result and gets back the integrity
+# token it puts in every PO token it makes for an app; the Play store sends its PO token in field 26 of the x-ps-rh
+# header (potoken.proto).
+
+def _opaque(b):
+    # the integrity tokens and encrypted fields are Tink ciphertext: 01 (or 00, legacy), 4-byte key id, ciphertext
+    if len(b) > 5 and b[0] in (0, 1):
+        return b"<%d bytes, Tink ciphertext, key id 0x%s>" % (len(b), b[1:5].hex().encode())
+    return b"<%d bytes>" % len(b)
+
+def decode_get_po_integrity_token_request(buf):
+    req = _parse("GetPoIntegrityTokenRequest", buf, "potoken.proto")
+    if req is None or not req.droidguard_result or len(req.droidguard_binding) != 32:
+        return "not a getPoIntegrityToken request:\n" + _raw(buf)
+    dg = req.droidguard_result
+    req.droidguard_result = b"<%d characters of base64: DroidGuard result, decoded below>" % len(dg)
+    binding = req.droidguard_binding
+    req.ClearField("droidguard_binding")
+    out = _named("GetPoIntegrityTokenRequest", req.SerializeToString(), "potoken.proto")
+    out += "droidguard_binding: %s\n" % binding.hex()
+    out += "droidguard_result:\n" + _indent(decode_droidguard_result(dg.decode("latin-1")))
+    return out
+
+def decode_get_po_integrity_token_response(buf):
+    resp = _parse("GetPoIntegrityTokenResponse", buf, "potoken.proto")
+    if resp is None or not resp.integrity_token or not (resp.outer_integrity_token or resp.outer_integrity_token_hw):
+        return "not a getPoIntegrityToken reply:\n" + _raw(buf)
+    tokens = []
+    for f in ("integrity_token", "outer_integrity_token", "outer_integrity_token_hw", "key_set"):
+        if resp.HasField(f):
+            tokens.append((f, getattr(resp, f)))
+            setattr(resp, f, _opaque(getattr(resp, f)))
+    out = _named("GetPoIntegrityTokenResponse", resp.SerializeToString(), "potoken.proto")
+    for f, v in tokens:
+        out += "%s (hex): %s\n" % (f, v.hex())
+    return out
+
+def decode_po_token(buf):
+    # a PoToken, as Play Services hands it to an app
+    t = _parse("PoToken", buf, "potoken.proto")
+    if t is None or not (t.HasField("software_key") or t.HasField("hardware_key")):
+        return "not a PO token: %d bytes\n" % len(buf)
+    k = t.software_key if t.HasField("software_key") else t.hardware_key
+    outer = k.outer_integrity_token if t.HasField("software_key") else b""
+    if k.HasField("encrypted_info"):
+        k.encrypted_info = _opaque(k.encrypted_info)
+    if outer:
+        k.outer_integrity_token = _opaque(outer)
+    out = _named("PoToken", t.SerializeToString(), "potoken.proto")
+    if outer:
+        out += "outer_integrity_token (hex; from getPoIntegrityToken, the same in every PO token until the next): %s\n" % outer.hex()
+    return out
+
+def decode_ps_rh_po_token(value):
+    # the PO token in field 26 of a Play store x-ps-rh header value (base64 of gzipped protobuf); "" when there is none
+    try:
+        buf = _b64(value)
+        if buf is None:
+            return ""
+        try:
+            buf = zlib.decompress(buf, 32 + zlib.MAX_WBITS)
+        except zlib.error:
+            return ""
+        f26 = [v for f, t, v in (_fields(buf) or []) if f == 26 and t == 2]
+        if not f26:
+            return ""
+        p = _parse("PlayStorePoToken", f26[0], "potoken.proto")
+        w = _parse("PoTokenWrapper", _b64(p.token_wrapper) or b"", "potoken.proto") if p is not None else None
+        if w is None or not w.HasField("status"):
+            return "PO token in x-ps-rh header (field 26), not in a format we know:\n" + _raw(f26[0])
+        p.token_wrapper = "<PoTokenWrapper, decoded below>"
+        out = "PO token in x-ps-rh header (field 26, decoded):\n" + _named("PlayStorePoToken", p.SerializeToString(), "potoken.proto")
+        token = _b64(w.po_token) if w.status == w.TOKEN else None
+        if token:
+            w.po_token = "<PO token, decoded below>"
+        out += "token_wrapper:\n" + _indent(_named("PoTokenWrapper", w.SerializeToString(), "potoken.proto"))
+        if token:
+            out += "  po_token:\n" + _indent(_indent(decode_po_token(token)))
+        return out
+    except Exception as e:
+        return "***ERROR decoding PO token in x-ps-rh header: %r\n" % e
 
 # ---------------------------------------------------------------- gref
 

@@ -1,0 +1,106 @@
+// PO tokens: attestation tokens Google Play Services makes for an app that asks (e.g. YouTube, the Play store),
+// from an integrity token it fetches about once a day from getPoIntegrityToken with a DroidGuard result.
+// Field numbers and types are from Google Play Services 21.48.15 (package com.google.android.gms.potokens, classes
+// chqq, chqr, axvi, axvn, axvo, axvp) and the Play store 52.7.55 (bybb, bzmb, acqp); neither keeps field names, so
+// names come from the code that fills each field and from microG's re-implementation (potoken.proto,
+// PoTokenHelper.kt). The Dec 2024 Pixel 7 captures match this layout.
+syntax = "proto2";
+
+// POST body of deviceintegritytokens-pa.googleapis.com/v1/getPoIntegrityToken (chqq)
+message GetPoIntegrityTokenRequest {
+  enum Mode {
+    MODE_UNSPECIFIED = 0;
+    // PO tokens encrypted with a Tink key set Play Services generates; the key set is handed to DroidGuard with
+    // the request, presumably reaching Google inside the encrypted DroidGuard payload. Every capture uses this mode.
+    MODE_SOFTWARE_KEY = 1;
+    // PO tokens also signed with an Android Keystore ECDSA key
+    MODE_HARDWARE_BACKED = 2;
+  }
+  optional Mode mode = 1;
+  optional bytes droidguard_result = 2;   // base64 text of a DroidGuard result (droidguard.proto)
+  optional bytes droidguard_binding = 3;  // 32 random bytes, also passed (base64) to DroidGuard with the request
+}
+
+// reply (chqr)
+message GetPoIntegrityTokenResponse {
+  // opaque to the handset: Tink ciphertext under a Google key (01 + key id 0237fdb6 in all captures); it goes,
+  // encrypted, inside every PO token
+  optional bytes integrity_token = 1;
+  optional uint32 lifetime_s = 2;         // 86400 in the captures; Play Services fetches a new one after this
+  // opaque, same Google key; sent in clear next to the encrypted part of every mode-1 PO token, so it is the same
+  // in every PO token until the next refresh
+  optional bytes outer_integrity_token = 3;
+  optional bytes outer_integrity_token_hw = 4;  // the mode-2 counterpart of field 3; not in the captures
+  optional bytes key_set = 5;             // a Tink key set that replaces the one Play Services generated, if a flag is set
+}
+
+// the token Play Services hands the app (PoToken.a; axvp)
+message PoToken {
+  oneof token {
+    SoftwareKeyToken software_key = 1;    // mode 1
+    HardwareKeyToken hardware_key = 2;    // mode 2
+  }
+}
+
+message SoftwareKeyToken {                // axvn
+  // PoTokenInfo, encrypted with the mode-1 Tink key set: 01, 4-byte key id, ciphertext. The key id changes at
+  // each refresh, as a new key set is generated for each getPoIntegrityToken call.
+  optional bytes encrypted_info = 1;
+  optional bytes outer_integrity_token = 2;   // GetPoIntegrityTokenResponse.outer_integrity_token, in clear
+}
+
+message HardwareKeyToken {                // axvo
+  optional bytes encrypted_info = 1;
+  optional bytes signature = 2;           // SHA256withECDSA of encrypted_info by the Android Keystore key
+}
+
+// the plaintext of encrypted_info (axvi); not visible on the wire
+message PoTokenInfo {
+  optional uint32 integrity_token_age_s = 1;
+  optional bytes request_data = 2;        // bytes the calling app passes in
+  optional string package_name = 3;       // the calling app
+  optional bytes package_signers_sha256 = 4;  // SHA-256 of the calling app's signing certificates
+  optional bytes integrity_token = 5;     // GetPoIntegrityTokenResponse.integrity_token
+}
+
+// Play store: field 26 of the x-ps-rh request header, in apps/contentSync and replicateLibrary requests (bybb)
+message PlayStorePoToken {
+  optional string token_wrapper = 1;      // url-safe base64, unpadded, of PoTokenWrapper
+  optional Duration lookup_time = 2;      // time the Play store took to get the token from its cache
+}
+
+message Duration {
+  optional int64 seconds = 1;
+  optional int32 nanos = 2;
+}
+
+// the Play store's cached PO token (bzmb)
+message PoTokenWrapper {
+  enum Status {
+    STATUS_0 = 0;
+    STATUS_1 = 1;
+    STATUS_2 = 2;
+    TOKEN = 3;                            // po_token holds a PO token from Play Services
+    API_CHECK_TIMEOUT = 4;                // checking that Play Services offers the PoTokens API timed out
+    API_CHECK_FAILED = 5;                 // Play Services does not offer it
+    GENERATION_TIMEOUT = 6;               // Play Services took too long to make a PO token
+    GENERATION_FAILED = 7;
+    GMS_TOO_OLD = 8;                      // Play Services older than 21.06
+    CACHE_EMPTY = 9;                      // no token cached yet; one is being made
+    NOT_YET_GENERATED = 10;               // no token made since the Play store started
+    NOT_CONFIGURED = 11;                  // the PoToken config flags are missing
+  }
+  enum CacheState {
+    CACHE_STATE_0 = 0;
+    FRESH = 1;                            // cached token younger than the soft TTL (flag, 1800 s in the captures)
+    STALE = 2;                            // older than the soft TTL: sent, and a new one is being made
+    NEW = 3;                              // just made
+    EXPIRED = 4;                          // older than the hard TTL (3600 s): still sent, and a new one is being made
+    NONE = 5;                             // no cached token
+  }
+  // url-safe base64, unpadded, of PoToken; for the error statuses, an error code from a config flag
+  // (e.g. "xw3iuv", "h6iqp", "d7zf8g")
+  optional string po_token = 1;
+  optional Status status = 2;
+  optional CacheState cache_state = 3;
+}
