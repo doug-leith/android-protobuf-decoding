@@ -129,6 +129,10 @@ Each message contains a sequence of log events, which may be from different log 
 
 - ondevicesafety_named.proto is decoded protobuf definition of request and response (gRPC): the on-device spam/scam classifier's encrypted rule/model package download, sending client id, device tier, labels, counters, the device's Tink public key and a DroidGuard token (Messages) or Android Keystore key attestation (Play Protect)
 
+## Google Play Services https://voilatile-pa.googleapis.com/google.internal.android.location.voilatile.v1.VoilaTileService/FindTiles
+
+- voilatile_named.proto is decoded protobuf definition of the request (the Wi-Fi BSSIDs and cell towers the phone sees) and response (location tiles giving each known access point's position); s2cell.py converts their S2 cell ids to latitude/longitude
+
 ## Google Play Services https://android.googleapis.com/auth/devicekey
 
 - devicekeyrequest.proto is (partially) decoded protobuf definition for request and response

@@ -22,6 +22,7 @@ import locm_pb2
 from decode_raw import decode_raw, DecodeRawError  # in-process `protoc --decode_raw`
 from decode_named import decode_named, DecodeNamedError, message_class  # in-process `protoc --decode`
 import adparams_decode  # advert url parameters ms, dc_ms, attok, gref
+import s2cell  # S2 cell id -> lat/lng, for the VoilaTile location tiles
 import contextlib, importlib, io
 import datetime
 from mitmproxy.utils import strutils
@@ -248,6 +249,7 @@ def printRequest(url, request):
     '/loc/m/api': decode_locm,
     'KollektomatService/Offer': decode_kollektomat,
     'ProgramBlobService/DownloadBlob': decode_downloadblob_request,
+    'VoilaTileService/FindTiles': decode_voilatile_request,
     'app-measurement.com/a': decode_firebase_analytics,
     'android.clients.google.com/checkin': decode_checkin,
     'android.googleapis.com/checkin': decode_checkin,
@@ -315,6 +317,7 @@ def printResponse(url, response, verboseResponse=False):
     'android.googleapis.com/auth/devicekey': decode_deviceKeyResponse,
     'deviceintegritytokens-pa.googleapis.com/v1/getAdEventToken': adparams_decode.decode_get_ad_event_token_response,
     'ProgramBlobService/DownloadBlob': decode_downloadblob_response,
+    'VoilaTileService/FindTiles': decode_voilatile_response,
     }
 
     responseMimeType=None
@@ -966,6 +969,106 @@ def decode_kollektomatproto(bytes, verbose=True, debug=False, Grep=True, saveDat
 def decode_kollektomat(postData, verbose=True, debug=False):
     #print("raw: ",postData)
     return(decode_gRPC(postData,decode_kollektomatproto))
+
+def frewle_aps(blob):
+    # FREWLE Wi-Fi AP tile (FrewleTile.frewle_blob in voilatile_named.proto), as GMS's esni/esnj read it: byte 0 version
+    # (1), bytes 4-8 the tile's S2 cell id >> 24, bytes 9-10 the AP count, then 11 bytes per AP: MAC (6), position in
+    # the tile cell (3, 12 more S2 levels), power output (1), path-loss exponent (1, (x + 128) * 0.01). An AP whose
+    # bytes 6-10 are all 0 shares the previous AP's values. Returns (tile cell id, [(mac, ap cell id, power, ple)]).
+    if not blob or blob[0] != 1:
+        return None, []
+    cell = int.from_bytes(blob[4:9], "big") << 24
+    shift = 2 * (30 - s2cell.cell_level(cell)) - 24
+    aps, last = [], None
+    for k in range(int.from_bytes(blob[9:11], "big")):
+        e = blob[11 + 11*k:22 + 11*k]
+        if len(e) < 11:
+            break
+        if any(e[6:11]) or last is None:
+            last = e
+        ap_cell = (cell ^ (cell & -cell)) | (((int.from_bytes(last[6:9], "big") << 1) | 1) << shift)
+        signed = lambda b: b - 256 if b > 127 else b
+        aps.append((int.from_bytes(e[0:6], "big"), ap_cell, signed(last[9]), (signed(last[10]) + 128) * 0.01))
+    return cell, aps
+
+voilatile_bssids = set()  # the BSSIDs of the last FindTiles request, to find them in its response's tiles
+
+def decode_voilatile_requestproto(bytes, verbose=True, debug=False, Grep=True):
+    # voilatile-pa VoilaTileService/FindTiles request: Google Play services' network location asking for the location
+    # tiles of the Wi-Fi APs and cell towers the phone sees
+    global voilatile_bssids
+    try:
+        req = message_class("FindTilesRequest", "voilatile_named.proto")()
+        req.ParseFromString(bytes)
+        decoded = decode_named("FindTilesRequest", "voilatile_named.proto", bytes)
+    except (protobuf_message.DecodeError, DecodeNamedError) as e:
+        if verbose:
+            print("***ERROR FindTiles request: ", e)
+        return "Failed"
+    bssids = [b for q in req.query for b in q.wifi_aps.bssid]
+    cells = [c for q in req.query for c in q.cell_towers.cell_key]
+    voilatile_bssids = set(bssids)
+    grep = ""
+    if Grep:
+        grep = "+++VOILATILE_REQUEST wifi_aps=%d %s cells=%s tile_keys=%d device=%s\n" % (
+            len(bssids), ",".join("%012x" % b for b in bssids) or "-", ",".join(cells) or "-", len(req.tile_key),
+            req.client_context.device.model or req.client_context.device.manufacturer_model or "-")
+    # BSSIDs are printed as integers by the decode; hex form here
+    return grep + decoded + "".join("bssid %012x\n" % b for b in bssids)
+
+def decode_voilatile_responseproto(bytes, verbose=True, debug=False, Grep=True):
+    # FindTiles response: S2-cell tiles listing each known AP's MAC and position (FREWLE tiles) or cell towers.
+    # The FREWLE blobs are elided from the decode and printed parsed, one AP per line.
+    try:
+        resp = message_class("FindTilesResponse", "voilatile_named.proto")()
+        resp.ParseFromString(bytes)
+    except protobuf_message.DecodeError as e:
+        if verbose:
+            print("***ERROR FindTiles response: ", e)
+        return "Failed"
+    tiles, aps_out, located = [], "", []
+    for t in [t for r in resp.result for t in r.tile] + [b.tile for b in resp.bluesky]:
+        if t.data.HasField("wifi"):
+            cell, aps = frewle_aps(t.data.wifi.frewle.frewle_blob)
+            if cell is None:
+                continue
+            lvl, lat, lng = s2cell.cell_to_latlng(cell)
+            tiles.append("wifi:%.5f,%.5f(L%d,%d_aps)" % (lat, lng, lvl, len(aps)))
+            aps_out += "FREWLE tile %016x level %d centre %.5f,%.5f, %d APs (%d bytes elided above):\n" % (
+                cell, lvl, lat, lng, len(aps), len(t.data.wifi.frewle.frewle_blob))
+            for mac, c, power, ple in aps:
+                _, alat, alng = s2cell.cell_to_latlng(c)
+                aps_out += "  AP %012x %.5f,%.5f power=%d path_loss_exponent=%.2f\n" % (mac, alat, alng, power, ple)
+                if mac in voilatile_bssids:
+                    located.append("%012x@%.5f,%.5f" % (mac, alat, alng))
+            t.data.wifi.frewle.ClearField("frewle_blob")
+        elif t.data.HasField("cell"):
+            name = t.key.cell.name
+            where = ""
+            if "#" in name:
+                try:
+                    lvl, lat, lng = s2cell.cell_to_latlng(s2cell.token_to_id(name.split("#")[0]))
+                    where = "@%.5f,%.5f(L%d)" % (lat, lng, lvl)
+                except (ValueError, IndexError):
+                    pass
+            tiles.append("cell:%s%s(%d_cells)" % (name, where, len(t.data.cell.cell_id)))
+    try:
+        decoded = decode_named("FindTilesResponse", "voilatile_named.proto", resp.SerializeToString())
+    except DecodeNamedError as e:
+        if verbose:
+            print("***ERROR FindTiles response: ", e)
+        return "Failed"
+    grep = ""
+    if Grep:
+        grep = "+++VOILATILE_RESPONSE tiles=%d %s requested_aps_located=%d %s\n" % (
+            len(tiles), " ".join(tiles) or "-", len(located), " ".join(located) or "-")
+    return grep + decoded + aps_out
+
+def decode_voilatile_request(postData, verbose=True, debug=False):
+    return(decode_gRPC(postData, decode_voilatile_requestproto))
+
+def decode_voilatile_response(data, verbose=True, debug=False):
+    return(decode_gRPC(data, decode_voilatile_responseproto, "Response data (gRPC decoded)"))
 
 def pb_enum_name(m, f):
     # the name of enum field f's value in message m, or the number when the value is not in the enum

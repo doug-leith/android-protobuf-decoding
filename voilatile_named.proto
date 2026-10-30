@@ -1,0 +1,213 @@
+edition = "2023";
+
+// Google Play services' Wi-Fi and cell location tile lookups:
+// google.internal.android.location.voilatile.v1.VoilaTileService/FindTiles
+// (voilatile-pa.googleapis.com, gRPC). The request lists the Wi-Fi BSSIDs and cell
+// towers the phone sees; the response returns location tiles (S2 cells) holding each
+// known access point's position, which network location then uses on the phone.
+// Schema from GMS 24.06.16 (Pixel 8 Sep 2024 factory image, dex 8 and 9; obfuscated
+// class names in comments): request built in dxdb.a() (location) and dvtj.a()
+// (Bluesky tiles), sent by dvmh/dvmp; response read in dwzc (FREWLE tile cache) and
+// dvtj. Fields the client never reads (stripped from its classes by R8) are added
+// from the captured responses and marked "not in the client schema". Unnamed fields
+// are f<number>.
+
+option features.utf8_validation = NONE;
+
+// dvmp.b: request of VoilaTileService/FindTiles
+message FindTilesRequest {  // esuk
+  ClientContext client_context = 1;  // estimated name (high): esuf, filled by dvmh's constructor and dxdb
+  repeated TileQuery query = 2;  // estimated name (high): dxdb.a(): one for the Wi-Fi APs, one for the cell towers
+  repeated TileKey tile_key = 3;  // estimated name (high): dvtj.a(): tiles asked for by key (Bluesky)
+}
+
+message ClientContext {  // esuf
+  DeviceInfo device = 1;  // estimated name (high): esue
+}
+
+message DeviceInfo {  // esue
+  string rotating_client_id = 1;  // estimated name (high): dxct.a(): base64 of 8 random bytes + elapsedRealtime minutes, renewed after a flag's interval; sent unless a flag says not to
+  string manufacturer_model = 2;  // estimated name (high): dvmh: Build.MANUFACTURER + " " + Build.MODEL when the detailed fields are off
+  string android_release = 3;  // estimated name (high): Build.VERSION.RELEASE
+  string gms_version = 4;  // estimated name (high): "24.06.16 (190408-{{cl}})" in this build
+  string manufacturer = 5;  // estimated name (high): Build.MANUFACTURER
+  string brand = 6;  // estimated name (high): Build.BRAND
+  string product = 7;  // estimated name (high): Build.PRODUCT
+  string model = 8;  // estimated name (high): Build.MODEL
+}
+
+message TileQuery {  // esuh
+  oneof query {
+    WifiApQuery wifi_aps = 1;  // estimated name (high): dxdb.a(): dwcx.c(), the scanned BSSIDs
+    Empty f2 = 2;  // esuq: no fields, no writer in dex 8
+    CellTowerQuery cell_towers = 3;  // estimated name (high): dxdb.a(): dwcx.b(), the cell keys
+  }
+}
+
+message WifiApQuery {  // esum
+  repeated int64 bssid = 1;  // estimated name (high): Wi-Fi MAC addresses as 48-bit integers (the same values as Kollektomat's WifiAccessPoint.bssid)
+}
+
+message CellTowerQuery {  // esub
+  repeated string cell_key = 1;  // estimated name (high): dxdb.a(): "<radio>:<mcc>:<mnc>:..." with radio 3 GSM (lac, cid), 4 CDMA, 5 UMTS, 6 LTE (cell id), 7 NR
+}
+
+message Empty {  // esuq, esup, esut, esur, esus (no fields in the client)
+}
+
+message TileKey {  // esuv
+  TileVersion version = 1;  // estimated name (medium): esuw; dvtj names cache files by it; 654 for Wi-Fi tiles, a day in µs for cell tiles
+  oneof kind {
+    WifiTileKey wifi = 2;  // estimated name (medium): esup; the key of every Wi-Fi tile in the captures
+    Empty f3 = 3;  // esut
+    CellTileKey cell = 4;  // estimated name (medium): esud; the key of the cell tile answering a cell query
+    BlueskyTileKey bluesky = 5;  // estimated name (high): esua; dvtj.a() and dvmh: AppOp android:coarse_location "location_nlp_network" noted for it ("Bluesky noteOp failed")
+    TileKeyId f6 = 6;  // esuz
+  }
+}
+
+message TileVersion {  // esuw
+  uint64 value = 1;  // estimated name (medium): see TileKey.version
+}
+
+message WifiTileKey {  // esup
+  uint64 s2_cell_id = 1;  // not in the client schema; estimated name (high): an S2 cell id (level 15, Dublin in the captures), the same id as the FREWLE tile's header
+}
+
+message CellTileKey {  // esud
+  string name = 1;  // not in the client schema; estimated name (medium): "<S2 cell token>#<radio>:<mcc>:<mnc>", e.g. "48670c7#6:272:5" (a level-12 cell over Dublin, LTE, Ireland, network 05)
+}
+
+message BlueskyTileKey {  // esua
+  string name = 1;  // estimated name (low): dvtj.a() str2
+}
+
+message TileKeyId {  // esuz
+  uint64 f1 = 1;
+}
+
+// dvmp.b: response of VoilaTileService/FindTiles
+message FindTilesResponse {  // esul
+  ServerTime server_time = 1;  // not in the client schema; estimated name (medium): its seconds equal the request time
+  repeated QueryResult result = 2;  // estimated name (high): one per TileQuery (dwzc reads the tiles of every result)
+  repeated BlueskyResult bluesky = 3;  // estimated name (high): dvtj.a(): status + tile per requested TileKey
+}
+
+message ServerTime {
+  int64 seconds = 1;
+}
+
+message QueryResult {  // esui
+  string f1 = 1;  // not in the client schema; always "" in the captures
+  repeated Tile tile = 2;  // estimated name (high): dwzc iterates esui.c
+  oneof extra {
+    QueryInfo info = 3;  // esun
+    Empty f4 = 4;  // esur
+  }
+}
+
+message QueryInfo {  // esun
+  erxa f2 = 2;
+  QueryInfoF3 f3 = 3;  // not in the client schema
+}
+
+message QueryInfoF3 {  // not in the client schema; 1: 2^64-2, 100: 1572160060 in the captures
+  uint64 f1 = 1;
+  int64 f100 = 100;
+}
+
+message erxa {  // erxa; 1: 654 (the Wi-Fi tile version) in the captures
+  int32 f1 = 1;
+  bool f73 = 73;
+  bool f74 = 74;
+  int32 f77 = 77;
+  int32 f78 = 78;
+}
+
+message BlueskyResult {  // esug
+  Status status = 1;  // estimated name (high): fasr; dvtj: "VoilaTile returned error: " + code + ":" + message
+  Tile tile = 2;  // estimated name (high): cached by dvtj
+}
+
+message Status {  // fasr, as google.rpc.Status
+  int32 code = 1;
+  string message = 2;
+}
+
+message Tile {  // esux
+  TileKey key = 1;  // estimated name (high): dvtj names the tile's cache file by key.version and key.bluesky
+  TileData data = 2;  // estimated name (high): esuu
+}
+
+message TileData {  // esuu
+  oneof data {
+    WifiTile wifi = 1;  // estimated name (high): dwzc: esuo -> esqt FREWLE tile
+    Empty f2 = 2;  // esus
+    CellTile cell = 3;  // estimated name (medium): dwzc: logged as CELL_FINGERPRINT_CACHE_EVENT; the answer to a cell query
+    bytes f4 = 4;  // estz.1 (the message has one bytes field)
+    bytes f5 = 5;  // esuy: a message fspx not in dex 8/9, kept as bytes
+  }
+}
+
+message WifiTile {  // esuo
+  FrewleTile frewle = 5;  // estimated name (high): esqt, parsed by dwzc/esni ("FREWLE tile to be parsed is null")
+}
+
+message CellTile {  // esuc
+  repeated uint64 cell_id = 1;  // estimated name (low): packed 64-bit keys
+  repeated bytes cell_record = 2;  // estimated name (low): one record per key
+  int32 f3 = 3;  // not in the client schema
+  int32 f4 = 4;  // not in the client schema
+}
+
+// A Wi-Fi AP location tile for one S2 cell. frewle_blob: byte 0 version (1), bytes 4-8
+// the tile's S2 cell id >> 24, bytes 9-10 the number of APs, then 11 bytes per AP: MAC (6),
+// position in the cell (3; 12 more S2 levels, esni.e), power output (1), path-loss
+// exponent (1, (x + 128) * 0.01); an AP whose position bytes are 0 shares the previous
+// AP's (esnj.b).
+message FrewleTile {  // esqt
+  bytes frewle_blob = 1;  // estimated name (high): esni/esnj read it (getMacAddress, getS2CellId, getNumMacEntries, getPowerOutput, getPathLossExponent)
+  ApAltitudes altitudes = 3;  // estimated name (medium): dwzc: (base + per-AP value) * 0.1 + model offsets -> erye.g
+  erxe f4 = 4;
+  ApParameters ap_parameters = 5;  // estimated name (medium): dwzc copies its per-AP arrays into erye
+  ApList f6 = 6;
+}
+
+message ApAltitudes {  // erxd
+  int32 base_dm = 1;  // estimated name (medium): added to each per_ap_dm (0.1 m units)
+  repeated uint32 per_ap_dm = 2 [features.repeated_field_encoding = EXPANDED];  // estimated name (medium): one per AP, 0 = none
+}
+
+message erxe {  // erxe
+  repeated uint32 f1 = 1 [features.repeated_field_encoding = EXPANDED];
+  repeated erxb f2 = 2;
+  repeated S2Point f3 = 3;
+  int32 f4 = 4;
+}
+
+message erxb {  // erxb
+  string f1 = 1;
+  uint32 f2 = 2;
+  S2Point f3 = 3;
+  uint32 f4 = 4;
+}
+
+message S2Point {  // erxf
+  int64 s2_cell_id = 1;  // estimated name (medium): level-30 S2 cell ids inside the tile in the captures
+  int64 f2 = 2;
+}
+
+message ApParameters {  // erxc
+  repeated fixed64 ap_id = 1;  // estimated name (low): dwzc -> erye.b
+  repeated sint32 f2 = 2;  // dwzc: x * 0.05 + 2 -> erye.c
+  repeated sint32 f3 = 3;  // dwzc: x * 0.01 + 1.1 -> erye.d
+  repeated int32 f4 = 4;  // dwzc: x * 0.1 -> erye.e
+}
+
+message ApList {  // erwz
+  repeated uint64 f1 = 1;  // dwzc hands it to the tile cache (esnc.o)
+}
+
+// Fields left f<number>: TileQuery.f2, TileKey.f3/f6, QueryResult.f1/f4, QueryInfo, erxa,
+// TileData.f2/f4/f5, FrewleTile.f4/f6, ApParameters.f2-f4, erxe, erxb: empty or unread
+// messages, or arrays whose meaning the client code does not show.
