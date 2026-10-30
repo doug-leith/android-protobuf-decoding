@@ -80,6 +80,10 @@ Each message contains a sequence of log events, which may be from different log 
 
 - stats_log.proto is (partially) decoded protobuf definition.  hashes of strings are sent in log rather than text, plus a list of strings used.  SMHasher program calcs hash of a string and so can be used to construct a table mapping from the list of strings to hash values, see d ecode_westworld() in logbatch_decode.py
 
+### CONSENT_INFO (sent with WESTWORLD, LB_AS and other log sources' events)
+
+- consentinfo.proto is decoded protobuf definition of the consent settings Google Play Services checked before uploading the event
+
 ### TRON log source (Google Play Services Tron component, sends AOSP metric logger data)
 
 - tron_decode.py is a python script to decode and print out a binary protobuf stored in file /tmp/tron_bytes
