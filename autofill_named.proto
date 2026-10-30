@@ -196,7 +196,7 @@ message FillRequestEvent {  // auqn
   int64 latency_ms = 3;  // estimated name (high): stopwatch hoyz.d().toMillis() (auye label stopwatch); time to answer the request
   bool is_successful = 4;  // estimated name (high): auye label isSuccessful
   bool has_save_info = 5;  // estimated name (medium): a response was made and it has a SaveInfo
-  UserOptInStatus user_opt_in_status = 6;  // estimated name (high): auye label userOptInStatus (auql)
+  UserOptInStatus user_opt_in_status = 6;  // estimated name (high): auye label userOptInStatus; awor.a(): has the user chosen a Google account for Autofill with Google, and if not, is there a Google account on the phone (see enum UserOptInStatus)
   bool is_app_excluded = 7;  // estimated name (high): auye label isAppExcluded; set for apps on awok's exclusion list
   bool save_delayed = 8;  // estimated name (low): auvs.f of the response's save config; true for SaveInfo FLAG_DELAY_SAVE (auvz); when false auua disables the Smart Lock save dialog for the domain
   bool save_blocked_for_domain = 9;  // estimated name (low): auvs.g, true only from auvs.b() (no SaveInfo), returned when the form's domain matches an asgk entry (auua)
@@ -1016,11 +1016,15 @@ enum CredentialPickerSource {  // aurc.e literal per controller
   CREDENTIALS_BOTTOM_SHEET = 2;
 }
 
+// Whether the user has turned on Autofill with Google with an account, set by awor.a() for each fill request:
+// no Autofill account chosen (ashy "none") -> NO_RESPONSE if AccountManager has a "com.google" account, else
+// NO_ACCOUNTS; an account chosen -> OPTED_IN. The fill request is handled and logged either way. In the captures:
+// NO_ACCOUNTS before the phone is signed in to Google, NO_RESPONSE after; never OPTED_IN.
 enum UserOptInStatus {  // Java enum auql (names kept)
-  UserOptInStatus_UNKNOWN_STATUS = 0;
-  OPTED_IN = 1;
-  NO_RESPONSE = 2;
-  NO_ACCOUNTS = 3;
+  UserOptInStatus_UNKNOWN_STATUS = 0;  // not set by this build
+  OPTED_IN = 1;  // an account is chosen for Autofill with Google
+  NO_RESPONSE = 2;  // no Autofill account chosen, but a Google account is on the phone (opt-in not answered)
+  NO_ACCOUNTS = 3;  // no Autofill account chosen and no Google account on the phone
 }
 
 enum RequestFailureReason {  // Java enum auqm (names kept)
