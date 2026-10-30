@@ -138,6 +138,12 @@ Each message contains a sequence of log events, which may be from different log 
 - federated_learning_protos/federatedcompute/ are the protobuf definitions of the federated learning and analytics protocol (from the open-source federated compute client): eligibility checks, task assignments and aggregation uploads, with the population and task names
 - federatedcompute_decode.py picks the request and response type for each URL
 
+## Google app https://www.google.com/m/voice-search/up and /down
+
+- voice_search_named.proto is decoded protobuf definition of the Google app's S3 protocol, which carries Assistant queries, Assistant settings and client sync: each spoken query as its on-device transcript together with the last 10 earlier queries, the foreground app, the installed apps, alarms and device state, and the Assistant's replies
+- wallet_client_token_named.proto is decoded protobuf definition of the Google Play Services Wallet client token attached to each Assistant query (IMEI, phone number, serial number, Android ID, IMSI, network location, IP addresses)
+- voice_search_decode.py splits the streams into messages and decodes the typed values inside them
+
 ## Google Play Services https://android.googleapis.com/auth/devicekey
 
 - devicekeyrequest.proto is (partially) decoded protobuf definition for request and response

@@ -24,6 +24,7 @@ from decode_named import decode_named, DecodeNamedError, message_class  # in-pro
 import adparams_decode  # advert url parameters ms, dc_ms, attok, gref
 import s2cell  # S2 cell id -> lat/lng, for the VoilaTile location tiles
 import federatedcompute_decode  # federatedcompute-pa: federated learning and analytics
+import voice_search_decode  # www.google.com/m/voice-search: the Google app's S3 protocol (Assistant)
 import contextlib, importlib, io
 import datetime
 from mitmproxy.utils import strutils
@@ -254,6 +255,7 @@ def printRequest(url, request):
     'ProgramBlobService/DownloadBlob': decode_downloadblob_request,
     'VoilaTileService/FindTiles': decode_voilatile_request,
     'federatedcompute-pa.googleapis.com/v1/': lambda b: federatedcompute_decode.decode_request(url, b) or decode_pb(b),
+    'www.google.com/m/voice-search/up': lambda b: voice_search_decode.decode_up(b) or decode_pb(b),
     'app-measurement.com/a': decode_firebase_analytics,
     'android.clients.google.com/checkin': decode_checkin,
     'android.googleapis.com/checkin': decode_checkin,
@@ -326,6 +328,7 @@ def printResponse(url, response, verboseResponse=False):
     'ProgramBlobService/DownloadBlob': decode_downloadblob_response,
     'VoilaTileService/FindTiles': decode_voilatile_response,
     'federatedcompute-pa.googleapis.com/v1/': lambda b: federatedcompute_decode.decode_response(url, b, response.status_code) or decode_pb(b),
+    'www.google.com/m/voice-search/down': lambda b: voice_search_decode.decode_down(b) or b.decode('utf-8', 'replace'),
     }
 
     responseMimeType=None
