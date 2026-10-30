@@ -20,6 +20,7 @@ import firebase_logbatch_pb2
 import locm_pb2
 from decode_raw import decode_raw, DecodeRawError  # in-process `protoc --decode_raw`
 from decode_named import decode_named, DecodeNamedError  # in-process `protoc --decode`
+import adparams_decode  # advert url parameters ms, dc_ms, attok, gref
 import contextlib, importlib, io
 import datetime
 from mitmproxy.utils import strutils
@@ -192,6 +193,11 @@ def printHeaders(flowheaders, type=""):
             parts=val.split(' ')
             if len(parts)==2 and parts[0] == "Bearer" and parts[1][0:7]=="ya29.m.":
                 print(decodeAuthBearerHeader(parts[1]))
+        elif h['name'].lower() == "location":
+            # e.g. the intent:// Play store link returned by www.google.com/aclk, with gref
+            res = adparams_decode.decode_url_params(h['value'], "location header parameter")
+            if res:
+                print(res, end='')
 
     return request_content_sum
 
@@ -216,6 +222,10 @@ def printRequest(url, request):
                 print("Decoded "+q+" query parameter:\n", decode_pb(buf,verbose=True,debug=False))
             except Exception as e:
                 print("***ERROR: ",e)
+    # advert parameters ms, dc_ms, attok, gref (query or ;name=value path parameters)
+    res = adparams_decode.decode_url_params(url)
+    if res:
+        print(res, end='')
 
     # handlers for known google post data formats
     request_decoders={

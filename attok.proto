@@ -1,0 +1,83 @@
+// Event attestation token carried in the attok query parameter of in-app ad tracking links, and the
+// device integrity token Google Play Services fetches from deviceintegritytokens-pa.googleapis.com
+// /v1/getAdEventToken. Recovered from Google Play Services 21.48.15, package
+// com.google.android.gms.ads.identifier.settings (class names in comments are the obfuscated ones).
+// Fields 2 and 5 of IntegrityTokenContent are newer than that build; they are named from captured replies.
+syntax = "proto2";
+
+// cest: content plus a signature over it. Used both for the attok token (signed with the handset's
+// event attestation key) and for the stored integrity token (signed by Google).
+message SignedToken {
+  optional bytes content = 1;    // serialised EventAttestation, or IntegrityTokenContent
+  optional bytes signature = 2;
+}
+
+// cesp: content of the Google-signed integrity token
+message IntegrityTokenContent {
+  optional bytes public_key = 1;         // handset event attestation public key (compressed P-256)
+  optional int64 issued_time_s = 2;
+  optional int32 device_verdict = 3;     // GMS treats (verdict & 3) == 0 as "not real device"
+  optional bytes ad_id = 5;              // Google Advertising Id, 16 bytes
+}
+
+// cesm: details of the app showing the advert
+message AppInfo {
+  optional bool limit_flag = 2;               // per-app flag read by b.o(uid)
+  optional string package_name = 3;
+  repeated bytes signing_cert_hash = 4;       // up to 5
+  optional string installer_package = 5;
+  optional bytes apk_sha256 = 6;
+  optional int32 screen_status = 7;           // bit 1 locked, bit 2 interactive, bit 4 landscape
+  optional uint64 version_code = 8;
+}
+
+// cesu: a touch event (from MotionEvent or VerifiedMotionEvent)
+message TouchEvent {
+  optional int32 device_id = 1;
+  optional int32 display_id = 2;
+  optional int32 source = 3;
+  optional int32 action_masked = 4;
+  optional int32 button_state = 5;
+  optional int32 flags = 6;
+  optional int32 meta_state = 7;
+  optional float raw_x = 8;
+  optional float raw_y = 9;
+  optional int64 event_time_ms = 10;
+  optional int64 down_time_ms = 11;
+}
+
+message AdRequestEvent {           // cesj
+  optional bytes request_payload = 6;
+  optional AppInfo app = 7;
+}
+message ImpressionEvent {          // cesr
+  optional AppInfo app = 1;
+}
+message ClickEvent {               // cesl
+  optional AppInfo app = 1;
+  optional TouchEvent down = 2;
+  optional TouchEvent up = 3;
+  optional int32 verification = 4;   // 1 = verified by the Android OS input manager
+}
+message InstallReferrerEvent {     // cess
+  optional AppInfo app = 1;
+}
+message UserDataDeletionEvent {    // cesw
+  optional int32 type = 1;
+}
+
+// cesq: the attested event, signed with the handset's event attestation key
+message EventAttestation {
+  optional bytes public_key = 1;                 // sent when no integrity token is stored
+  optional int64 time_ms = 2;
+  optional SignedToken integrity_token = 4;      // the Google-signed IntegrityTokenContent
+  optional string destination = 6;               // e.g. doubleclick.net
+  optional bytes ad_id = 8;                      // Google Advertising Id, 16 bytes
+  oneof event {
+    AdRequestEvent ad_request = 3;
+    ImpressionEvent impression = 9;
+    ClickEvent click = 10;
+    InstallReferrerEvent install_referrer = 11;
+    UserDataDeletionEvent user_data_deletion = 12;
+  }
+}
