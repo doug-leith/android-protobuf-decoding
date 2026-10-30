@@ -106,7 +106,7 @@ message ThreadInfo {  // nwa / bszv / eydw / itsq; from a stored ChimeThread or 
 message RenderContext {  // nwt / btaw / eyev / ituo
   string language_code = 1;  // Locale.toLanguageTag() of the first configured locale
   oneof time_zone_oneof {
-    int32 f2 = 2;  // not set by these builds
+    int32 time_zone_utc_offset = 2;  // never set by these builds; estimated name (low): the alternative to time_zone in the same oneof
     string time_zone = 4;  // TimeZone.getDefault().getID()
   }
   DeviceInfo device_info = 3;
@@ -237,7 +237,7 @@ message Target {  // nwx / btbc / eyez / itut
 }
 
 message ChimeTarget {  // nww / btbb / eyey / itur
-  int32 target_type = 1;  // always 3 (an R8-unboxed enum, values 0-12); estimated name (low)
+  int32 target_type = 1;  // always 3 (an R8-unboxed enum, values 0-12; the RPC Target nyy sets the same 3); estimated name (low)
   DeliveryAddress delivery_address = 2;
   RenderContext render_context = 4;  // GMS 2024 only
   string representative_target_id = 5;  // gnp_accounts.representative_target_id
@@ -306,10 +306,10 @@ message FcmMessage {  // nwi / btae
 message DeliveryLatency {  // nwn / btaj
   int64 since_received_ms = 1;  // elapsedRealtime() now minus at arrival; estimated name (high)
   int64 credentials_check_ms = 2;  // time spent checking the account's credentials (BlockingNotificationReceiver); estimated name (high)
-  int64 f3 = 3;  // always 0 in these builds
-  int64 f4 = 4;  // always 0
-  int64 f5 = 5;  // always 0
-  int64 f6 = 6;  // always 0
+  int64 thread_interceptor_ms = 3;  // time in the app's ChimeThreadInterceptor (Maps bstf sets it; 0 in Safety Hub); estimated name (medium)
+  int64 notification_customizer_ms = 4;  // time in the app's notification customizer, which adds inline actions (Maps bdzl sets it); estimated name (medium)
+  int64 f5 = 5;  // always 0: no build sets it
+  int64 f6 = 6;  // always 0: no build sets it
   DeliverySource source = 7;  // how the threads arrived
 
   enum DeliverySource {  // Java enum btai (Maps), nwm (Safety Hub)
@@ -348,7 +348,7 @@ message Interaction {  // nxb / btbi / eyfb / ituw
   RichCollapsedView rich_collapsed_view = 14;
   FetchReason fetch_reason = 15;  // FETCHED_LATEST_THREADS, FETCHED_UPDATED_THREADS
   TrayLimitInfo tray_limit_info = 19;  // REMOVED with LIMIT_REACHED
-  int32 f34 = 34;  // 1 for every interaction logged from the system tray handlers; meaning not recovered (an R8-unboxed enum, values 0-4)
+  NotificationSurface notification_surface = 34;  // see NotificationSurface
 
   enum InteractionType {  // Java enum nwz (Safety Hub)
     INTERACTION_TYPE_UNSPECIFIED = 0;
@@ -425,7 +425,7 @@ message Interaction {  // nxb / btbi / eyfb / ituw
   enum FetchReason {
     FETCH_REASON_UNSPECIFIED = 0;
     SYNC_INSTRUCTION = 1;
-    FETCH_REASON_2 = 2;  // not produced by Safety Hub's mapping
+    FETCH_REASON_2 = 2;  // produced by no build's mapping (Safety Hub ika.d, Maps bdyx.d)
     COLLABORATOR_API_CALL = 3;
     INBOX = 4;
     LOCALE_CHANGED = 5;
@@ -433,12 +433,28 @@ message Interaction {  // nxb / btbi / eyfb / ituw
   }
 }
 
-// Shared by Interaction.built_in_action_type and ShownAction (R8-unboxed enum, values 0-4).
+// Set (to 1) only on events about one notification in the system tray: clicks, dismissals, replies, removals
+// (Safety Hub ikj, ikp, ikq; Maps bdzh, bdzf, bdzk) and the failures met while showing it (BAD_PAYLOAD,
+// CHANNEL_BLOCKED, FAILED_TO_DOWNLOAD_IMAGE, USER_BLOCKED, DROPPED_BY_CLIENT, ...); never on RPC, registration,
+// database or scheduled-job events. The library's other surface is the in-app inbox (RemoveReason
+// CLICKED_IN_SYSTEM_TRAY vs CLICKED_IN_INBOX). An R8-unboxed enum, values 0-4. estimated name (medium)
+enum NotificationSurface {
+  NOTIFICATION_SURFACE_UNSPECIFIED = 0;
+  SYSTEM_TRAY = 1;  // estimated name (medium)
+  INBOX = 2;  // estimated name (low): the other surface the library knows
+  NOTIFICATION_SURFACE_3 = 3;
+  NOTIFICATION_SURFACE_4 = 4;
+}
+
+// ChimeNotificationAction.builtInActionType, minus one; shared by Interaction.built_in_action_type and
+// ShownAction (R8-unboxed enum, values 0-4). The server's action (Safety Hub nzf) carries a built-in type
+// (field 7) or an action id (4), and a payload: reply hint text (8), a preference (9, nxn) or a snooze
+// duration (10, obl).
 enum BuiltInActionType {
-  BUILT_IN_ACTION_TYPE_UNSPECIFIED = 0;
-  REPLY = 1;  // set by ReplyActionEventHandler; estimated name (high)
-  BUILT_IN_ACTION_TYPE_2 = 2;
-  BUILT_IN_ACTION_TYPE_3 = 3;
+  BUILT_IN_ACTION_TYPE_UNSPECIFIED = 0;  // an action with an action id instead
+  REPLY = 1;  // Maps bdzh builds this one with a RemoteInput (REPLY_TEXT_KEY); ReplyActionEventHandler logs it
+  PREFERENCE = 2;  // estimated name (low): the payload after reply in the server's oneof
+  SNOOZE = 3;  // estimated name (low): the next payload
   BUILT_IN_ACTION_TYPE_4 = 4;
 }
 
@@ -450,8 +466,16 @@ message ShownAction {  // nxa / btbh
   }
 }
 
+// Whether the notification used a rich collapsed view (Maps bfat.as(): the notification's bundle extra
+// "chime.richCollapsedView"; absent or 2 -> 2, 1 -> 1). estimated name (medium)
 message RichCollapsedView {  // btax (Maps)
-  int32 type = 1;  // from bundle extra "chime.richCollapsedView" (0 or 2 -> 2, 1 -> 1); estimated name (low)
+  RichCollapsedViewState state = 1;
+
+  enum RichCollapsedViewState {  // same three-value shape as DeviceState.DeviceStateBool
+    RICH_COLLAPSED_VIEW_UNKNOWN = 0;
+    RICH_COLLAPSED_VIEW_USED = 1;  // estimated name (medium)
+    RICH_COLLAPSED_VIEW_NOT_USED = 2;  // estimated name (medium): what an absent extra gives
+  }
 }
 
 // TrayLimitInfo(limit) or a per-slot limit.
@@ -474,7 +498,7 @@ message Failure {  // nwq / btan / eyek / ittr
   RichCollapsedView rich_collapsed_view = 4;  // Maps only
   string exception = 5;  // RPC failures: Throwable.getClass().getSimpleName()
   RegistrationFailureReason registration_failure_reason = 8;  // GMS device only
-  int32 f37 = 37;  // as Interaction.f34
+  NotificationSurface notification_surface = 37;  // as Interaction.notification_surface
 
   enum FailureType {  // Java enum btam (Maps)
     NOTIFICATION_FAILURE_UNSPECIFIED = 0;
