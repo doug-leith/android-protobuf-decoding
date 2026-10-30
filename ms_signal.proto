@@ -1,0 +1,107 @@
+// AdShield signal carried (encrypted) in the ms and dc_ms parameters of advert links, as built by the
+// Google Play store app (2022 build, signal message class eaq; adparams_decode.py decrypts it).
+// Field numbers and types are from the protobuf-lite message info, which keeps no names. Names are:
+//   code:  from the Java code that sets the field
+//   value: from the values seen in captures, the code that sets them is encrypted
+//   neither: named f<number>_<class of the task that sets it>
+// Enum fields are declared int32 since the enum value names are stripped from the app.
+syntax = "proto2";
+
+message AfmaSignal {
+  optional string signal_version = 1;          // value: "15"; "E" when the task fails
+  optional string client_name = 2;             // code: set by the Play store, its user agent string
+  optional int64 f3_eez = 3;
+  optional int64 battery_status = 5;           // value
+  optional int64 battery_level_percent = 6;    // value
+  optional int64 f11_eew = 11;
+  optional int64 f12_eex = 12;
+  optional int64 last_up_x_dp = 14;            // code+value: last touch-up event, first two of its features
+  optional int64 last_up_y_dp = 15;
+  optional int64 last_up_f16 = 16;
+  optional int64 f17_eer = 17;
+  optional int64 status_flags = 20;            // code: 4096 empty signal, 16384 no signal tasks, 32768
+  optional int64 f22_eeu = 22;
+  optional int64 sdk_init_time_s = 23;         // code: time the signal collector was initialised
+  optional string ad_id = 24;                  // code: Google Advertising Id, ad request signals only
+  optional int64 time_s = 25;                  // value: time the signal was made
+  optional int32 ad_id_type = 26;              // code: 5 when ad_id is set
+  optional string f27_eeo = 27;
+  optional bool limit_ad_tracking = 28;        // code
+  optional string f29_een = 29;
+  optional int64 f31_efb = 31;
+  optional int64 f32_efb = 32;
+  optional int64 f33_efg = 33;
+  optional string f34_eeo = 34;
+  optional int64 f35_eeo = 35;
+  optional int64 last_up_f36 = 36;             // code: last touch-up event, only after a touch
+  optional int64 last_up_f37 = 37;
+  optional int64 touch_up_count = 39;          // code: ACTION_UP events
+  optional int64 touch_move_sample_count = 40; // code: ACTION_MOVE samples, history included
+  optional int64 touch_down_count = 41;        // code: ACTION_DOWN events
+  optional int64 touch_cancel_count = 42;      // code: ACTION_CANCEL events
+  repeated TouchDetails previous_up_events = 43;  // code: up to 5 earlier touch-up events, x and y only
+  optional int64 f44_eeq = 44;
+  optional int64 stack_trace_signal = 45;      // code: computed from the caller's stack trace
+  optional string f46_eeo = 46;
+  optional string f47_eeo = 47;
+  optional int32 f48_efh = 48;
+  optional int32 f49 = 49;                     // not set by the 2022 build
+  optional TouchDetails last_touch = 50;       // code
+  optional int64 elapsed_realtime_ms = 51;     // value: time since boot including sleep
+  optional int64 uptime_ms = 52;               // value: time since boot excluding sleep
+  optional int64 f53_eff = 53;                 // code: click signals only
+  optional int32 stack_trace_status = 56;      // code: set with stack_trace_signal
+  optional ViewInfo view_info = 57;            // code: computed from the advert's View
+  optional int64 battery_temperature_decidegrees_c = 59;  // value
+  optional int64 f60_eez = 60;
+  optional int64 f61_efc = 61;
+  optional int64 f62_eel = 62;                 // code: computed from the View and Activity
+  optional int64 f63_eel = 63;
+  optional string f67_eel = 67;
+  optional RequestString request_string = 69;  // code: copied from the ad request, query signals only
+  optional int32 f73_efa = 73;
+  optional int32 f76_eev = 76;
+  optional int64 f83_eew = 83;
+  optional int64 f84_eew = 84;
+  optional string f89 = 89;                    // newer than the 2022 build; "1.460000000" in captures
+  optional F201 f201 = 201;
+}
+
+// eao: one touch event, distances in dp (pixels / display density)
+message TouchDetails {
+  optional int64 x_dp = 1;                     // code+value: first two features of the event
+  optional int64 y_dp = 2;
+  optional int64 f3 = 3;
+  optional int64 move_mean_f3_plus = 4;        // code: mean over move samples of (feature f3 + another)
+  optional int64 f5 = 5;
+  optional int64 move_mean_f5_plus = 6;        // code: mean over move samples of (feature f5 + another)
+  optional int32 f7_nonzero = 7;
+  optional int64 f8 = 8;
+  optional int64 f9 = 9;                       // value: 1 in captures (tool type finger?)
+  optional int64 source = 10;                  // value: 4098 = InputDevice.SOURCE_TOUCHSCREEN
+  optional int32 f11_nonzero = 11;
+  optional int64 up_stack_trace_signal = 12;   // code: from the stack trace at the last ACTION_UP
+  optional int64 travel_distance_dp = 13;      // code: path length from ACTION_DOWN
+  optional int64 down_window_offset_x_dp = 14; // code: rawX - x at ACTION_DOWN
+  optional int64 down_window_offset_y_dp = 15;
+  optional int64 window_offset_change_x_dp = 16;  // code: change of that offset by the last event
+  optional int64 window_offset_change_y_dp = 17;
+  optional int64 down_x_dp = 18;               // code: x at ACTION_DOWN
+  optional int64 down_y_dp = 19;
+}
+
+message ViewInfo {                             // eap
+  optional int64 f1 = 1;
+  optional int64 f3 = 3;
+  optional int64 f4 = 4;
+  optional int64 f5 = 5;
+  optional int64 f6 = 6;
+}
+
+message RequestString {                        // eau
+  optional string value = 1;
+}
+
+message F201 {                                 // eat
+  optional int64 f1 = 1;
+}

@@ -74,8 +74,9 @@ def _uuid(b):
 # Play store class ecw: the signal protobuf is split into 255-byte chunks, each made a 256-byte block
 # (length byte, chunk, random padding), passed through the fixed transform in afma_circuit.py, then
 # XORed with RC4 keyed by the click's ai value (first 32 characters).  The blocks and the MD5 of the
-# signal are sent as {1: block (repeated), 2: md5}.  Envelope field 3 marks the other producers:
+# signal are sent as {1: block (repeated), 2: md5}.  Envelope field 4 marks the other producers:
 # 2 = native AdShield code, 4 = DroidGuard VM output (Google Mobile Ads SDK, flow msa-r).
+# The decrypted signal is decoded with ms_signal.proto.
 ERROR_CODES = {"3": "invalid request data", "5": "no signal available", "7": "signal encoding failed"}
 
 _gates = None
@@ -182,10 +183,11 @@ def _decrypt_blocks(blocks, key):
         plain += b[1:1 + b[0]]
     return plain
 
-MS_FIELDS = """  1 signal version   2 client version string   5/6/59 battery status/level %/temperature (0.1 C)
-  14/15 touch x/y (pixels)   23 session start time (s)   25 time of signal (s)   45 call stack depth
-  50 touch event details   51/52 time since boot with/without sleep (ms)   24 Google Advertising Id
-  (ad request signals only)"""
+def _signal(buf):
+    try:
+        return decode_named("AfmaSignal", "ms_signal.proto", buf)
+    except DecodeNamedError as e:
+        return "(could not decode as AfmaSignal: %s)\n%s" % (e, _raw(buf))
 
 def decode_ms(value, ai):
     if value.isdigit() and len(value) <= 3:
@@ -196,8 +198,8 @@ def decode_ms(value, ai):
     keys = [ai[:32].encode("utf-8")] if ai else []
     keys.append(None)              # dc_ms on ad.doubleclick.net has no ai, and then no RC4 layer
     env = _fields(buf)
-    if env is not None and all(t == 2 and f in (1, 2) or t == 0 and f == 3 for f, t, v in env):
-        kind = [v for f, t, v in env if f == 3]
+    if env is not None and all(t == 2 and f in (1, 2) or t == 0 and f == 4 for f, t, v in env):
+        kind = [v for f, t, v in env if f == 4]
         blocks = [v for f, t, v in env if f == 1]
         md5 = [v for f, t, v in env if f == 2]
         if kind == [4]:
@@ -210,8 +212,8 @@ def decode_ms(value, ai):
             for key in keys:
                 plain = _decrypt_blocks(blocks, key)
                 if plain is not None and hashlib.md5(plain).digest() == md5[0]:
-                    return ("decrypted Play store AdShield signal (%d bytes, MD5 matches, RC4 key %s):\n%s\nfields:\n%s\n"
-                            % (len(plain), "ai" if key else "none", _raw(plain), MS_FIELDS))
+                    return ("decrypted Play store AdShield signal (%d bytes, MD5 matches, RC4 key %s):\n%s"
+                            % (len(plain), "ai" if key else "none", _signal(plain)))
             return ("encrypted: Play store AdShield format (%d blocks) but decryption failed the MD5 check; "
                     "probably an encoder build with a different key\n" % len(blocks))
     if len(buf) == 256:
@@ -220,7 +222,7 @@ def decode_ms(value, ai):
             b = _invert_block(_rc4(key, buf) if key else buf)
             if b is not None and hashlib.md5(b[16:]).digest() == b[:16] and b[16] <= 239:
                 plain = b[17:17 + b[16]]
-                return "decrypted Play store AdShield fallback signal (%d bytes):\n%s" % (len(plain), _raw(plain))
+                return "decrypted Play store AdShield fallback signal (%d bytes):\n%s" % (len(plain), _signal(plain))
         return "encrypted: 256 bytes, not a Play store AdShield block we can decrypt\n"
     return "encrypted or unknown format: %d bytes, not an AdShield envelope\n" % len(buf)
 
