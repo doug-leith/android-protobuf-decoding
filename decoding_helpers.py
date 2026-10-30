@@ -19,7 +19,7 @@ import warnings
 import firebase_logbatch_pb2
 import locm_pb2
 from decode_raw import decode_raw, DecodeRawError  # in-process `protoc --decode_raw`
-from decode_named import decode_named, DecodeNamedError  # in-process `protoc --decode`
+from decode_named import decode_named, DecodeNamedError, message_class  # in-process `protoc --decode`
 import adparams_decode  # advert url parameters ms, dc_ms, attok, gref
 import contextlib, importlib, io
 import datetime
@@ -246,6 +246,7 @@ def printRequest(url, request):
     request_decoders={
     '/loc/m/api': decode_locm,
     'KollektomatService/Offer': decode_kollektomat,
+    'ProgramBlobService/DownloadBlob': decode_downloadblob_request,
     'app-measurement.com/a': decode_firebase_analytics,
     'android.clients.google.com/checkin': decode_checkin,
     'android.googleapis.com/checkin': decode_checkin,
@@ -307,6 +308,7 @@ def printResponse(url, response, verboseResponse=False):
     'remoteprovisioning.googleapis.com/v1:signCertificates' : decode_signedcerts,
     'android.googleapis.com/auth/devicekey': decode_deviceKeyResponse,
     'deviceintegritytokens-pa.googleapis.com/v1/getAdEventToken': adparams_decode.decode_get_ad_event_token_response,
+    'ProgramBlobService/DownloadBlob': decode_downloadblob_response,
     }
 
     responseMimeType=None
@@ -884,6 +886,83 @@ def decode_kollektomatproto(bytes, verbose=True, debug=False, Grep=True, saveDat
 def decode_kollektomat(postData, verbose=True, debug=False):
     #print("raw: ",postData)
     return(decode_gRPC(postData,decode_kollektomatproto))
+
+def pb_enum_name(m, f):
+    # the name of enum field f's value in message m, or the number when the value is not in the enum
+    v = getattr(m, f)
+    names = m.DESCRIPTOR.fields_by_name[f].enum_type.values_by_number
+    return names[v].name if v in names else str(v)
+
+def tink_summary(b):
+    # size and Tink key ID of a Tink ciphertext (output prefix 0x01 + 4-byte key ID), for the large encrypted blobs
+    if len(b) >= 5 and b[0] == 1:
+        return "<%d bytes, Tink key %s>" % (len(b), b[1:5].hex())
+    return "<%d bytes>" % len(b)
+
+def decode_downloadblob_requestproto(bytes, verbose=True, debug=False, Grep=True):
+    # ondevicesafety-pa ProgramBlobService/DownloadBlob request: Google's on-device abuse library (Moirai, in Google
+    # Messages; also Play Protect's com.google.android.odad) asking for its rule/model package
+    try:
+        req = message_class("DownloadBlobRequest", "ondevicesafety_named.proto")()
+        req.MergeFromString(bytes)
+    except Exception:
+        req = None
+    if req is None or not req.HasField("blob_meta"):
+        if verbose:
+            print("***ERROR DownloadBlob request: no blob_meta")
+        return "Failed"
+    try:
+        decoded = decode_named("DownloadBlobRequest", "ondevicesafety_named.proto", bytes)
+        grep = ""
+        if Grep:
+            ci, c = req.blob_meta.client_info, req.blob_meta.counters
+            att = req.attestation
+            kind = "droidguard" if att.HasField("droidguard_token") else "key_attestation" if att.HasField("key_attestation") else "-"
+            labels = ",".join("%s=%s" % (l.attribute, l.value) for l in ci.label) or "-"
+            grep = "+++ONDEVICESAFETY_REQUEST %s %s tier=%s labels=%s downloads=%d classifications=%d attestation=%s mode=%s\n" % (
+                ci.client_id or "-", pb_enum_name(ci.client_version, "client_type"), ci.device_tier or "-", labels,
+                c.download_count, c.classification_count, kind, pb_enum_name(req, "download_mode"))
+        return grep + decoded
+    except DecodeNamedError as e:
+        if verbose:
+            print("***ERROR DownloadBlob request: ", e)
+        return "Failed"
+
+def decode_downloadblob_responseproto(bytes, verbose=True, debug=False, Grep=True):
+    # ProgramBlobService/DownloadBlob response: the encrypted package (megabytes), its transparency-log proof and the
+    # tokens. The package blobs are printed as size and Tink key ID only.
+    try:
+        resp = message_class("DownloadBlobResponse", "ondevicesafety_named.proto")()
+        resp.MergeFromString(bytes)
+    except Exception:
+        if verbose:
+            print("***ERROR DownloadBlob response: does not parse")
+        return "Failed"
+    blob = tink_summary(resp.blob) if resp.blob else "-"
+    components = "|".join("%s/%d:%s" % (pb_enum_name(c, "type"), c.component_id, tink_summary(c.blob))
+                          for c in resp.protection_components) or "-"
+    resp.ClearField("blob")
+    for c in resp.protection_components:
+        c.ClearField("blob")
+    try:
+        decoded = decode_named("DownloadBlobResponse", "ondevicesafety_named.proto", resp.SerializeToString())
+        grep = ""
+        if Grep:
+            checkpoint = resp.protection_proof_v2.signed_checkpoint.checkpoint.split("\n")
+            grep = "+++ONDEVICESAFETY_RESPONSE %s blob=%s components=%s leaf_index=%d tree_size=%s protection_token=%s\n" % (
+                pb_enum_name(resp, "status"), blob, components, resp.protection_proof_v2.leaf.leaf_index, checkpoint[1] if len(checkpoint) > 1 else "-",
+                resp.protection_token[:8].hex() or "-")
+        return grep + "(blob and protection_components.blob elided: %s; %s)\n" % (blob, components) + decoded
+    except DecodeNamedError as e:
+        if verbose:
+            print("***ERROR DownloadBlob response: ", e)
+        return "Failed"
+
+def decode_downloadblob_request(postData, verbose=True, debug=False):
+    return(decode_gRPC(postData, decode_downloadblob_requestproto))
+
+def decode_downloadblob_response(data, verbose=True, debug=False):
+    return(decode_gRPC(data, decode_downloadblob_responseproto, "Response data (gRPC decoded)"))
 
 def base64padding(header):
     if len(header) % 4 == 2:

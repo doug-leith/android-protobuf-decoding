@@ -1,0 +1,161 @@
+edition = "2023";
+
+// google.internal.abuse.ondevicesafety.v1alpha.ProgramBlobService/DownloadBlob on
+// ondevicesafety-pa.googleapis.com: how Google's on-device abuse library Moirai (in Google
+// Messages) downloads its "protections", the encrypted rule-and-model package it classifies
+// messages with ("Persephone", PersephoneGrpcBlobFetcher). Each call carries the app's client
+// ID, device tier, counters of classifications and downloads, the public key the package is to
+// be encrypted to, and an attestation of the phone: a DroidGuard token from Messages, an Android
+// Keystore key attestation from com.google.android.odad (Google Play Protect's on-device abuse
+// detection, whose calls the same service answers). See on_device_abuse_named.proto for what
+// Moirai reports about it. Tink ciphertexts and tokens start with Tink's prefix: 01 and a 4-byte
+// key ID.
+//
+// Schema from the Messages APKs in the Pixel 8 factory images (messages.android_20240130 and
+// messages.android_20240903; obfuscated class names in comments as January / September build).
+// Names are from the code that sets or reads each field (Kotlin getter strings such as
+// "getProtectionToken(...)", parameter names, log text); "estimated name" marks names the code
+// does not settle.
+
+option features.utf8_validation = NONE;
+
+message DownloadBlobRequest {  // dohz / dvji; built by PersephoneGrpcBlobFetcher.fetch()
+  BlobMeta blob_meta = 1;
+  ClientAttestation attestation = 3;  // estimated name (high)
+  bytes next_page_token = 4;  // from the previous response, for a partial update; Moirai stores it with the package
+  RequestFlags flags = 7;
+  DownloadMode download_mode = 8;
+}
+
+// Hashed into the DroidGuard binding "blob_meta" (parameter name "bm"); estimated name (high).
+message BlobMeta {  // doir / dvjz
+  ClientInfo client_info = 1;  // estimated name (medium)
+  Counters counters = 2;  // estimated name (medium)
+  EncryptionKey encryption_key = 3;  // estimated name (high)
+}
+
+message ClientInfo {  // doho / dviz
+  string device_tier = 2;  // "getDeviceTier(...)": the "device_tier" label, default "Ultra"
+  repeated Label label = 4;  // "getLabelList(...)": language_code (always "en"), plus the client's labels (e.g. "exp", "region")
+  string client_id = 5;  // "getClientId(...)": Moirai ClientId, "<package>" or "<package>:<role>"
+  ClientVersion client_version = 6;  // estimated name (medium)
+}
+
+message Label {  // doij / dvjs
+  string attribute = 1;  // "getAttribute(...)"
+  string value = 2;  // "getValue(...)"
+}
+
+message ClientVersion {  // dohr / dvjb
+  ClientType client_type = 1;  // Java enum dohq (names kept)
+  int64 build_version = 2;  // a constant in the code (602681988 in the January build); estimated name (medium)
+}
+
+enum ClientType {  // dohq
+  TYPE_UNKNOWN = 0;
+  TYPE_ANDROID = 1;
+  TYPE_ANDROID_CORE = 2;
+  TYPE_ANDROID_CORE_ATTESTED_PKVM = 3;
+}
+
+// Moirai's persisted counters (as in ON_DEVICE_ABUSE ClientMetadata fields 1 and 2).
+message Counters {  // doht / dvjd
+  int64 download_count = 1;  // protection packages downloaded so far
+  int64 classification_count = 2;  // classifications run so far
+  Timestamp last_counter_update = 3;  // "getLastCounterUpdate(...)": when the stored state was last changed
+}
+
+message Timestamp {  // dqiu / dxov: google.protobuf.Timestamp
+  int64 seconds = 1;
+  int32 nanos = 2;
+}
+
+// The device's Tink public keyset that the server encrypts the package to (logged as
+// "PersephoneGrpcBlobFetcher downloading with public key hash %s"; its SHA-256 is
+// ClientMetadata.public_key_hash in on_device_abuse_named.proto).
+message EncryptionKey {  // dohw / dvjg
+  bytes public_keyset = 1;  // a serialized Tink Keyset (EciesAeadHkdfPublicKey); its primary key ID is the one in the package's Tink prefix. estimated name (high)
+  int64 f3 = 3;  // not in Messages' build; ODAD sends 1
+}
+
+message ClientAttestation {  // doih / dvjq (Messages' build has field 1 only)
+  // Messages: the DroidGuard result string (GMS DroidGuard flow "hades_persephone_risk", with
+  // binding {"blob_meta": a SHA-256 of blob_meta's device tier, client ID, counters, timestamp
+  // and labels}). estimated name (high)
+  bytes droidguard_token = 1;
+  KeyAttestation key_attestation = 2;  // ODAD; estimated name (high)
+}
+
+// Not in Messages' build; named from the captured content (ODAD).
+message KeyAttestation {
+  repeated bytes certificate_chain = 1;  // X.509 DER, leaf first: "Android Keystore Key" (TEE, RSA-2048) up to Google's Droid CA3, Droid CA2 and root
+  string signed_hash = 2;  // base64 of a 32-byte digest; estimated name (medium)
+  bytes signature = 3;  // RSA PKCS#1 v1.5 SHA-256 signature over signed_hash's text, made by the attested key (verified)
+  bytes public_key = 4;  // the attested key's SubjectPublicKeyInfo (same as the leaf certificate's)
+}
+
+message RequestFlags {  // dojd / dvkk; both always set true, nothing names them
+  bool f1 = 1;
+  bool f2 = 2;
+}
+
+enum DownloadMode {  // Java enum dohy (names kept)
+  MODE_UNSPECIFIED = 0;
+  PARTIAL_UPDATES_ENABLED = 1;
+  FULL_PACKAGE_FORCED = 2;  // when forced by config or partial updates are off
+}
+
+// Parameter name "downloadBlobResponse" (ceyl).
+message DownloadBlobResponse {  // doid / dvjm
+  bytes blob = 1;  // "getBlob(...)": the package (SCAR), Tink-encrypted to EncryptionKey ("SCAR decrypted with %d bytes.")
+  bytes next_page_token = 2;  // "getNextPageToken(...)"; opaque, a server Tink ciphertext
+  bytes protection_token = 6;  // "getProtectionToken(...)"; opaque, a server Tink ciphertext; sent in every ON_DEVICE_ABUSE event
+  bytes f8 = 8;  // not in the client schemas; empty in the captures
+  bytes f10 = 10;  // not in the client schemas; empty in the captures
+  ProtectionProof protection_proof_v2 = 12;  // "getProtectionProofV2(...)": the package's binary-transparency proof
+  repeated ProtectionComponent protection_components = 13;  // "getProtectionComponentsList(...)"
+  DownloadStatus status = 14;  // named from the worker's log ("Download worker finished %s download")
+}
+
+enum DownloadStatus {  // R8-unboxed enum doic
+  STATUS_UNSPECIFIED = 0;
+  FULL_PACKAGE_DOWNLOADED = 1;
+  PARTIAL_PACKAGE_UPDATED = 2;
+  PARTIAL_UPDATE_EMPTY = 3;
+}
+
+// An inclusion proof in a transparency log (DefaultBinaryTransparencyVerifier).
+message ProtectionProof {  // dojb / dvki
+  LogLeaf leaf = 1;  // estimated name (medium)
+  SignedCheckpoint signed_checkpoint = 2;  // estimated name (medium)
+  InclusionProof inclusion_proof = 3;  // estimated name (medium)
+}
+
+message LogLeaf {  // doip / dvjx
+  uint64 leaf_index = 1;  // passed as "leafIndex" to the inclusion-proof check
+  uint64 f2 = 2;  // not in the client schemas; 3 (Messages) and 6 (ODAD) in the captures
+}
+
+message SignedCheckpoint {  // doin / dvjv
+  string checkpoint = 1;  // "getCheckpoint(...)": a log checkpoint, text lines: origin, tree size, base64 root hash
+  bytes signature = 2;  // "getSignature(...)"
+}
+
+message InclusionProof {  // doif / dvjo
+  repeated bytes hashes = 1;  // "getHashesList(...)"
+}
+
+message ProtectionComponent {  // doix / dvkf
+  bytes blob = 1;  // the component's data, hashed into its log leaf; estimated name (medium)
+  ComponentType type = 2;  // "getType(...)"
+  ProtectionProof component_proof = 3;  // "getComponentProof(...)"; January build only (checked for TYPE_PRIVATE_HASH_SET)
+  int32 component_id = 5;  // with type, keys a component when a partial update replaces it ("protection component [%s %d]"); estimated name (medium)
+}
+
+enum ComponentType {  // Java enum doje (names kept)
+  TYPE_UNKNOWN_COMPONENT = 0;  // TYPE_UNKNOWN in the code; renamed to keep enum value names unique
+  TYPE_RULE = 1;
+  TYPE_MODEL = 2;
+  TYPE_PRIVATE_HASH_SET = 3;
+  TYPE_BLM_BLOCK_LIST = 4;
+}
