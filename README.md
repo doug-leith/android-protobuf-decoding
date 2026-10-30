@@ -52,7 +52,7 @@ Each message contains a sequence of log events, which may be from different log 
 
 - gboard_named.proto is (partially) decoded protobuf definition
 
-### ICING log source (Google Play Services icing on-device search index)
+### ICING log source (Google Play Services on-device search)
 
 - icing_named.proto is decoded protobuf definition
 
