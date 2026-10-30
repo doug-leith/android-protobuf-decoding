@@ -75,7 +75,8 @@ def _uuid(b):
 # (length byte, chunk, random padding), passed through the fixed transform in afma_circuit.py, then
 # XORed with RC4 keyed by the click's ai value (first 32 characters).  The blocks and the MD5 of the
 # signal are sent as {1: block (repeated), 2: md5}.  Envelope field 4 marks the other producers:
-# 2 = native AdShield code, 4 = DroidGuard VM output (Google Mobile Ads SDK, flow msa-r).
+# 2 = Tink hybrid (ECIES) encryption to a Google public key in the app, 4 = DroidGuard VM output
+# (Google Mobile Ads SDK, flow msa-r).
 # The decrypted signal is decoded with ms_signal.proto.
 ERROR_CODES = {"3": "invalid request data", "5": "no signal available", "7": "signal encoding failed"}
 
@@ -205,7 +206,7 @@ def decode_ms(value, ai):
         if kind == [4]:
             return "encrypted: DroidGuard VM output (AdShield msa-r), %d bytes, cannot be decoded offline\n" % sum(map(len, blocks))
         if kind == [2]:
-            return "encrypted: native AdShield output, %d bytes, cannot be decoded offline\n" % sum(map(len, blocks))
+            return "encrypted: Tink hybrid ciphertext to a Google public key, %d bytes, cannot be decoded offline\n" % sum(map(len, blocks))
         if kind:
             return "encrypted: unknown AdShield envelope type %d\n" % kind[0]
         if blocks and len(md5) == 1:

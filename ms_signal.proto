@@ -1,101 +1,103 @@
 // AdShield signal carried (encrypted) in the ms and dc_ms parameters of advert links, as built by the
 // Google Play store app (2022 build, signal message class eaq; adparams_decode.py decrypts it).
-// Field numbers and types are from the protobuf-lite message info, which keeps no names. Names are:
-//   code:  from the Java code that sets the field
-//   value: from the values seen in captures, the code that sets them is encrypted
-//   neither: named f<number>_<class of the task that sets it>
+// Field numbers and types are from the protobuf-lite message info, which keeps no names.  Names are
+// from the code that computes each field: partly the Play store app, partly the AdShield helper classes
+// (package com.google.android.ads.z__, class named in brackets), which the app ships encrypted inside
+// its own code and loads at runtime.  Where neither shows a meaning the name is f<number>.
 // Enum fields are declared int32 since the enum value names are stripped from the app.
 syntax = "proto2";
 
 message AfmaSignal {
-  optional string signal_version = 1;          // value: "15"; "E" when the task fails
-  optional string client_name = 2;             // code: set by the Play store, its user agent string
-  optional int64 f3_eez = 3;
-  optional int64 battery_status = 5;           // value
-  optional int64 battery_level_percent = 6;    // value
-  optional int64 f11_eew = 11;
-  optional int64 f12_eex = 12;
-  optional int64 last_up_x_dp = 14;            // code+value: last touch-up event, first two of its features
+  optional string android_version = 1;         // Build.VERSION.RELEASE [u]; "E" on failure
+  optional string client_name = 2;             // set by the caller; the Play store's user agent
+  optional int64 foreground_flag_noisy = 3;    // random 1-64, bit 0x10 set iff the app's process is foreground/visible [v]
+  optional int64 battery_status = 5;           // 0 unknown, 1 discharging/not charging, 2 charging, 3 full [m]
+  optional int64 battery_level_percent = 6;    // [m]
+  optional int64 network_transport = 11;       // -1 none, 0 cellular, 1 wifi, 2 VPN [s]
+  optional int64 screen_orientation = 12;      // 1 portrait, 3 landscape, 20 square, -1 undefined [t]
+  optional int64 last_up_x_dp = 14;            // last ACTION_UP touch [ag]
   optional int64 last_up_y_dp = 15;
-  optional int64 last_up_f16 = 16;
-  optional int64 f17_eer = 17;
-  optional int64 status_flags = 20;            // code: 4096 empty signal, 16384 no signal tasks, 32768
-  optional int64 f22_eeu = 22;
-  optional int64 sdk_init_time_s = 23;         // code: time the signal collector was initialised
-  optional string ad_id = 24;                  // code: Google Advertising Id, ad request signals only
-  optional int64 time_s = 25;                  // value: time the signal was made
-  optional int32 ad_id_type = 26;              // code: 5 when ad_id is set
-  optional string f27_eeo = 27;
-  optional bool limit_ad_tracking = 28;        // code
-  optional string f29_een = 29;
-  optional int64 f31_efb = 31;
-  optional int64 f32_efb = 32;
-  optional int64 f33_efg = 33;
-  optional string f34_eeo = 34;
-  optional int64 f35_eeo = 35;
-  optional int64 last_up_f36 = 36;             // code: last touch-up event, only after a touch
-  optional int64 last_up_f37 = 37;
-  optional int64 touch_up_count = 39;          // code: ACTION_UP events
-  optional int64 touch_move_sample_count = 40; // code: ACTION_MOVE samples, history included
-  optional int64 touch_down_count = 41;        // code: ACTION_DOWN events
-  optional int64 touch_cancel_count = 42;      // code: ACTION_CANCEL events
-  repeated TouchDetails previous_up_events = 43;  // code: up to 5 earlier touch-up events, x and y only
-  optional int64 f44_eeq = 44;
-  optional int64 stack_trace_signal = 45;      // code: computed from the caller's stack trace
-  optional string f46_eeo = 46;
-  optional string f47_eeo = 47;
-  optional int32 f48_efh = 48;
-  optional int32 f49 = 49;                     // not set by the 2022 build
-  optional TouchDetails last_touch = 50;       // code
-  optional int64 elapsed_realtime_ms = 51;     // value: time since boot including sleep
-  optional int64 uptime_ms = 52;               // value: time since boot excluding sleep
-  optional int64 f53_eff = 53;                 // code: click signals only
-  optional int32 stack_trace_status = 56;      // code: set with stack_trace_signal
-  optional ViewInfo view_info = 57;            // code: computed from the advert's View
-  optional int64 battery_temperature_decidegrees_c = 59;  // value
-  optional int64 f60_eez = 60;
-  optional int64 f61_efc = 61;
-  optional int64 f62_eel = 62;                 // code: computed from the View and Activity
-  optional int64 f63_eel = 63;
-  optional string f67_eel = 67;
-  optional RequestString request_string = 69;  // code: copied from the ad request, query signals only
-  optional int32 f73_efa = 73;
-  optional int32 f76_eev = 76;
-  optional int64 f83_eew = 83;
-  optional int64 f84_eew = 84;
+  optional int64 last_up_duration_ms = 16;     // up time - down time
+  optional int64 seconds_since_sdk_init = 17;  // time_s - sdk_init_time_s
+  optional int64 status_flags = 20;            // 4096 empty signal, 16384 no signal tasks, 32768
+  optional int64 root_or_emulator = 22;        // 0 neither, 1 /system/app/Superuser.apk exists, 2 emulator Build.MODEL/HARDWARE [q]
+  optional int64 sdk_init_time_s = 23;         // time the signal collector was initialised
+  optional string device_id = 24;              // ad request signals only: the Google Advertising Id (ad_id_type 5); when
+                                               // Google Play services is not installed, MD5 of Settings.Secure.ANDROID_ID,
+                                               // upper case hex [p]
+  optional int64 time_s = 25;                  // System.currentTimeMillis() / 1000 [o]
+  optional int32 ad_id_type = 26;              // 5 = device_id is the Google Advertising Id
+  optional string app_id = 27;                 // caller-supplied id, else a hash of the app's APK file [l]
+  optional bool limit_ad_tracking = 28;
+  optional string app_signature_sha1 = 29;     // base64 of the hex SHA-1 of the app's first signing certificate [aa]; "E" on failure
+  optional int64 screen_width_px = 31;         // real display size [y]
+  optional int64 screen_height_px = 32;
+  optional int64 timezone_offset_min_plus_1440 = 33;  // (zone + DST offset) in minutes, plus 1440 [ae]
+  optional string app_version_name = 34;       // [l]
+  optional int64 app_version_code = 35;        // [l]
+  optional int64 last_up_pressure_x100 = 36;   // last ACTION_UP touch [ag]
+  optional int64 last_up_touch_major_dp = 37;
+  optional int64 touch_up_count = 39;          // ACTION_UP events
+  optional int64 touch_move_sample_count = 40; // ACTION_MOVE samples, history included
+  optional int64 touch_down_count = 41;        // ACTION_DOWN events
+  optional int64 touch_cancel_count = 42;      // ACTION_CANCEL events
+  repeated TouchDetails previous_up_events = 43;  // up to 5 earlier ACTION_UP touches, x and y only
+  optional int64 cpu_cores = 44;               // Runtime.availableProcessors() [n]
+  optional int64 stack_depth = 45;             // stack frames below the first com.google.android.ads/gms frame [ab]
+  optional string app_package_name = 46;       // [l]
+  optional string app_installer = 47;          // installer package name, "unknown" if none [l]
+  optional int32 usb_connected = 48;           // 1 yes, 0 no, 2 failed [ah]
+  optional int32 adb_enabled = 49;             // 1 yes, 0 no, 2 setting missing [k]
+  optional TouchDetails last_touch = 50;
+  optional int64 elapsed_realtime_ms = 51;     // SystemClock.elapsedRealtime() [ac]
+  optional int64 uptime_ms = 52;               // SystemClock.uptimeMillis() [ac]
+  optional int64 ms_since_caller_event = 53;   // elapsedRealtime() - a time passed by the caller, click signals only [ad]
+  optional int32 click_path = 56;              // stack has View.performClick: 0 via View$PerformClick.run, 1 directly; 2 not at all [ab]
+  optional ViewInfo view_info = 57;            // the advert's View [ai]
+  optional int64 battery_temperature_decidegrees_c = 59;  // [m]
+  optional int64 process_importance = 60;      // RunningAppProcessInfo.importance, 100 foreground, 200 visible [v]
+  optional int64 screen_state_flags = 61;      // bit 2 screen off, bit 1 keyguard locked, bit 4 an app state flag is false [z]
+  optional int64 activity_intent_flags = 62;   // Intent.getFlags() of the advert's Activity [j]
+  optional int64 activity_task_size = 63;      // number of activities in the Activity's task [j]
+  optional string activity_class_name = 67;    // simple class name of the Activity, last 32 characters [j]
+  optional RequestString request_string = 69;  // copied from the ad request, query signals only
+  optional int32 http_proxy_set = 73;          // 1 if System property http.proxyHost is set, 0 not, 2 failed [w]
+  optional int32 has_launcher_activity = 76;   // 1 if the app has a MAIN/LAUNCHER activity [r]
+  optional int64 network_f83 = 83;             // values passed by the caller with the network transport [s]
+  optional int64 network_f84 = 84;
   optional string f89 = 89;                    // newer than the 2022 build; "1.460000000" in captures
   optional F201 f201 = 201;
 }
 
-// eao: one touch event, distances in dp (pixels / display density)
+// eao: one touch event, from MotionEvent [af]; dp = pixels / display density
 message TouchDetails {
-  optional int64 x_dp = 1;                     // code+value: first two features of the event
+  optional int64 x_dp = 1;
   optional int64 y_dp = 2;
-  optional int64 f3 = 3;
-  optional int64 move_mean_f3_plus = 4;        // code: mean over move samples of (feature f3 + another)
-  optional int64 f5 = 5;
-  optional int64 move_mean_f5_plus = 6;        // code: mean over move samples of (feature f5 + another)
-  optional int32 f7_nonzero = 7;
-  optional int64 f8 = 8;
-  optional int64 f9 = 9;                       // value: 1 in captures (tool type finger?)
-  optional int64 source = 10;                  // value: 4098 = InputDevice.SOURCE_TOUCHSCREEN
-  optional int32 f11_nonzero = 11;
-  optional int64 up_stack_trace_signal = 12;   // code: from the stack trace at the last ACTION_UP
-  optional int64 travel_distance_dp = 13;      // code: path length from ACTION_DOWN
-  optional int64 down_window_offset_x_dp = 14; // code: rawX - x at ACTION_DOWN
+  optional int64 touch_major_dp_x100 = 3;
+  optional int64 move_mean_touch_major_dp_x100 = 4;  // mean over ACTION_MOVE samples
+  optional int64 pressure_x100 = 5;
+  optional int64 move_mean_pressure_x100 = 6;        // mean over ACTION_MOVE samples
+  optional int32 window_obscured = 7;          // 1 if FLAG_WINDOW_IS_OBSCURED (another window over the app)
+  optional int64 duration_ms = 8;              // up time - down time, ACTION_UP only
+  optional int64 tool_type = 9;                // MotionEvent.getToolType(0), 1 finger
+  optional int64 source = 10;                  // MotionEvent.getSource(), 4098 touchscreen
+  optional int32 device_id_nonzero = 11;       // 1 if MotionEvent.getDeviceId() != 0
+  optional int64 up_stack_depth = 12;          // stack_depth at the last ACTION_UP [ab]
+  optional int64 travel_distance_dp = 13;      // path length from ACTION_DOWN
+  optional int64 down_window_offset_x_dp = 14; // rawX - x at ACTION_DOWN
   optional int64 down_window_offset_y_dp = 15;
-  optional int64 window_offset_change_x_dp = 16;  // code: change of that offset by the last event
+  optional int64 window_offset_change_x_dp = 16;  // change of that offset by the last event
   optional int64 window_offset_change_y_dp = 17;
-  optional int64 down_x_dp = 18;               // code: x at ACTION_DOWN
+  optional int64 down_x_dp = 18;               // x at ACTION_DOWN
   optional int64 down_y_dp = 19;
 }
 
-message ViewInfo {                             // eap
-  optional int64 f1 = 1;
-  optional int64 f3 = 3;
-  optional int64 f4 = 4;
-  optional int64 f5 = 5;
-  optional int64 f6 = 6;
+message ViewInfo {                             // eap [ai]
+  optional int64 visible_area_percent = 1;     // on-screen area as % of the View's area, -2 not visible
+  optional int64 min_alpha_percent = 3;        // lowest alpha of the View and its parents
+  optional int64 height_dp = 4;
+  optional int64 width_dp = 5;
+  optional int64 density_x100 = 6;
 }
 
 message RequestString {                        // eau
