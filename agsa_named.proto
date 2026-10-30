@@ -287,10 +287,10 @@ message AgsaClientLog {  // jios
   ClientEvent client_event = 7;
   string f8 = 8;  // hbnv.a(); null in this build's hbnv (hbmh)
   string app_version = 10;  // the app's version name (hbmh.b())
-  repeated fixed32 f13 = 13 [features.repeated_field_encoding = EXPANDED];  // hbnv.c(); empty in this build's hbnv (hbmh)
-  ffkz f16 = 16;
-  izwf f17 = 17;
-  hvkz f18 = 18;
+  repeated fixed32 server_experiment_ids = 13 [features.repeated_field_encoding = EXPANDED];  // hbnv.c(); empty in this build's hbnv (hbmh)
+  TapasQueryLog tapas_query_log = 16;  // ffkz from bpjc ('Tapas/TapasQueryLogger'), hbmr and adhg. estimated name (medium)
+  izwf zero_state_cache_metadata = 17;  // izwf from avjs.d (ycb); its entries are built in bnpc.#mergeZeroStateResponses for stale CachedElementCandidates. estimated name (low)
+  OnDeviceQueryLog on_device_query_log = 18;  // hvkz built in bzbd ('OnDeviceQueryLoggerImpl'); hbmq adds the jaty ContextLoggingMetadata as hvkz.5. estimated name (medium)
   RobinPolicyState robin_policy_state = 19;  // ikia built by cvla ("Ma-Robin-Policy", hbnp extras provider) only for log sources AGSA_ASSISTANT and AGSA_APA (cvla.java:11), set as jios.j by hchq.java:94-108. estimated name (medium)
 }
 
@@ -298,8 +298,8 @@ message VisualElementEvent {  // ijeg
   VeEventId event_id = 1;  // id of this event: the client's EI plus a counter (fvlh)
   repeated VisualElement visual_element = 2;  // the visual elements shown (impression events: "Impressions must be in their own event.")
   VeEventId parent_event_id = 3;  // the event the elements were attached to (fvsc.b); estimated name (medium)
-  iket root = 4;  // root information, from fvsc.a (fvqz.b); estimated name (low)
-  VeInteractionType f5 = 5;
+  VeEventRootInfo root = 4;  // root information, from fvsc.a (fvqz.b); estimated name (low)
+  VeInteractionType interaction_type = 5;  // estimated name (medium): Enum_ijgi (VeInteractionType): 3 on user interactions, fvli.g() 1/2 on show/hide
   VeInteractions interactions = 7;  // taps and other interactions with elements
   VeEventId f8 = 8;
   VeEventLink linked_event = 9;
@@ -308,144 +308,144 @@ message VisualElementEvent {  // ijeg
 message ClientEvent {  // ijja
   uint64 current_time_millis = 1;  // System.currentTimeMillis() (ybl, hbnr)
   GsaEventType event_type = 2;  // wire type int32 ikmt Java enum number (hbna.java:201 'Unsupported eventName'): 883 APP_FLOW_EVENT, 584 PROFILING_STATISTICS, 927 APP_UPGRADE, 921-923 PHENOTYPE_REGISTER_*, 1137 GMSCORE_BOOT_COUNT_UPDATED, 1367, 1412 GENERIC_APP_FLOW, 1464 MOBILE_ASSISTANT_MONITORING_EVENT. estimated name (high)
-  string f3 = 3;
-  int32 f5 = 5;
+  string request_id = 3;  // hchf.b(query.F) request id as string; also filled from LogMetadata mRequestId (avkh.c) in GsaEventLogSender (ycb.java:87-93). estimated name (high)
+  int32 action_type = 5;  // itkp ActionType Java enum number (.cP) of the voice action, e.g. SMS/SET_ALARM; written with APP_EVENT_PROMPT_FOR_* and VBUS_ACTION_DATA_USING_* events. estimated name (high)
   UnexpectedClientError unexpected_client_error = 8;  // logged as UNEXPECTED_CLIENT_ERROR (hbna.java:84-98). estimated name (high)
-  jgdj f9 = 9;
-  int32 f13 = 13;
-  int32 f17 = 17;
-  ijit f20 = 20;
-  ijgx f21 = 21;
-  ijih f23 = 23;
-  ijhg f25 = 25;
-  ikaj f29 = 29;
+  EmbeddedRecognizerLog embedded_recognizer_log = 9;  // Greco3 recognition run log (jgdx.c) with recognizer/model info, written with EMBEDDED_RECOGNIZER_EVENT_* events by Greco3EngineManager. estimated name (medium)
+  int32 request_type = 13;  // LogMetadata mRequestType (avkh.c(int)) copied into events that also get the remembered request id. estimated name (high)
+  int32 network_type = 17;  // jghe network-type Java enum number from aviy.a(network info): WIFI/ETHERNET/NR/NO_CONNECTION...; with VBUS_ERROR_OCCURRED and committed-query events. estimated name (high)
+  PlayServicesData play_services_data = 20;  // APP_EVENT_PLAY_SERVICES_DATA_DETERMINED: ijit{b: play-services availability result, c: com.google.android.gms versionCode}. estimated name (medium)
+  TokenFetchResult token_fetch = 21;  // APP_EVENT_TOKEN_FETCHED: ijgx{b: ijgw result (e.g. TIMEOUT)}. estimated name (medium)
+  EmbeddedTaggerResult tagger_result = 23;  // TaggerResult.b of the embedded parser, with APP_EVENT_ACTION_FROM_EMBEDDED_PARSER. estimated name (medium)
+  RecipientDisambiguation recipient_disambiguation = 25;  // APP_EVENT_PROMPT_FOR_RECIPIENT on a CommunicationAction: ijhg{b: candidate contact-method count, c: person count, d: card decision 0-3}. estimated name (medium)
+  SearchClient search_client = 29;  // ikaj Java enum (GEL, VELVET, HOTWORD_SERVICE, ANDROID_AUTO, OPA_ANDROID...) via avka.b(); Query toString prints it as 'searchClient='. estimated name (high)
   int32 f33 = 33;
-  iohf f34 = 34;
-  ijko f35 = 35;
+  NowOptIn now_opt_in = 34;  // iohf written with SIDEKICK_EVENT_OPT_IN (Google Now opt-in state). estimated name (medium)
+  RelationshipInfo relationship_info = 35;  // ijko written with APP_EVENT_RELATIONSHIP_INFO_LOGGED. estimated name (high)
   Enum_ijiw f36 = 36;
-  uint64 f37 = 37;
-  ijkt_a f39 = 39;
+  uint64 latency_id = 37;  // LatencyLoggingData mLatencyId (random long per request), also the activity latencyId (avkk) and a random id for SEARCH_SERVICE_ON_START_COMMAND. estimated name (high)
+  DeviceLockState device_lock_state = 39;  // arub.f(): 1 screen on + unlocked, 2 keyguard locked not secure, 3 keyguard locked secure, 4 screen off (ijkt maps 1-4). estimated name (high)
   ErrorInfo error = 40;  // error code + exception chain with stack traces (fmyi.java). estimated name (high)
-  string f41 = 41;
-  string f43 = 43;
-  bool f44 = 44;
-  ijgq f47 = 47;
-  float f48 = 48;
-  float f49 = 49;
-  Enum_ijiu f53 = 53;
+  string cached_request_id = 41;  // VBUS_USE_CACHED_RESPONSE: SearchResultMetadata requestId of the cached result (apwy.a). estimated name (medium)
+  string edit_request_id = 43;  // SearchResultMetadata editRequestId (apwy.b) with VBUS_USE_CACHED_RESPONSE / search-result events. estimated name (medium)
+  bool eyes_free = 44;  // Query.bw(): Query flag printed as 'eyes-free'. estimated name (high)
+  SearchboxClickLog searchbox_stats = 47;  // ijgq{d: ikcw suggestion-click stats of the search box (sb.s.SbLogger)} with USER_EVENT_CLICK_ON_DEVICE_RESULT / USER_EVENT_CLICK_ON_WEB. estimated name (medium)
+  float software_hotword_score = 48;  // HotwordResult.c() = softwareHotwordScore. estimated name (high)
+  float speaker_score = 49;  // HotwordResult.d() = speakerScore (speaker-id verification score). estimated name (high)
+  GsaActivityId activity_type = 53;  // APP_EVENT_ACTIVITY_ON_INTENT: the GSA activity's int id passed to awfs(name, id) (minus 1), e.g. BaseOptInActivity 15 -> 14, PaymentsAuthActivity 22 -> 21. estimated name (medium)
   ijje f55 = 55;
   ijje f56 = 56;
-  int32 f57 = 57;
-  int32 f58 = 58;
-  string f59 = 59;
-  bool f60 = 60;
-  bool f62 = 62;
-  string f68 = 68;
-  string f69 = 69;
-  iiuc f70 = 70;
+  int32 widget_version = 57;  // intent extra 'widget_ver' with APP_EVENT_ACTIVITY_ON_INTENT. estimated name (high)
+  int32 stream_volume = 58;  // bxgg.c() = AudioManager.getStreamVolume(output stream) at query/hotword time. estimated name (medium)
+  string calling_package = 59;  // PackageManager.getNameForUid(Binder.getCallingUid()) ('UNKNOWN' if null) for HotwordService / SSB service client requests. estimated name (high)
+  bool dsp_hotword_triggered = 60;  // HotwordResult.D() = dspHotwordTriggered. estimated name (high)
+  bool chrome_account_differs = 62;  // SSB_SERVICE_REQUEST_REGISTER_CLIENT: true unless GSA's current account equals the account in Chrome's SsbContext (hpph.c, saved as chrome_history_sync_account). estimated name (medium)
+  string hotword_model_identifier = 68;  // HotwordResult.y() = hotwordModelIdentifier. estimated name (high)
+  string query_text = 69;  // Query.i, the query string (Query dump shows it beside the query chars) when the query has text. estimated name (medium)
+  IntentInfo intent = 70;  // iiuc from hchi.b(Intent): action, type, categories, component package/class. estimated name (high)
   bool f75 = 75;
   bool f76 = 76;
-  Enum_ilch f83 = 83;
-  iivs f84 = 84;
-  ijgs f85 = 85;
-  ijil f86 = 86;
-  uint64 f94 = 94;
+  ErrorComponent error_component = 83;  // ilch inline enum; the only write is 10 for the renderer error reported over the apiu binder (ERROR_DYNAMIC_JAR, with a CanvasEvent and an error code). estimated name (low)
+  iivs feedback_data = 84;  // FeedbackData.b (iivs) with APP_EVENT_SEND_FEEDBACK_REPORT. estimated name (medium)
+  WidgetLifecycleEvent widget_lifecycle_event = 85;  // APP_WIDGET_LIFE_CYCLE_EVENT: ijgs{b: int, c: string} from hbnd.u(int, String). estimated name (high)
+  SearchEndState search_end_state = 86;  // ijil{b: ijir end state (SERVER_ERROR, NO_SPEECH_DETECTED...), c: per-ijio latency marks (COMMIT, MIC_CLOSE, END_OF_SPEECH...) ms before end, ...} with the VBUS end-state event. estimated name (medium)
+  uint64 duration_ms = 94;  // elapsed ms of the logged operation: GEARHEAD_TTS_NULLING latch time (f-e), Greco3 recognition run time (currentTimeMillis - start). estimated name (medium)
   uint64 latency_ms = 102;  // flow duration end-start in ms for APP_FLOW_EVENT (avlf.java:213); micros/1000 elsewhere. estimated name (medium)
-  string f103 = 103;
+  string webview_csi_url = 103;  // WEBVIEW_CSI_REPORTING: 'url' of the webviewcsi JSON object. estimated name (high)
   uint64 elapsed_realtime_millis = 105;  // SystemClock.elapsedRealtime() (ybl, hbnr)
   ikda f107 = 107;
   ijdz f108 = 108;
-  uint64 f109 = 109;
-  uint64 f110 = 110;
+  uint64 query_submission_time = 109;  // Query.B, printed 'submission-time='. estimated name (high)
+  uint64 query_submission_elapsed_time = 110;  // Query.D, printed 'submission-elapsed-time='. estimated name (high)
   repeated ProfilingStatistic profiling_statistics = 111;  // event 584 PROFILING_STATISTICS (bwqm.java:56-60). estimated name (high)
   uint64 elapsed_realtime_nanos = 113;  // SystemClock.elapsedRealtimeNanos() (fgnm.a(), hbnr)
-  ijkz f114 = 114;
-  jqly f118 = 118;
-  jcyi f120 = 120;
-  ijht f125 = 125;
-  ijlg f129 = 129;
+  UdcCacheFetchResult udc_cache_fetch_result = 114;  // ijkz{b: cache hit flag, c: arsj error code} with UDC_CACHE_FETCH_SUCCESS / UDC_CACHE_FETCH_ERROR ('Error getting cached settings'). estimated name (medium)
+  SystemHealthMetric system_health_metric = 118;  // no writer in this build; the type jqly is the Primes system-health metric record (package metric, battery snapshot, timer, trace) built by the gc* Primes classes. estimated name (low)
+  ActionLoggingEvent action_logging_event = 120;  // jcyi built from the Query (azal.a) for APP_EVENT_ACTION_LOGGING_EVENT. estimated name (medium)
+  CustomTabsInfo custom_tabs_info = 125;  // ijht with USER_EVENT_CUSTOM_TABS_OPEN (Chrome custom tab opened for a VIEW/BROWSABLE intent). estimated name (medium)
+  CsiTiming csi_timing = 129;  // ijlg timing record (b: time, i: nanos...) with APP_EVENT_CSI_TIME_OF_FIRST_BYTE and other CSI events. estimated name (medium)
   bool f130 = 130;
-  ijjo f134 = 134;
-  uol f135 = 135;
+  ImproveLocationDialogMetrics location_prompt = 134;  // ijjo from ImproveLocationRequest$ImproveLocationDialogMetrics with LOCATION_PROMPT. estimated name (high)
+  HotwordRetrainingNotificationSource hotword_retraining_notification_source = 135;  // uol Java enum from pref 'hands_free_hotword_retraining_notification_source' with APP_EVENT_HOTWORD_RETRAINING_NOTIFICATION_SHOWN. estimated name (high)
   AttentionEventBatch attention_events = 136;  // event LOG_ATTENTION_FEED (dtzo.java:49), AttentionEventLogger batch. estimated name (medium)
-  int32 f143 = 143;
-  bool f144 = 144;
-  bool f145 = 145;
-  int64 f146 = 146;
+  int32 speechie_mode = 143;  // APP_EVENT_VOICE_SEARCH_SPEECHIE_START: the SpeechieMode future's value (same value as iirx.v); failure logs 'Failed to get SpeechieMode'. estimated name (high)
+  bool embedded_voice = 144;  // APP_EVENT_USER_SPEECH_DURATION_CAPTURED: set true when the recognised query was made with Query.ao(...,true), the flag Query.bu() prints as 'embedded-voice' (on-device recognition). estimated name (high)
+  bool hybrid_query = 145;  // true when Query.bV(), the flag the Query toString prints as 'hybrid-query'; written with VBUS_ACTION_DATA_USING_EMBEDDED / _NETWORK. estimated name (high)
+  int64 transport_rtt_ms = 146;  // avhi.a() = Cronet getTransportRttMs() snapshot of the network session (fmvd.a), APP_EVENT_VOICE_SEARCH_SPEECHIE_START. estimated name (medium)
   ijjx f147 = 147;
   ikcy f149 = 149;
   bool f150 = 150;  // always written false in GsaEventLogSender#sendEvent (ycb.java:86); meaning not found.
   ijif f151 = 151;
-  repeated Workload f152 = 152 [features.repeated_field_encoding = EXPANDED];
-  ijkl f154 = 154;
-  ilcg f156 = 156;
-  Enum_ijix f161 = 161;
-  int32 f164 = 164;
-  int64 f165 = 165;
-  ijjs f174 = 174;
-  ijhw f181 = 181;
-  ikac f182 = 182;
+  repeated Workload unloaded_workers = 152 [features.repeated_field_encoding = EXPANDED];  // WORKER_UNLOADED_EVENT: repeated apka Workload enum (apkb.si) of the unloaded worker. estimated name (high)
+  QuerySource query_source = 154;  // ijkl{b: Query.aR() 'source', c: Query searchClient (ikaj) name}, both as avki strings. estimated name (medium)
+  CanvasEvent canvas_event = 156;  // ilcg parsed from the bytes passed with ERROR_DYNAMIC_JAR; parse failure logs 'Fail to parse CanvasEvent'. estimated name (high)
+  SearchCorpus search_corpus = 161;  // Query.dr()-1 from the corpus string: 1 web, 2 summons, 3 web.isch, 4 web.nws, 5 web.vid, 6 web.app, 7 web.bks, 8 web.shop, 0 other; USER_EVENT_QUERY_ABANDONED / USER_EVENT_CLICK_ON_WEB. estimated name (high)
+  int32 sampling_weight = 164;  // 1000 / per-event sampling rate (per mille) when the event is sampled; ycb rebuilds the log record when it changes. estimated name (medium)
+  int64 transport_rtt_ms_2 = 165;  // written from the same avhi.a() (Cronet transport RTT) right after field 146; the interface has no other long getter, the Cronet session also carries getDownstreamThroughputKbps (fmvd.b), which this may have been meant to hold. estimated name (low)
+  HotwordDeviceSelection hotword_device_selection = 174;  // ijjs with APP_EVENT_HOTWORD_DEVICE_SELECTION_DECISION_MADE (multi-device hotword arbitration). estimated name (high)
+  CustomTabSession custom_tab_session = 181;  // ijhw built per Chrome Custom Tab session (up to 100 ijhn navigation records) with USER_EVENT_CUSTOM_TABS_OPEN / _NAVIGATION_ENDED / _TAB_HIDDEN. estimated name (medium)
+  AssistSession assist_session = 182;  // ikac{b: enum, c: assist session id (qnj.a random long, also the event's request id), d: bool}; with assist events (ON_SHOW_START, PROCESS_ASSIST_DATA_END, WAIT_FOR_SCREENSHOT_END) and NATIVE_VISUAL_ELEMENTS_LOG_EVENT. estimated name (medium)
   AppFlowData app_flow_data = 183;  // AppFlowData{flowType,status,startEvent,endEvent,events} (avlk.java:68). estimated name (high)
-  ijjg_a f188 = 188;
-  Enum_ijiy f191 = 191;
+  LatencyInjectionType latency_injection_type = 188;  // LATENCY_INJECTION: ijjg-mapped int (0-4 -> 1-5, stored minus 1) passed over the apiu binder interface. estimated name (low)
+  QueryRetryType query_retry_type = 191;  // when Query.cl(): 1 back-stack (bE), 2 auto-retried (bk), 0 otherwise. estimated name (medium)
   ijjz f192 = 192;
   int32 previous_version_code = 193;  // APP_UPGRADE: stored previous version code, -1 if none (artc.java:28-77, 'Velvet upgraded from %d to %d'). estimated name (high)
   int32 version_code = 194;  // APP_UPGRADE: current version code (artc.java:82). estimated name (high)
-  iiya f195 = 195;
-  int64 f197 = 197;
-  ijwf f199 = 199;
-  ijxa f200 = 200;
-  ijid f201 = 201;
-  ijdc f207 = 207;
-  ijjv f211 = 211;
-  ijkr f212 = 212;
-  ikge f214 = 214;
-  ikgc f215 = 215;
-  iirx f223 = 223;
+  TaskGraphData task_graph_data = 195;  // iiya from awfc.a(graph, ...) with TASKGRAPH_GRAPH_DATA / TASKGRAPH_FULL_DUMP_DATA (sampled nextInt(1000)). estimated name (high)
+  int64 click_id = 197;  // random long click id attached to first-party URLs as the 'agsac' query parameter (ecnn), copied to Custom Tabs events. estimated name (medium)
+  OpaDeeplink opa_deeplink = 199;  // USER_EVENT_OPA_DEEPLINK_TRIGGERED: ijwf{c: deeplink 'source' query parameter (<=10 chars)}. estimated name (high)
+  OpaUpgradePromo opa_upgrade_promo = 200;  // ijxa: OPA (Assistant) upgrade-promo notification info: trigger pref 'opa_upgrade_promo_notification_trigger', multi-day count. estimated name (high)
+  DeeplinkHandling deeplink_handling = 201;  // ijid with HANDLE_DEEPLINK_SUCCESS (939) / HANDLE_DEEPLINK_FAILURE (940): b deeplink type, c failure reason. estimated name (medium)
+  BistoEvent bisto_event = 207;  // ijdc with BISTO_EVENT (search client BISTO, Assistant headphones); also sent cross-process via ACTION_RECORD_GSA_CLIENT_EVENT. estimated name (high)
+  MultiDeviceSnackbarInteraction multi_device_snackbar_interaction = 211;  // ijjv with USER_EVENT_MULTI_DEVICE_SNACKBAR_INTERACTIONS. estimated name (high)
+  SpeakerModelRestore speaker_model_restore = 212;  // ijkr{b: result} with APP_EVENT_RESTORE_SPEAKER_MODEL. estimated name (high)
+  OnboardingSequence onboarding_sequence = 214;  // ikge{b: sequence start time...} with APP_EVENT_ONBOARDING_SEQUENCE_START / _END. estimated name (high)
+  VisualElementsContext visual_elements_context = 215;  // ikgc{b: vcp Java enum (surface/feature: FOLLOW_ON, AVS_LISTENING, GEMINI_SUGGESTION...), e: ikgb enum, ...} with NATIVE_VISUAL_ELEMENTS_LOG_EVENT. estimated name (low)
+  AppFlowEventData flow_event_data = 223;  // no writer in this build; type iirx is AppFlowEvent.event_data (avks.b) of the app-flow logger. estimated name (low)
   uint64 profiling_window_ms = 226;  // PROFILING_STATISTICS: elapsedRealtime - window start, ms (bwqm.java:64). estimated name (medium)
   SmartspaceLogData smartspace_log_data = 227;  // ijyq Smartspace log data. estimated name (medium)
   iknk f228 = 228;
-  awbw f233 = 233;
-  Enum_ijiz f234 = 234;
+  HotwordPhrase hotword_phrase = 233;  // no writer in this build; type is the awbw Java enum OK_GOOGLE / OK_HEY_GOOGLE (hotword phrase variant). estimated name (low)
+  TelemetryDiscardReason telemetry_discard_reason = 234;  // APP_EVENT_TELEMETRY_LOCAL_DATA_DISCARDED: why stored profiling statistics were dropped on merge (ijiz). estimated name (medium)
   bool f241 = 241;
-  ijkc f247 = 247;
-  ijnr f252 = 252;
+  OpaDeviceSetupDiscovery opa_device_setup_discovery = 247;  // ijkc{b: discovery state} with APP_EVENT_OPA_DEVICE_SETUP_DISCOVERY_EVENT. estimated name (high)
+  LensEvent lens_event = 252;  // ijnr Lens SDK event (LENS_SDK_TRIGGER and other Lens events). estimated name (medium)
   string client_instance_id = 253;  // SHA-256('<account name>:1:<GSF android_id as %016x, low bit cleared>') (hatc.java, fgna.java); 'ClientInstanceId'. estimated name (high)
   bool f255 = 255;
-  ikhi f262 = 262;
-  ikfd f265 = 265;
-  ijkx f283 = 283;
-  repeated ijji f286 = 286;
-  ibaf f288 = 288;
-  ijtt f289 = 289;
+  SrpToOpaTransition srp_to_opa_transition = 262;  // ikhi{b=2, c: extra android.opa.extra.SRP_TO_OPA_TRANSITION_ORIGINAL_REQUEST_ID} when Query.cs(). estimated name (medium)
+  OpaConversationEvent opa_conversation_event = 265;  // ikfd with APP_EVENT_OPA_CONVERSATION_EVENT (Assistant conversation), d set by the caller. estimated name (high)
+  RequestThrottling request_throttling = 283;  // REQUEST_THROTTLED_BY_CLIENT: ijkx{b: repeated ints, c: bool}. estimated name (high)
+  repeated DoodleImpression doodle_impressions = 286;  // LAUNCHER_DOODLE_IMPRESSION_EVENT: one ijji per impression bundle {b: impression_timestamp, c: impression_duration, d: impression_num_loops}. estimated name (high)
+  ImmersiveCanvasEvent immersive_canvas_event = 288;  // ibaf with IMMERSIVE_CANVAS_JS_RUNTIME_ERROR and other immersive-canvas events (fddr, bkil, bkif). estimated name (medium)
+  NgaSessionData nga_session_data = 289;  // ijtt built by the NGA SessionDataLogger (adhf.c). estimated name (medium)
   AppFlow app_flow = 292;  // a VE flow record set from the flow logging library (gevd.c()); LogEvent event code GENERIC_APP_FLOW
   ProductLogContext product_log_context = 293;  // set for every event of a TNG product logger (hbmv, hbjr)
   ijul f295 = 295;
   NgaEligibility nga_eligibility = 296;  // ijtv Java enum. estimated name (high)
-  ijlc f297 = 297;
-  ijhd f298 = 298;
-  bool f301 = 301;
-  string f302 = 302;
+  UdcSettingsStatus udc_settings_status = 297;  // UDC_SETTINGS_STATUS: ijlc{b: status}. estimated name (high)
+  ConsentFlowEvent consent_flow_event = 298;  // CONSENT_FLOW_EVENT from OptInActivity: ijhd{b=1, c: result, d: OptInActivity.y, e, f}. estimated name (high)
+  bool hotword_enabled = 301;  // bewe.L() = avch.f() || avch.m(): always-on / voice-everywhere hotword available with enrollment state 1, passed through atzu.j for hotword triggers. estimated name (low)
+  string foreground_activity = 302;  // class name of the top running task's activity (ActivityManager.getRunningTasks) at hotword trigger. estimated name (high)
   repeated NgaMonitorEvent nga_monitor_events = 306;  // MOBILE_ASSISTANT_MONITORING_EVENT (bfot.java:137-163). estimated name (medium)
-  ijkj f308 = 308;
-  ijkg f313 = 313;
+  NotificationSettingsChange notification_settings_change = 308;  // ijkj{b: change kind (3 = channel group block state), d: channel/group id or 'UNKNOWN'} from NOTIFICATION_CHANNEL(_GROUP)_BLOCK_STATE_CHANGED broadcasts, logged as APP_EVENT_OPA_NOTIFICATIONS_DISABLED. estimated name (high)
+  OpaEligibility opa_eligibility = 313;  // ijkg from OpaEligibilityChecker: reason ijkf (TABLET, KID_HOME_ENABLED, LOCALE, METHOD_ERROR, DEVICE_CHECKER, RAM_*), locale, flag lists, SDK_INT for DEVICE_CHECKER, error for METHOD_ERROR. estimated name (medium)
   AssistantClientState assistant_client_state = 314;  // akdu.b() (akob.java:59); same message is OpaAndroidInfo.3 (ibhk) and iirx.90. estimated name (low)
-  ikjp f315 = 315;
-  ikgg f316 = 316;
-  iter f317 = 317;
+  ikjp tapas_context = 315;  // ikjp from bpjc.i.a() in the Tapas (suggestion) ML logging path. estimated name (low)
+  ikgg tapas_suggestion_info = 316;  // ikgg built with the TAPAS_SUGGESTION (vcp) visual-element context. estimated name (low)
+  TapasMlQueryEvent tapas_ml_query_event = 317;  // iter built in '[Tapas] build ML query event' / '[Tapas] annotate monitoring data'. estimated name (medium)
   jaas f318 = 318;
   bool f319 = 319;
-  ikhf f322 = 322;
-  int64 f329 = 329;
-  bool f330 = 330;
+  GearheadAssistantSessionInfo gearhead_assistant_session_info = 322;  // ikhf from etpw.b(qdr) with OPA_AUTO_ON_GEARHEAD_ASSISTANT_SESSION_INFO_RECEIVED (Android Auto assistant session). estimated name (medium)
+  int64 nga_session_id = 329;  // id of the current NGA session (voice / post-execution / not-listening, ahuh.a by ahub type) via amvo.a(), added to NATIVE_VISUAL_ELEMENTS_LOG_EVENT. estimated name (medium)
+  bool dictation_used_today = 330;  // MOBILE_ASSISTANT_MONITORING_EVENT: true when NgaStateReportTask.getDictationUsedTodayOrSinceLastTaskRun returned true. estimated name (medium)
   ClientEventExtensions extensions = 332;
-  int32 f334 = 334;
-  string f335 = 335;
-  jqdi f338 = 338;
+  int32 hotword_enrollment_state = 334;  // avch.M() = shared pref 'hotword_enrollment_state', HOTWORD_SERVICE_INTERACTION_REQUEST_HOTWORD_DETECTION. estimated name (high)
+  string hotword_locale = 335;  // avch.V() = U(): spoken-language tag (uqi/uqj or Locale.getDefault().toLanguageTag()). estimated name (medium)
+  SearchboxExtraStats searchbox_extra_stats = 338;  // jqdi{b: per-suggestion jqdg entries, c: clicked index, d: end type} from dyau, logged beside field 47 on the same click. estimated name (low)
   extensions 4 to 4, 6 to 7, 10 to 12, 14 to 16, 18 to 19, 22 to 22, 24 to 24, 26 to 28, 30 to 32, 38 to 38, 42 to 42, 45 to 46, 50 to 52, 54 to 54, 61 to 61, 63 to 67, 71 to 74, 77 to 82, 87 to 93, 95 to 101, 104 to 104, 106 to 106, 112 to 112, 115 to 117, 119 to 119, 121 to 124, 126 to 128, 131 to 133, 137 to 142, 148 to 148, 153 to 153, 155 to 155, 157 to 160, 162 to 163, 166 to 173, 175 to 180, 184 to 187, 189 to 190, 196 to 196, 198 to 198, 202 to 206, 208 to 210, 213 to 213, 216 to 222, 224 to 225, 229 to 232, 235 to 240, 242 to 246, 248 to 251, 254 to 254, 256 to 261, 263 to 264, 266 to 282, 284 to 285, 287 to 287, 290 to 291, 294 to 294, 299 to 300, 303 to 305, 307 to 307, 309 to 312, 320 to 321, 323 to 328, 331 to 331, 333 to 333, 336 to 337, 339 to max;
 }
 
-message ffkz {
+message TapasQueryLog {  // ffkz
   string f1 = 1;
   string f2 = 2;
   iavy f3 = 3;
@@ -472,8 +472,8 @@ message izwf {
   repeated izwh f1 = 1;
 }
 
-message hvkz {
-  ffkz f1 = 1;
+message OnDeviceQueryLog {  // hvkz
+  TapasQueryLog f1 = 1;
   ibhk f2 = 2;
   VeEventId f3 = 3;
   hvlb f4 = 4;
@@ -494,26 +494,26 @@ message VisualElement {  // ikez
   int32 ve_type = 1;  // visual element type id
   int32 index = 3;  // set alongside ve_type as a 64-bit key (fvqt); estimated name (low)
   repeated int32 child_index = 4 [features.repeated_field_encoding = EXPANDED];  // indices of the element's children in visual_element
-  string f5 = 5;
+  string element_data = 5;  // estimated name (low): string from server VE data (jfqk.g via hcif.b, AMP stamp jdum.b)
   Visibility visibility = 6;  // set when not visible (ikey: names from ikey.a())
-  int32 f7 = 7;
-  izwn f11 = 11;
+  int32 content_hash = 7;  // estimated name (low): int: hashCode of the item's string (language code in bkmo) or hcif.c from the server
+  izwn linked_ve_ref = 11;  // estimated name (low): izwn (oneof EventId / VeEventId / int / izwj) from server element data or the zero-state controller
   int32 f149 = 149;
   ijfd f232 = 232;
   extensions 2 to 2, 8 to 10, 12 to 148, 150 to 231, 233 to max;
 }
 
-message iket {
-  int32 f1 = 1;
-  int32 f2 = 2;
-  int32 f3 = 3;
-  int32 f4 = 4;
-  int32 f5 = 5;
-  int32 f6 = 6;
-  string f11 = 11;
-  repeated VisualElement f14 = 14;
-  ijeb f15 = 15;
-  Ved f16 = 16;
+message VeEventRootInfo {  // iket
+  int32 root_ve_type = 1;  // estimated name (medium): a VE type: the tree's root/page type (fvqz.b, fvli.b(tree, 472), 51627 zero state) or the interacted VE's type (fvli.f); captured e.g. 79409 beside element 108877
+  int32 ve_index = 2;  // estimated name (medium): ikxh.1 (index) of the interacted VE
+  int32 user_action = 3;  // estimated name (high): ilbl UserActionId (UNASSIGNED_USER_ACTION_ID, AUTOMATED, USER, GENERIC_CLICK, TAP, ...)
+  int32 directional_movement = 4;  // estimated name (high): ilbj DirectionalMovementId (LEFT, RIGHT, UP, DOWN) from extension 100000001
+  int32 toggle_state = 5;  // estimated name (medium): ilbh value + 1 from extension 100000002; fvne.o(z) sets it from a CompoundButton's new checked state (1 or 2)
+  int32 action_detail = 6;  // estimated name (low): int from extension 100000003 (fvrb): e.g. the bottom-nav tab on NAVIGATE, doodle state 2/3
+  string ved_string = 11;  // estimated name (high): the encoded ved of the interacted element ("... because there is no ved for the VE")
+  repeated VisualElement visual_elements = 14;  // estimated name (medium): repeated VisualElement added for the interaction (ikew[] from the fvqk pipeline)
+  ijeb client_data = 15;  // estimated name (medium): ijeb extension holder: impression time (ijfb/ijey/ijfa = fvqd.d) and fvqj contributions
+  Ved ved = 16;  // estimated name (high): the interacted element's Ved (fvpy.b(...).c)
   extensions 7 to 10, 12 to 13, 17 to max;
 }
 
@@ -533,30 +533,30 @@ message UnexpectedClientError {  // ijgz
   int32 error_id = 1;  // integer id passed to hbmj.a(int), e.g. 144280204 'App entry source is absent' (dxqw.java:274), 178123295 GWS invalid cookies (hcke.java:101). estimated name (medium)
 }
 
-message jgdj {
+message EmbeddedRecognizerLog {  // jgdj
   string f21 = 21;
   jgdd f27 = 27;
 }
 
-message ijit {
-  int32 f1 = 1;
-  int32 f2 = 2;
+message PlayServicesData {  // ijit
+  int32 play_services_availability = 1;  // GoogleApiAvailability.isGooglePlayServicesAvailable(context, 15000000) result (flar impl j(context,15000000)). estimated name (medium)
+  int32 gms_version_code = 2;  // com.google.android.gms PackageInfo.versionCode (elwp.a). estimated name (high)
 }
 
-message ijgx {
-  ijgw f1 = 1;
+message TokenFetchResult {  // ijgx
+  ijgw result = 1;  // ijgw Java enum number: SUCCESS, USER_RECOVERABLE_ERROR, GOOGLE_AUTH_EXCEPTION, IO_EXCEPTION, TIMEOUT, INTERRUPTED, FETCH_OMITTED. estimated name (medium)
 }
 
-message ijih {
+message EmbeddedTaggerResult {  // ijih
 }
 
-message ijhg {
+message RecipientDisambiguation {  // ijhg
   int32 f1 = 1;
   int32 f2 = 2;
   Enum_ijhf f4 = 4;
 }
 
-message iohf {
+message NowOptIn {  // iohf
   Enum_iogz f1 = 1;
   Enum_ioha f2 = 2;
   iodm_a f3 = 3;
@@ -565,7 +565,7 @@ message iohf {
   Enum_iohc f11 = 11;
 }
 
-message ijko {
+message RelationshipInfo {  // ijko
   Enum_ijkn f1 = 1;
   bool f2 = 2;
   int32 f3 = 3;
@@ -582,7 +582,7 @@ message ErrorInfo {  // iiuk
   repeated ExceptionInfo exceptions = 2;  // estimated name (high)
 }
 
-message ijgq {
+message SearchboxClickLog {  // ijgq
   repeated ijkv f2 = 2;
   string f3 = 3;
   ikcw f4 = 4;
@@ -595,14 +595,14 @@ message ijje {
   string f1 = 1 [features.field_presence = LEGACY_REQUIRED];
 }
 
-message iiuc {
+message IntentInfo {  // iiuc
   iiua f1 = 1;
   iiua f3 = 3;
   repeated iiua f4 = 4;
   iiua f5 = 5;
   iiua f6 = 6;
   iiua f7 = 7;
-  hbpq f8 = 8;
+  SourceData f8 = 8;
 }
 
 message iivs {
@@ -613,7 +613,7 @@ message iivs {
   repeated iiwo f5 = 5;
   repeated iiwu f7 = 7;
   repeated ProfilingStatistic f9 = 9;
-  repeated iiya f10 = 10;
+  repeated TaskGraphData f10 = 10;
   repeated iixa f11 = 11;
   repeated iixe f12 = 12;
   iivi f14 = 14;
@@ -623,12 +623,12 @@ message iivs {
   ibhh f21 = 21;
 }
 
-message ijgs {
+message WidgetLifecycleEvent {  // ijgs
   Enum_ijgt f2 = 2;
   string f3 = 3;
 }
 
-message ijil {
+message SearchEndState {  // ijil
   Enum_ijiq f1 = 1;
   repeated ijip f2 = 2;
   repeated ijij f3 = 3;
@@ -656,16 +656,16 @@ message ProfilingStatistic {  // iivq
   uint64 max_value = 9;  // max of recorded values (bxfb.a). estimated name (high)
   uint64 sum = 10;  // sum of values (bxfb.b). estimated name (high)
   uint32 count = 11;  // number of samples (bxfb.c). estimated name (high)
-  int32 f14 = 14;  // bxfc.d int sub-key (e.g. HTTP request type, flag id; fmwj.java:18, aptq.java:38); left unnamed.
+  int32 dimension = 14;  // bxfc.d int sub-key (e.g. HTTP request type, flag id; fmwj.java:18, aptq.java:38); left unnamed.
 }
 
-message ijkz {
+message UdcCacheFetchResult {  // ijkz
   bool f1 = 1;
   int32 f2 = 2;
   repeated int32 f3 = 3 [features.repeated_field_encoding = EXPANDED];
 }
 
-message jqly {
+message SystemHealthMetric {  // jqly
   jqho f1 = 1;
   fixed64 f2 = 2;
   string f3 = 3;
@@ -692,7 +692,7 @@ message jqly {
   jqjn f35 = 35;
 }
 
-message jcyi {
+message ActionLoggingEvent {  // jcyi
   string f1 = 1;
   string f3 = 3;
   string f4 = 4;
@@ -703,7 +703,7 @@ message jcyi {
   int32 f10 = 10;
 }
 
-message ijht {
+message CustomTabsInfo {  // ijht
   bool f1 = 1;
   Enum_ijhp f2 = 2;
   ijhr_a f3 = 3;
@@ -717,7 +717,7 @@ message ijht {
   bool f13 = 13;
 }
 
-message ijlg {
+message CsiTiming {  // ijlg
   uint64 f1 = 1;
   uint64 f2 = 2;
   uint64 f3 = 3;
@@ -728,7 +728,7 @@ message ijlg {
   uint64 f8 = 8;
 }
 
-message ijjo {
+message ImproveLocationDialogMetrics {  // ijjo
   ijjl f1 = 1;
   ijjq f2 = 2;
   ijjn_a f3 = 3;
@@ -737,7 +737,7 @@ message ijjo {
 message AttentionEventBatch {  // izwd
   int32 first_event_sequence_number = 1;  // fgey.d: starts 1, += events per batch (fgey.java:135,196). estimated name (medium)
   string f2 = 2;  // fgey.h string from fgfu (page key?); not named.
-  string f3 = 3;  // constant "V" (fgey.java:130); not named.
+  string client_code = 3;  // constant "V" (fgey.java:130); not named.
   repeated AttentionEvent events = 4;  // estimated name (high)
   int32 logger_instance_id = 5;  // random int chosen once per logger instance (fgey.java:22). estimated name (medium)
   VeEventId root_ve = 17;  // fgey.g ikxk. estimated name (medium)
@@ -755,18 +755,18 @@ message ijif {
   string f1 = 1;
 }
 
-message ijkl {
-  iiua f1 = 1;
-  iiua f2 = 2;
+message QuerySource {  // ijkl
+  iiua source = 1;  // Query.aR(), the Query dump's 'source', as an avki string. estimated name (medium)
+  iiua search_client = 2;  // Query.P (ikaj searchClient) name, as an avki string. estimated name (medium)
 }
 
-message ilcg {
+message CanvasEvent {  // ilcg
   ilcf f1 = 1;
   string f2 = 2;
   string f3 = 3;
 }
 
-message ijjs {
+message HotwordDeviceSelection {  // ijjs
   bool f1 = 1;
   bool f2 = 2;
   bool f3 = 3;
@@ -775,7 +775,7 @@ message ijjs {
   int32 f7 = 7;
 }
 
-message ijhw {
+message CustomTabSession {  // ijhw
   uint32 f1 = 1;
   uint32 f2 = 2;
   uint32 f3 = 3;
@@ -786,7 +786,7 @@ message ijhw {
   repeated ijhn f8 = 8;
 }
 
-message ikac {
+message AssistSession {  // ikac
   Enum_ikab f1 = 1;
   uint64 f2 = 2;
   bool f4 = 4;
@@ -804,7 +804,7 @@ message ijjz {
   EventId f3 = 3;
 }
 
-message iiya {
+message TaskGraphData {  // iiya
   uint64 f2 = 2;
   map<string, iiyd> f3 = 3;
   uint64 f4 = 4;
@@ -819,19 +819,19 @@ message iiya {
   repeated iiyd f14 = 14;
 }
 
-message ijwf {
+message OpaDeeplink {  // ijwf
   Enum_ijwg f1 = 1;
-  string f2 = 2;
+  string source = 2;  // deeplink URI 'source' query parameter, max 10 chars. estimated name (high)
 }
 
-message ijxa {
+message OpaUpgradePromo {  // ijxa
   Enum_ijxb f1 = 1;
   int32 f2 = 2;
   int32 f3 = 3;
   int32 f4 = 4;
 }
 
-message ijid {
+message DeeplinkHandling {  // ijid
   int32 f1 = 1;
   Enum_ijia f2 = 2;
   repeated ijic f3 = 3;
@@ -840,7 +840,7 @@ message ijid {
   Enum_ijhz f6 = 6;
 }
 
-message ijdc {
+message BistoEvent {  // ijdc
   ijco f6 = 6;
   ijcl f7 = 7;
   ijcq f10 = 10;
@@ -876,116 +876,116 @@ message ijdc {
   ijdg f55 = 55;
 }
 
-message ijjv {
+message MultiDeviceSnackbarInteraction {  // ijjv
   bool f1 = 1;
   Enum_ijjt f2 = 2;
 }
 
-message ijkr {
+message SpeakerModelRestore {  // ijkr
   Enum_ijkq f1 = 1;
 }
 
-message ikge {
+message OnboardingSequence {  // ikge
   uint64 f1 = 1;
-  uol f2 = 2;
+  HotwordRetrainingNotificationSource f2 = 2;
   Enum_uon f3 = 3;
   vcp f5 = 5;
   string f6 = 6;
 }
 
-message ikgc {
+message VisualElementsContext {  // ikgc
   vcp f2 = 2;
   int64 f3 = 3;
   ikgb_a f4 = 4;
   ikfz f5 = 5;
 }
 
-message iirx {
-  int32 f1 = 1;
-  ijek f3 = 3;
-  ijeo f4 = 4;
-  string f5 = 5;
+message AppFlowEventData {  // iirx
+  int32 end_state = 1;  // estimated name (medium): ijir end-state number (UNKNOWN_STATE, SERVER_ERROR, WEBVIEW_ERROR, S3_ERROR, NO_SPEECH_DETECTED, ...; ijir.af) logged with the VBUS_ENDSTATE_SUCCESS/CANCEL/FAILURE app-flow events
+  ijek connectivity_check = 3;  // estimated name (medium): connectivity check result at query end (ijek from the ConnCheckAndReport avhg)
+  ijeo network_requests = 4;  // estimated name (medium): per-request network stats (repeated ijes: request type, bytes sent...) plus recent connectivity events, from the same ConnCheckAndReport object
+  string request_id = 5;  // estimated name (medium): hex of Query.F, the random per-query id (avvy.j(): Random.nextLong()) also attached as "rId"; NGA paths put the aknj recognition request id here
   Enum_iiqc f6 = 6;
   int32 f7 = 7;
-  int32 f17 = 17;
-  string f18 = 18;
-  bool f19 = 19;
-  Enum_iirq f20 = 20;
-  int32 f21 = 21;
-  repeated iipt f22 = 22;
-  Enum_iirr f23 = 23;
-  int64 f24 = 24;
-  iiqy_a f25 = 25;
-  vcp f27 = 27;
-  string f30 = 30;
-  iisc f31 = 31;
-  iaxz f33 = 33;
-  iiqo f34 = 34;
-  string f35 = 35;
-  uol f36 = 36;
-  string f38 = 38;
-  float f39 = 39;
-  float f40 = 40;
-  string f41 = 41;
+  int32 speechie_mode = 17;  // estimated name (low): int from a future result logged with VOICE_SEARCH_SPEECHIE_START; Query dumps a 'speechie mode' int
+  string secondary_request_id = 18;  // estimated name (low): hex of Query.J (constructor arg j10), written only when non-zero; only the toBuilder copy sets it in this build
+  bool is_assistant_flagged = 19;  // estimated name (low): Query.bJ() (flag bit 1<<49 set and 1<<27 clear); set true on NGA_PAUSED_SPEED_BUMP / NGA_LOW_POWER_TRIGGER_DETECTED and brpu/uqr paths
+  VoiceTriggerType voice_trigger_type = 20;  // estimated name (medium): how a voice query was started, values only (Enum_iirq): avvz derives it from QueryTriggerType and the query source
+  int32 recommitted_event = 21;  // estimated name (medium): avlr number of the original VBUS_*_SEARCH_COMMIT event, logged on VBUS_SEARCH_RECOMMIT
+  repeated iipt errors = 22;  // estimated name (medium): error chain (iipt: avcr b() and avme code a()); axdh reads the first entry's avme as FeedLaunchErrorReason/FeedLaunchDisabledReason
+  TtsType tts_type = 23;  // estimated name (medium): TTS kind on TTS_PLAY_REQUESTED, values only (Enum_iirr); the same branch logs APP_EVENT_LOCAL_TTS_PLAYED(241) / NETWORK_TTS_PLAYED(240) / LOCAL_TTS_FROM_NETWORK_SYNTHESIZER_PLAYED(304)
+  int64 startup_flags = 24;  // estimated name (low): the pending startup bit flags recorded at start (brsk.b(j): this.e = j), logged with OPA_ANDROID_STARTUP_END
+  FeedLaunchCancelReason feed_launch_cancel_reason = 25;  // estimated name (high): values only (iiqy_a); FeedLaunchStateDumper prints the names for FEED_LAUNCH_CANCEL events
+  vcp opa_triggered_by = 27;  // estimated name (high): vcp number from the query extra android.opa.extra.TRIGGERED_BY, or the NGA trigger
+  string query_source = 30;  // estimated name (high): Query.aR(), which Query's dump labels "source"; or exqx.b in the CA converter
+  iisc webview_info = 31;  // estimated name (medium): OPA WebView pool state on OPA_WEBVIEW_INITIALIZATION_START (iisc.1 = 2 not created, 4 created and prepared, 5 created)
+  iaxz app_usage_report = 33;  // estimated name (medium): iaxz built for OPA_APP_USAGE_REPORT_* (call log query) events
+  iiqo echo_tts_nulling = 34;  // estimated name (medium): iiqo with a duration/count, logged on ECHO_TTS_NULLING_SUCCESS
+  string locale = 35;  // estimated name (medium): speech/hotword locale (avch.V(), the same value SpeechMetadata.locale gets)
+  HotwordRetrainingNotificationSource voice_match_entry_point = 36;  // estimated name (medium): uol number (UNKNOWN_ENTRY, ...) on Voice Match enrollment start events
+  string hotword_model_id = 38;  // estimated name (high): HotwordResultMetadata.hotwordModelId / HotwordResult.y() (hotwordModelIdentifier)
+  float hotword_score = 39;  // estimated name (high): HotwordResultMetadata.c() = hotwordScore / HotwordResult.c() = softwareHotwordScore
+  float speaker_id_score = 40;  // estimated name (high): HotwordResultMetadata.d() = speakerIdScore / HotwordResult.d() = speakerScore
+  string device_model = 41;  // estimated name (high): Build.MANUFACTURER + "_" + Build.MODEL
   Enum_iiqz f42 = 42;
-  bool f43 = 43;
+  bool is_nga = 43;  // estimated name (low): set true only by NGA (new Assistant) code paths: OPA startup in adhg, NGA failure in adfy, escape hatch in aduq/ahjm, bjru when the NGA config (yvt.c()) is on
   Enum_iiru f44 = 44;
-  Enum_iirn f45 = 45;
-  ikaj f46 = 46;
-  string f47 = 47;
-  iiqk f48 = 48;
-  Enum_vhg f49 = 49;
-  iire f50 = 50;
-  repeated int32 f51 = 51 [features.repeated_field_encoding = EXPANDED];
-  repeated iipz f53 = 53;
-  ijfo f55 = 55;
-  repeated iipx f56 = 56;
-  ikjp f57 = 57;
-  Enum_iirs f58 = 58;
-  iiqt f59 = 59;
-  int32 f60 = 60;
+  KeyguardState keyguard_state = 45;  // estimated name (medium): values only (Enum_iirn): 1 when arub.b() (keyguard locked), 2 otherwise
+  SearchClient search_client = 46;  // estimated name (high): ikaj number; Query.toString prints it as "searchClient="
+  string recognition_engine_version = 47;  // estimated name (high): aeio.j() = engineVersion (aeht.toString label), on NGA recognition events
+  iiqk assistant_settings_info = 48;  // estimated name (medium): iiqk built from the assistant-settings intent extras (entry source, feature_action, surface, locale) on OPA_SETTINGS_PAGE_MAIN_* events
+  AgsaActivationClientType activation_client_type = 49;  // estimated name (medium): vhh number (EVENT_BUS, CAR_ASSISTANT, ..., HOTWORD, NGA ...); log text calls it AgsaActivationClientType
+  iire hotword_info = 50;  // estimated name (medium): iire hotword/DSP details (detector type, flags, last missed hotword time) merged by iiqp.e()
+  repeated int32 int_list = 51 [features.repeated_field_encoding = EXPANDED];  // estimated name (low): repeated int added through iiqp.a(Iterable); no caller found in this build
+  repeated iipz voice_match_entry_info = 53;  // estimated name (low): repeated iipz (iipz.1 = 2, iipz.2 = eijy entry from the launch intent) on Voice Match enrollment screens
+  ijfo end_of_speech_source = 55;  // estimated name (medium): ijfo number (S3_NATIVE, S3_ENDPOINTER_FALLBACK, SODA_AUDIO_LEVEL, ..., NON_VOICE_INTERACTION_CLIENT) on ESTIMATED_END_OF_SPEECH
+  repeated iipx client_ops = 56;  // estimated name (medium): repeated iipx client ops; logged with CONVERSATION_DELTA_CLIENT_OPS_EXECUTED
+  ikjp tapas_info = 57;  // estimated name (low): ikjp from the Tapas suggestion engine on TAPAS_* events
+  VaaConsentResult vaa_consent_result = 58;  // estimated name (high): values only (Enum_iirs); the log line names them with iirt.a()
+  iiqt car_setup_agent_link = 59;  // estimated name (medium): iiqt on OPA_SETTINGS_CAR_SETUP_AGENT_LINK_START/FAIL
+  int32 server_hotword_text_length = 60;  // estimated name (low): length of hvjr.l from the server hotword response, on HOTWORD_VERIFIED/REJECTED_BY_SERVER
   iiqv f61 = 61;
   string input_source = 62;  // ammi enum name (ASR/SODA/S3/TEXT_QUERY...) (aekv.java:99, adhg.java:1477). estimated name (low)
-  Enum_iirm f63 = 63;
-  int32 f64 = 64;
-  int32 f66 = 66;
+  PreloadState preload_state = 63;  // estimated name (high): values only (Enum_iirm): 2 when the query was prerendered (avmc.c()), 1 when prefetched (avmc.b()), else 0; avlz.toString labels them isPrefetched/isPrerendered
+  int32 num_query_tokens = 64;  // estimated name (high): agin.c(); the PassDecision toString labels it numQueryTokens
+  int32 enrollment_utterance_count = 66;  // estimated name (medium): eiyq.k, the Voice Match utterance index reached, logged on VOICE_MATCH_HOTWORD_ENROLLMENT_SCREEN_EXIT
   string f67 = 67;
-  int64 f68 = 68;
-  ikhk f73 = 73;
+  int64 speech_event_time = 68;  // estimated name (low): alok.f int64 on SPEECH_START/END/RETRY_RECEIVED events; units not checked
+  ikhk pie_info = 73;  // estimated name (low): ikhk built in the PIE (greeting/try-saying) flows: PIE_FLOW_START/DONE, MULTI_STEP_TRY_SAYING_*
   bool f77 = 77;
-  iirp f78 = 78;
-  int32 f82 = 82;
-  string f84 = 84;
-  bool f85 = 85;
-  string f86 = 86;
-  iiqr f87 = 87;
-  int64 f88 = 88;
-  Enum_iirk f89 = 89;
+  iirp server_asr_result = 78;  // estimated name (medium): iirp parsed from server_asr_result_type / hypothesis length headers
+  int32 audio_size_bytes = 82;  // estimated name (medium): this.p, the audio byte count; logged with ASSISTANT_AUTO_AUDIO_SENT_TO_S3 when > 100, next to the log "Audio size: %d bytes"
+  string event_detail = 84;  // estimated name (low): a per-event string: AVS gleam/lens chip info, input-plate query suggestion, nudge id (vac), optionally hashed by awto.a()
+  bool is_assistant_query_alt = 85;  // estimated name (low): Query.bK() (flag 1<<49 and Query.e bit 8), or arkm.c()&&e() on hotword events
+  string recognition_candidate_id = 86;  // estimated name (high): aknj.b, also attached as "RecognitionCandidateId"
+  iiqr s3_header_info = 87;  // estimated name (low): iiqr on S3_HEADER_REQUEST_CREATION_SUCCESSFUL and the car session S3 personalization prewarm
+  int64 conversation_done_timeout_ms = 88;  // estimated name (medium): max wait logged with NGA_CLIENT_CONVERSATION_DONE_TIMEOUT
+  OpaInteractionViolation opa_interaction_violation = 89;  // estimated name (high): iirl number (MISSING_CLIENT_CONVERSATION_DONE, FAILED_TO_START_GRAPH, ...) on NGA_OPA_INTERACTION_VIOLATION
   AssistantClientState assistant_client_state = 90;  // estimated name (medium)
   bool f91 = 91;
-  ikfz f92 = 92;
-  iiqm f94 = 94;
-  iiqb f95 = 95;
-  ErrorInfo f96 = 96;
-  int32 f98 = 98;
-  ikgg f99 = 99;
-  int32 f103 = 103;
-  int32 f107 = 107;
-  ibdf f111 = 111;
-  iirw f117 = 117;
+  ikfz startup_ui_source = 92;  // estimated name (medium): ikfz number (SYS_UI, NGA_ON_SHOW, OPA_ON_SHOW) on OPA_ANDROID_STARTUP_* events
+  iiqm snapshot_sync_info = 94;  // estimated name (low): iiqm with one int, near "SnapshotClientSyncRequest_"
+  iiqb aum_action = 95;  // estimated name (low): iiqb on AUM_ACTION_LOGGED (Geller write logging)
+  ErrorInfo error_info = 96;  // estimated name (high): ErrorInfo (iiuk) of the failure, e.g. the AVS client error code
+  int32 preamble_type = 98;  // estimated name (medium): jhit number (NO_PREAMBLE, HOTWORD, MICROPHONE_TAP, ...) on VOICE_SEARCH_PREAMBLE_TYPE_RESOLVED
+  ikgg tapas_text_suggestion_info = 99;  // estimated name (low): ikgg on AGSA_TEXT_TAPAS_* suggestion events
+  int32 total_nudge_ui_impression_count = 103;  // estimated name (high): NudgeLogMetadata.totalNudgeUiImpressionCount (uys.b())
+  int32 input_plate_invoked_from_nudge_count = 107;  // estimated name (high): NudgeLogMetadata.inputPlateInvokedFromNudgeCount (uys.a())
+  ibdf fluid_action_info = 111;  // estimated name (low): ibdf built in the OPA fluid action (message/reminder/timer) flows
+  iirw session_stage_event = 117;  // estimated name (medium): iirw from an aiyk LogEvent{sessionStage, additionalSessionStageDebugInfo, contextType, flagValues, utteranceId, screenLocked, command}
   EventId f118 = 118;
-  bool f120 = 120;
-  int32 f121 = 121;
-  Enum_iiqd f122 = 122;
-  int32 f125 = 125;
-  int32 f126 = 126;
-  Enum_allj f128 = 128;
+  bool cloud_utterances_ready = 120;  // estimated name (medium): eiyq.a, set by the UtteranceDownloader ("Cloud utterances are ready %b"), on Voice Match shared-device/SLA enrollment start
+  int32 language_pack_version = 121;  // estimated name (low): iosz.d of the installed language pack for the current locale, on ASSISTANT_AUTO_ROUTINE_EXECUTION_FAILED
+  AssistDataType assist_data_type = 122;  // estimated name (high): iiqe number (CONTEXTUAL, VOICE, SCREENSHOT, LIGHTWEIGHT); the same event carries "assistDataType"
+  int32 tisid_cloud_utterance_count = 125;  // estimated name (medium): count of ENROLLMENT_TISID cloud utterances on VOICE_MATCH_GET_CLOUD_UTTERANCE_SET
+  int32 google_home_cloud_utterance_count = 126;  // estimated name (medium): count of ENROLLMENT_GOOGLE_HOME cloud utterances
+  NgaLifecycleComponent nga_lifecycle_failed_component = 128;  // estimated name (medium): values only (Enum_allj): the failing NGA lifecycle component's aahg.o() - 1, logged with NGA_LIFECYCLE_FAILURE
   int64 f130 = 130;
-  Enum_iiqw f132 = 132;
-  int32 f134 = 134;
-  bool f135 = 135;
-  iisg f136 = 136;
-  eijq f138 = 138;
+  FeedRequestType feed_request_type = 132;  // estimated name (low): values only (Enum_iiqw): buhp.i() of the Discover feed request, with DISCOVER_FEED_REQUEST_START/FAILURE
+  int32 first_failing_utterance_index = 134;  // estimated name (medium): beyk.h when all utterances ran, on RUN_ENROLLMENT_FIRST_FAILING_UTTERANCE
+  bool can_generate_tisid_model = 135;  // estimated name (medium): the bool ylx logs as canGenerateTisidModel; awac sets it from the TISID status
+  iisg voice_match_screen_info = 136;  // estimated name (low): iisg (one enum) on VOICE_MATCH_INTRO/HOTWORD_CONSENT_SCREEN_EXIT and VOICE_MATCH_ENROLLMENT_FAILED
+  eijq voice_match_flow = 138;  // estimated name (low): eijq Java enum (OPA_HOTWORD_ENROLLMENT, ANDROID_SETUP_WIZARD, ...) by type; no writer in this build
 }
 
 message SmartspaceLogData {  // ijyq
@@ -993,30 +993,30 @@ message SmartspaceLogData {  // ijyq
   bool is_opa_eligible = 3;  // LoggerOptions.isOpaEligible (dhkx.java:73). estimated name (high)
   bool is_work_profile = 6;  // LoggerOptions.isWorkProfile / huqb.v. estimated name (high)
   bool is_third_party_data = 7;  // LoggerOptions.isThirdPartyData / huqb.w. estimated name (high)
-  ijyl f8 = 8;
+  ijyl card_update_counts = 8;  // estimated name (low): ijyl: per card type, counts of ijyk outcomes (INVARIANT, NEW_CONTENT, NEW_TYPE)
   repeated SmartspaceSettingState setting_states = 9;  // snapshot of settings/permissions: setting enum + on/off (dhxh.java:156-209), incl. WEB_AND_APP_ACTIVITY, GOOGLE_LOCATION_HISTORY, NOTIFICATION_READ, WORK_PROFILE. estimated name (medium)
   SmartspaceSettingState setting_state = 10;  // single setting state (axhr.java:213). estimated name (low)
-  repeated ijxq f11 = 11;
+  repeated ijxq chips = 11;  // estimated name (medium): repeated ijxq: smart chips on the card (index, ChipType, two strings)
   bool is_bluechip_impression = 12;  // set true on BLUECHIP_SMARTSPACE card impressions (dhjt.java:585). estimated name (low)
   bool asi_smartspace_supported = 13;  // aoox.g(): ASI (com.google.android.as) newer than 6488361 on SDK>=31, or flag. estimated name (low)
-  ijxs f15 = 15;
+  ijxs card_metadata = 15;  // estimated name (low): ijxs extension holder; only CALENDAR cards fill it (ijxd bool from huob)
   sint32 feature_type = 16;  // bxpv.at Smartspace feature type number. estimated name (medium)
-  repeated ijxm f17 = 17;
+  repeated ijxm media_app_suggestions = 17;  // estimated name (medium): repeated ijxm from the on-device media app suggestion model, logged as MEDIA_ON_DEVICE_APP_SUGGESTION_MODEL_EVAL_LOGGED
   int32 card_id_bucket = 18;  // dibv.a(): abs(id % 8192) of the card id huqb.e. estimated name (low)
   bool smartspace_settings_migration_completed = 19;  // Settings.Secure smartspace_settings_migration_completed_key == 1 (axhr.java:827). estimated name (high)
   ijxf smartspace_style = 20;  // ijxf style (UNKNOWN_STYLE, VANILLA, ...) from ibkj (dhjt.java:964). estimated name (medium)
-  bxpv f21 = 21;
+  bxpv feature = 21;  // estimated name (medium): bxpv number (DEFAULT, WEATHER, CALENDAR, ...) as an enum, set on the At-a-Glance widget settings VE
 }
 
 message iknk {
   VeEventId f1 = 1;
 }
 
-message ijkc {
+message OpaDeviceSetupDiscovery {  // ijkc
   Enum_ijkb f1 = 1;
 }
 
-message ijnr {
+message LensEvent {  // ijnr
   ijpa f3 = 3;
   ijpn f4 = 4;
   ijpd f9 = 9;
@@ -1033,12 +1033,12 @@ message ijnr {
   isvh f25 = 25;
 }
 
-message ikhi {
+message SrpToOpaTransition {  // ikhi
   Enum_ikhh f1 = 1;
-  string f2 = 2;
+  string original_request_id = 2;  // extra android.opa.extra.SRP_TO_OPA_TRANSITION_ORIGINAL_REQUEST_ID. estimated name (high)
 }
 
-message ikfd {
+message OpaConversationEvent {  // ikfd
   int32 f1 = 1;
   oneof oneof0 {
     ikfq f2 = 2;
@@ -1046,18 +1046,18 @@ message ikfd {
   }
 }
 
-message ijkx {
+message RequestThrottling {  // ijkx
   repeated int32 f1 = 1 [features.repeated_field_encoding = EXPANDED];
   bool f2 = 2;
 }
 
-message ijji {
-  int64 f1 = 1;
-  int64 f2 = 2;
-  int64 f3 = 3;
+message DoodleImpression {  // ijji
+  int64 impression_timestamp = 1;  // Bundle 'impression_timestamp'. estimated name (high)
+  int64 impression_duration = 2;  // Bundle 'impression_duration'. estimated name (high)
+  int64 impression_num_loops = 3;  // Bundle 'impression_num_loops'. estimated name (high)
 }
 
-message ibaf {
+message ImmersiveCanvasEvent {  // ibaf
   iazp f1 = 1;
   iazv f2 = 2;
   iazx f5 = 5;
@@ -1065,7 +1065,7 @@ message ibaf {
   ibab f10 = 10;
 }
 
-message ijtt {
+message NgaSessionData {  // ijtt
   string f1 = 1;
   bytes f2 = 2;
   repeated ijtp f3 = 3;
@@ -1120,11 +1120,11 @@ message ijul {
   VeEventId f1 = 1;
 }
 
-message ijlc {
+message UdcSettingsStatus {  // ijlc
   Enum_ijlb f1 = 1;
 }
 
-message ijhd {
+message ConsentFlowEvent {  // ijhd
   Enum_ijhb f1 = 1;
   Enum_ijhc f2 = 2;
   uint32 f3 = 3;
@@ -1137,13 +1137,13 @@ message NgaMonitorEvent {  // ijqt
   DasherAccountStatus dasher_account_status = 2;  // ijqs.f (bfot.java:163) for NGA_DASHER_ACCOUNT_PRESENT. estimated name (high)
 }
 
-message ijkj {
+message NotificationSettingsChange {  // ijkj
   Enum_ijkh f1 = 1;
   bool f2 = 2;
   string f3 = 3;
 }
 
-message ijkg {
+message OpaEligibility {  // ijkg
   repeated Enum_ijke f1 = 1 [features.repeated_field_encoding = EXPANDED];
   string f2 = 2;
   repeated string f3 = 3;
@@ -1159,10 +1159,10 @@ message AssistantClientState {  // ibha
   NgaEligibility nga_eligibility = 1;  // estimated name (high)
   OnDeviceStackStatus on_device_stack_status = 2;  // ON_DEVICE_STACK_ENABLED if single locale passes akcn.a (akob.java:65-78). estimated name (high)
   NgaState nga_state = 3;  // ibgj from NgaState (akob.java:87). estimated name (high)
-  ibgz_a f4 = 4;  // ibgz_a: 1 mosaic logging params (bypn.java:69, ddaf.java:239), 2 akob/dipk/ctxk, 3 GSA_MIC path (cprh.java:113); meaning not settled, left unnamed.
+  RequestSource request_source = 4;  // ibgz_a: 1 mosaic logging params (bypn.java:69, ddaf.java:239), 2 akob/dipk/ctxk, 3 GSA_MIC path (cprh.java:113); meaning not settled, left unnamed.
   NgaStateDetails nga_state_details = 5;  // oneof enabled/disabled(reason)/paused(reason) (bfcz.java). estimated name (high)
-  ibhh f6 = 6;
-  jpvl f7 = 7;
+  ibhh tng_state = 6;  // estimated name (high): ibhh; the debug dump prints it as tng_state {is_connected, connection_fail_reasons, is_eligible, non_eligible_fail_reasons}
+  jpvl apvs_feature_state = 7;  // estimated name (medium): jpvl (feature_name, enabled, failure_reasons, change_reason, as fcf_metadata prints them), written for request_source APVS
   AccessibilityInfo accessibility_info = 8;  // gfec.a(). estimated name (high)
 }
 
@@ -1183,7 +1183,7 @@ message ikgg {
   bool f7 = 7;
 }
 
-message iter {
+message TapasMlQueryEvent {  // iter
   itgh f1 = 1;
   itjl f2 = 2;
   string f3 = 3;
@@ -1199,7 +1199,7 @@ message jaas {
   EventId f1 = 1;
 }
 
-message ikhf {
+message GearheadAssistantSessionInfo {  // ikhf
   int32 f1 = 1;
   int32 f2 = 2;
   string f3 = 3;
@@ -1219,7 +1219,7 @@ message ClientEventExtensions {  // ikdq
   extensions 1 to max;
 }
 
-message jqdi {
+message SearchboxExtraStats {  // jqdi
   repeated jqdg f1 = 1;
   int32 f2 = 2;
   ikcd_a f3 = 3;
@@ -1341,7 +1341,7 @@ message ijfi {
 
 message AssistantVeMetadata {  // ijwd
   Enum_ijwc f5 = 5;  // unnamed: Valyrian zero-state VE logger sets it from a 4-way UI-state switch (bsab.java:6464-6484), bsvo sets 3 (bsvo.java:75); not in captures
-  Enum_ijwa f6 = 6;  // unnamed: Valyrian zero-state sets it from bsab.er(), a 12-way map of the fragment's bsbr.b entry state (bsab.java:2756-2792, 6488-6491); not in captures
+  ZeroStateEntryAction zero_state_entry_action = 6;  // unnamed: Valyrian zero-state sets it from bsab.er(), a 12-way map of the fragment's bsbr.b entry state (bsab.java:2756-2792, 6488-6491); not in captures
   Enum_ijvx f8 = 8;
   AssistantVeSurface surface = 9;  // estimated name (low); value is the logging surface: 1 = Valyrian (Assistant) zero-state VE tree (bsab.java:6492, bsvo.java:88), 4 = At-a-Glance widget / non-bluechip Smartspace card (dipk.java:139, axhr.java:109, dhjt.java:1113 with z2=false), 10 = Bluechip Smartspace card (dhjt.java:1113 with z2=true); enum constant names are estimated (low)
   ijvw f11 = 11;
@@ -1528,7 +1528,7 @@ message ikdh {
 message PcpVeMetadata {  // ijza
   int32 client_type = 1;  // estimated name (high): the PCP client type, an hzqb (ClientType) number written as int32 (feov.java:57-65, fepb.java:69-73, fdrz.java:426-428); fezn.java:14 prints the same feyp field as 'clientType'. Captured: 39 BLUECHIP_SMARTSPACE_TNG, 47 MOBILE_ASSISTANT_NOTIFICATIONS, 52 WEARABLE_MOBILE_SYNC
   int32 feature_type = 2;  // estimated name (high): copied from feyp field 4 (feov.java:67-74, fepb.java:100-104), which fezn.java:11 prints as 'featureType'; the number is a PCP feature type (fdsx.d(): 1 = WEATHER_PRECISE, 2 = PROMOTIONAL, ...). Captured: always 1 on child VE 163406
-  ijyz f4 = 4;  // unnamed: ijyz (extensions only) copied from the PCP rendered element's VE info gufg.c (feov.java:76-91) or ReportingTokenImpl.VeTreeInfo.c() (feov.java:179-184); not in captures
+  ijyz suggestion_metadata = 4;  // unnamed: ijyz (extensions only) copied from the PCP rendered element's VE info gufg.c (feov.java:76-91) or ReportingTokenImpl.VeTreeInfo.c() (feov.java:179-184); not in captures
   PcpSuggestionsReport suggestions_report = 5;  // estimated name (low): ibfd built by the PCP suggestions fetch/update reporters; fepb attaches it only when report_type != 0 (fepb.java:74-83)
 }
 
@@ -1600,7 +1600,7 @@ message ijeb {
 message Ved {  // ikxh
   int32 index = 1;  // index of the element in its event
   int32 ve_type = 2;
-  int32 f7 = 7;
+  int32 result_position = 7;  // estimated name (low): third key encoded into the ved string after event_id; the open-source ved decoders call ved field 7 the result position
   VeEventId event_id = 13;
   ikfb f15 = 15;
 }
@@ -1610,7 +1610,7 @@ message VeInteraction {  // ijgj
   VeInteractionType type = 2;  // values only (ijgi); fvqw sets 3, 1 or 2 from the interaction kind
   VeInteractionTarget parent_target = 3;  // the element's parent, when the interaction carries several elements; estimated name (medium)
   int64 time = 4;  // fvno.e; units not settled; estimated name (low)
-  bool f6 = 6;
+  bool target_has_content_id = 6;  // estimated name (medium): replaces the placeholder f6 in names_core.json; true when the interacted element carries the fvsb.b content-id extension (fvqp = hashCode of the item id); fvqt then marks the subtree
 }
 
 message jgdd {
@@ -1716,9 +1716,9 @@ message iiua {
   string f2 = 2;
 }
 
-message hbpq {
-  int32 f1 = 1;  // open enum: class not recorded
-  string f2 = 2 [features.utf8_validation = VERIFY];
+message SourceData {  // hbpq
+  int32 source_type = 1;  // open enum: class not recorded hbpv.d - 2, printed as 'type' in SourceData.toString (source ids in hbpy.java). estimated name (high)
+  string extra = 2 [features.utf8_validation = VERIFY];  // hbpv.c, printed as 'extra' in SourceData.toString. estimated name (high)
 }
 
 message iiwe {
@@ -2043,11 +2043,11 @@ message AttentionEvent {  // izwc
   int64 timestamp_ms = 1;  // System.currentTimeMillis. estimated name (high)
   AttentionEventType event_type = 2;  // log tags VP/VE/PAUSE/SC/EXIT/SW/DOM_CHANGE/EI (fgey.f). estimated name (high)
   int32 top = 3;  // VE log 'top=' (fgey.java:77, fgfm.java:17). estimated name (medium)
-  int32 f4 = 4;  // fgfa.d; not named.
+  int32 left = 4;  // fgfa.d; not named.
   uint32 height = 5;  // VP log 'VP:%dx%d' second value (2400). estimated name (medium)
   uint32 width = 6;  // first value (1080). estimated name (medium)
   int32 scroll_top = 7;  // VP 'top=' / SC first value. estimated name (medium)
-  int32 f8 = 8;  // SC second value; not named.
+  int32 scroll_left = 8;  // SC second value; not named.
   uint64 idle_ms = 9;  // PAUSE(idle=%d). estimated name (medium)
   AttentionExitReason exit_reason = 11;  // fgey.d(j, reason): 2 from fgfe (visibility lost), 5 from fgff (root VE/page changed). estimated name (medium)
   uint32 ve_index = 12;  // fgfa.f / EI key. estimated name (low)
@@ -2076,7 +2076,7 @@ message ijhn {
 message AppFlowEvent {  // iisi
   int32 event = 1;  // avlr Java-enum number (declared int32). estimated name (high)
   uint64 timestamp_nanos = 2;  // fmxy.b, elapsed-realtime nanos. estimated name (medium)
-  iirx event_data = 3;  // estimated name (medium)
+  AppFlowEventData event_data = 3;  // estimated name (medium)
 }
 
 message iiyd {
@@ -2380,7 +2380,7 @@ message iire {
   bool f7 = 7;
   bool f8 = 8;
   int64 f10 = 10;
-  awbw f13 = 13;
+  HotwordPhrase f13 = 13;
   string f14 = 14;
   string f15 = 15;
   int32 f19 = 19;
@@ -2466,9 +2466,9 @@ message iisg {
 message SmartspaceSurfaceInfo {  // ijyd
   SmartspaceSurface surface = 1;  // ijya (Java enum). estimated name (high)
   oneof oneof0 {
-    ijyc_a f2 = 2;
-    ijxu f3 = 3;
-    ijxy f4 = 4;
+    SystemUiScreen system_ui_screen = 2;
+    ijxu ambient_screen = 3;
+    ijxy oem_system_ui_screens = 4;
   }
 }
 
@@ -2767,7 +2767,7 @@ message ikwh {
 }
 
 message ikrn {
-  ijnr f1 = 1;
+  LensEvent f1 = 1;
 }
 
 message ilcl {
@@ -2806,7 +2806,7 @@ message ikne {
 message ProductAndAccount {  // ikdo
   Product product = 1;  // the product whose logger sent the event; selects the log source (hbjf.a())
   AccountState account_state = 2;  // the account the event is logged under (hbmv from ikdk; hblq)
-  hbpq f3 = 3;
+  SourceData source_data = 3;  // hbpq from hbpr.a(hbpv): hbpv.toString is 'SourceData(type=..., sourceConstant=..., extra=...)'; the invocation source (e.g. 271 launcher-search, 17 and.opa.diag_swipe_gesture). estimated name (high)
 }
 
 message MonitorMetric {  // ijqx
@@ -3345,11 +3345,11 @@ message VeInteractionTarget {  // ijgn
   oneof oneof0 {
     EventId ei = 1;
     VeEventId ve_event_id = 3;
-    string f4 = 4;
+    string ei_string = 4;
   }
   oneof oneof1 {
     Ved ved = 2;
-    string f5 = 5;
+    string ved_string = 5;
   }
 }
 
@@ -4388,7 +4388,7 @@ message FlowRecordIds {  // pwv
 
 message FlowRecordTiming {  // jfxs
   Timestamp time = 1;  // when the record was logged; on the elapsed-realtime clock
-  Duration f3 = 3;
+  Duration duration = 3;  // iwrd.m(end - start) of the timed operation (gknh.h/d), beside time = end. estimated name (medium)
   FlowRecordResult result = 6;
 }
 
@@ -5621,23 +5621,23 @@ message FlowRecordResult {  // jfxr
 }
 
 message GoogleAppMetadata {  // iisy
-  string f1 = 1;
+  string dictation_flow_instance_id = 1;  // estimated name (low): the same optional string the flow gets as its instance id (gfbp.z), on NGA_APP_CONTROL_DICTATION_CALLBACK(_ENDED)
   AcetoneOverlayInfo acetone_overlay_info = 3;  // estimated name (medium)
-  iitj f4 = 4;
-  iite f5 = 5;
-  iaxl f6 = 6;
-  iitn f7 = 7;
-  iitp f8 = 8;
-  iitr f9 = 9;
-  repeated iipx f10 = 10;
-  iitv f11 = 11;
-  iitl f13 = 13;
-  iita f15 = 15;
-  iity f16 = 16;
-  Enum_iisw f17 = 17;
-  iitt f18 = 18;
-  iitc f20 = 20;
-  iitg f21 = 21;
+  iitj cookie_verify_result = 4;  // estimated name (medium): iitj holding a hntn (VerifyCookiesResult) mapping, flow GOOGLEAPP_GAIA_SIGN_IN_FETCH_COOKIES
+  iite discover_next_page_info = 5;  // estimated name (low): iite from the Discover stream (dttj.c), flow DISCOVER_NEXT_PAGE_EAGER_START
+  iaxl morris_media_info = 6;  // estimated name (medium): iaxl for Morris (driving mode) media browse/play flows (MORRIS_MEDIA_BROWSE_*, MORRIS_MEDIA_PLAYED_*)
+  iitn hotword_user_pulse = 7;  // estimated name (medium): iitn wrapping the ijlp hotword pulse metrics, flow HOTWORD_USER_PULSE_COMPLETED ("Uploading hotword pulse metrics to server.")
+  iitp morris_assistant_flow_info = 8;  // estimated name (low): iitp in the Morris assistant app flow (MORRIS_ASSISTANT_CANCEL_*/END_*/INTENT_PROCESSOR_*)
+  iitr morris_startup_info = 9;  // estimated name (low): iitr (request id string, request type, connectivity) on MORRIS_ASSISTANT_STARTUP_GENERIC fire-and-forget requests
+  repeated iipx client_ops = 10;  // estimated name (medium): repeated iipx (ClientOp) from UI_READY_TO_DISPLAY, flow MORRIS_ASSISTANT_CLIENT_OP
+  iitv morris_teardown_info = 11;  // estimated name (medium): iitv in the Morris teardown flow (MORRIS_TEARDOWN_*)
+  iitl voice_interaction_session_info = 13;  // estimated name (low): iitl from GsaVoiceInteractionSession.onShow, flow MORRIS_TEARDOWN_GSA_VOICE_INTERACTION_SESSION_FINISH_DURING_ON_SHOW
+  iita projected_request_info = 15;  // estimated name (low): iita of five bools, flow ASSISTANT_AUTO_PROJECTED_REQUEST_CREATION_START
+  iity app_entry_info = 16;  // estimated name (medium): iity: entry activity (class-name switch to a number), app entry state, and hchi.b(intent) entry source
+  DiscoverLoadOrder discover_load_order = 17;  // estimated name (low): values only (Enum_iisw): 1 for the first Discover surface logged since dtuc was created, 2 after; flows on GoogleActivity/SecondaryScreen/ChannelDetail
+  iitt morris_comms_flow_info = 18;  // estimated name (medium): iitt in the Morris send-message and outgoing-call flows
+  iitc media_session_info = 20;  // estimated name (low): iitc holding a duration in ms (media controller), ASSISTANT_MEDIA_SESSION_CLIENT_OP_END
+  iitg geller_pkg_access_info = 21;  // estimated name (medium): iitg.1 = serialized size of the Geller PKG read result, flow after PKG_ACCESS_GELLER_START
 }
 
 message ikeb {
@@ -5693,9 +5693,9 @@ message SpeechMetadata {  // ijmf
   string deeplink_param_a = 6;  // Speech deeplink scq.a (sdj.java:570); meaning not traced. estimated name (low)
   string deeplink_param_b = 7;  // Speech deeplink scq.b. estimated name (low)
   int32 deeplink_item_count = 8;  // scq.d.size(). estimated name (low)
-  Enum_ijmi f9 = 9;
+  EnrollmentFailureReason deeplink_enrollment_failure_reason = 9;  // estimated name (high): values only (Enum_ijmi), logged in the SPEECH_DEEPLINK_FAIL flow after "Enrollment failed with reason REASON_*"
   SodaSilentEnrollmentResult soda_silent_enrollment_result = 10;  // ymr.f() log tag 'SodaSilentEnrollment'. estimated name (high)
-  ijma f11 = 11;
+  ijma classic_enrollment_result = 11;  // estimated name (medium): ijma status pair (jhcn) for ACTIVE_ENROLLMENT_CLASSIC_END and TISID_SILENT_ENROLLMENT_CLASSIC_*
   bool f12 = 12;
   HotwordModelConfigFetch hotword_model_config_fetch = 13;  // awbf 'HotwordModelConfigFetcher' / 'logEmbeddedAssetsFetchAppflows'. estimated name (medium)
 }
@@ -5773,27 +5773,27 @@ message jpki {
 
 message AssistantDictationLogData {  // jpsy
   string error_detail = 1;  // free-text detail: String.valueOf(error code), 'Eligibility=%d', or Throwable.toString(). estimated name (medium)
-  bxxp_b f2 = 2;
+  DictationRequester requester = 2;  // bxxp requester; DictationParams.toString prints it as 'requester' (ckmn.java:87). estimated name (high)
   DictationEligibilityInfo eligibility_info = 3;  // keyboard/eligibility context built by ckgk; logged on ASSISTANT_DICTATION_ELIGIBILITY_CHECK_* (282-284, 1217) and dictation failures. estimated name (medium)
-  jput f4 = 4;
-  jpss f5 = 5;
-  jpsw f6 = 6;
-  Enum_izsx f7 = 7;
-  jpsu f8 = 8;
-  cieo f9 = 9;
-  jptz f10 = 10;
-  jpur f11 = 11;
-  jptm f12 = 12;
-  jpti f13 = 13;
-  jptc f14 = 14;
-  jpun f15 = 15;
-  jpuj f16 = 16;
-  jpux f17 = 17;
+  DictationParams dictation_params = 4;  // jput(initial stickiness bxxr, iwwr, initial text non-empty) from DictationParams (ckfw.O/Q). estimated name (medium)
+  jpss command = 5;  // jpss voice/button command (source enum, command name, ...) on ASSISTANT_DICTATION_BUTTON_COMMAND / VOICE_COMMAND / UNSUPPORTED_VOICE_COMMAND / DETECTED_INLINE_COMMAND. estimated name (medium)
+  jpsw utterance_dictated = 6;  // jpsw(jptg) on ASSISTANT_DICTATION_UTTERANCE_DICTATED (ckfv.r). estimated name (medium)
+  DictationOnboardingFeature onboarding_feature = 7;  // izsy feature on ASSISTANT_DICTATION_ONBOARDING_FEATURE_SHOWN/DISMISSED (ckfw.N). estimated name (medium)
+  DictationAlternatives alternatives_generated = 8;  // jpsu(int, int) on ASSISTANT_DICTATION_ALTERNATIVES_GENERATED (ckfv.c). estimated name (medium)
+  cieo keyboard_interaction_type = 9;  // cieo on ASSISTANT_DICTATION_ORATION_KEYBOARD_INTERACTION; log 'Unrecognized keyboard interaction type %s' (ckgw.java:35). estimated name (high)
+  EmojiSuggestionsInfo emoji_suggestions = 10;  // jptz oneof: displayed (count, bool) on EMOJI_SUGGESTIONS_DISPLAYED, spoken/tapped on EMOJI_SUGGESTIONS_SPOKEN/TAPPED. estimated name (medium)
+  jpur spoken_emoji = 11;  // jpur on ASSISTANT_DICTATION_SPOKEN_EMOJI / UNRECOGNIZED_SPOKEN_EMOJI (ckfv.m/s). estimated name (medium)
+  FulfillmentChannelDecision fulfillment_channel = 12;  // jptm(jptl channel, cibh eligibility) on ASSISTANT_DICTATION_FULFILLMENT_CHANNEL_DECIDED. estimated name (medium)
+  FulfillmentResultComparison fulfillment_result_comparison = 13;  // jpti(two command lists, two durations) on ASSISTANT_DICTATION_FULFILLMENT_RESULT_COMPARISON. estimated name (medium)
+  jptc emoji_processing_error = 14;  // jptc(cicx error) on ASSISTANT_DICTATION_EMOJI_PROCESSING_ERROR (ckfw.K). estimated name (medium)
+  jpun punctuation_correction_chip = 15;  // jpun(two bools) on ASSISTANT_TNG_DICTATION_PUNCTUATION_CORRECTION_CHIP_DISPLAYED (ckgy). estimated name (medium)
+  jpuj processing_queue_overflow = 16;  // jpuj(int) on ASSISTANT_DICTATION_PROCESSING_QUEUE_OVERFLOW (ckfv.n). estimated name (medium)
+  SuggestionChipsDisplayed suggestion_chips_displayed = 17;  // jpux(list of cick chip types) on ASSISTANT_DICTATION_SUGGESTION_CHIPS_DISPLAYED (ckfw.E). estimated name (medium)
   IvrEligibilityFailure ivr_eligibility_failure = 18;  // logged on ASSISTANT_DICTATION_IVR_ELIGIBILITY_CHECK_FAILED (1097, 'Instant voice replies'). estimated name (high)
-  jpsl f20 = 20;
+  FalseEndpointAnalysis false_endpoint_analysis = 20;  // jpsl(three commands) on ASSISTANT_DICTATION_FALSE_ENDPOINT_ANALYSIS_VOICE_COMMAND (ckfv.f). estimated name (medium)
   MultilangMetadata multilang_metadata = 21;  // automatic language switching / language-pack download state. estimated name (high)
-  jpub f22 = 22;
-  jpul f23 = 23;
+  jpub hotword_detected = 22;  // jpub(bool) on ASSISTANT_DICTATION_HOTWORD_DETECTED (ckfv.h). estimated name (medium)
+  jpul regex_utterance_detected = 23;  // jpul(cify) on ASSISTANT_DICTATION_FIX_IT_REGEX_UTTERANCE_DETECTED / MORE_FIXES_REGEX_UTTERANCE_DETECTED (ckfw.L/M). estimated name (medium)
 }
 
 message jpln {
@@ -5815,41 +5815,41 @@ message jpln {
   int64 f16 = 16;
   int64 f17 = 17;
   Enum_jplf f18 = 18;
-  iztf_b f19 = 19;
+  SelectedAsrEngine f19 = 19;
   string f20 = 20;
 }
 
 message AssistantAutoLogData {  // jphp
-  string f1 = 1;
-  int64 f2 = 2;
-  repeated iipx f4 = 4;
-  string f5 = 5;
-  jpje f6 = 6;
-  repeated ExceptionInfo f7 = 7;
-  jphm f9 = 9;
-  jpiw f10 = 10;
-  bool f11 = 11;
-  jpih f13 = 13;
+  string invocation_source = 1;  // exqx.b = ewbo.c of the Auto request (ewaq.b), a source constant such as 'and.opa.app', 'and.opa.launcher.icon', 'and.gsa.gearhead.news.text' (ewht.java:306, exvs.java:56). estimated name (medium)
+  int64 language_pack_version = 2;  // installed MDD language-pack version: iosz.d read from the LP 'metadata' file (ezze.a, fabr.java:112) or the LP version (evzn '#logEndEventMaybeWithLpVersion'). estimated name (medium)
+  repeated iipx delta_handling_results = 4;  // iipx per-delta handling results (status, error code, timestamps) collected in evvq/evvn, logged on CONVERSATION_DELTA_EXECUTION_ENDED. estimated name (medium)
+  string request_event_id = 5;  // hwac.c parsed from 'assistant.api.params.RequestLoggingParams' (evvq.java:48-61, 'get event id'). estimated name (medium)
+  jpje tts_type = 6;  // jpje (Java enum, names kept: ONLINE_RESPONSE, STRUCTURED_TTS, ERROR_PUNT, MESSAGE_READ_ONLINE ...), logged on TTS playback start (ewac/ewad/ewae, TTS_PLAY_NOT_STARTED). estimated name (medium)
+  repeated ExceptionInfo exceptions = 7;  // iium ExceptionInfo list from exqk.b(Throwable): simple class name + up to 11 stack frames per cause. estimated name (high)
+  AutoSpeechEvent speech_event = 9;  // jphm speech event: type (speech start/end, end of utterance, audio end), start/end micros from jgeh (exck.b); FETCH_ORCHESTRATOR_*_SPEECH_START/END etc. estimated name (medium)
+  AutoMediaAppFlowMetadata media_app_flow_metadata = 10;  // jpiw from exrx, whose toString is 'AssistantAutoMediaAppFlowMetadata{mediaControllerCompat, playMusicUri, mediaErrorCode, targetPackageName}' (exrz.java:66). estimated name (high)
+  bool hotword_detection_running = 11;  // exqx.h: 'Is AAE hotword detection running: %b' (evzz.java:251) on ASSISTANT_AUTO_HOTWORD_AVAILABILITY_FETCHED; also bdve.c() in bdvb. estimated name (medium)
+  jpih connection_type = 13;  // jpih from the estimated network connection type ('Estimated connection type: %s', excw.java:46). estimated name (medium)
   string language_pack_locale = 15;  // locale whose on-device ASR language pack is requested (ASSISTANT_AUTO_PROJECTED_START_LP_DOWNLOAD_REQUEST / SODA_RESOURCE_INITIALIZE); captured 'en-IE'. estimated name (medium)
-  string f16 = 16;
-  string f17 = 17;
-  bool f18 = 18;
-  int64 f19 = 19;
-  jpin f20 = 20;
-  jphh f22 = 22;
-  jpho f23 = 23;
-  string f24 = 24;
-  jpib f25 = 25;
-  jphc f27 = 27;
-  jphv f28 = 28;
-  jpil f29 = 29;
-  jphj f30 = 30;
-  jphz f31 = 31;
-  jpip f32 = 32;
+  string target_package = 16;  // Intent.getPackage() of an activity intent (ACTIVITY_INTENT_TRIGGERED, etyl) or the provider.OPEN package (evrp), '_NULL_' when absent. estimated name (medium)
+  string primary_region_app_package = 17;  // ewbj.b = GearheadStateSnapshot.d, Bundle key 'PRIMARY_REGION_APP_PACKAGE' (GearheadStateSnapshot.java:26, euac.java:468). estimated name (high)
+  bool is_navigating = 18;  // ewbj.c = GearheadStateSnapshot.c, Bundle key 'IS_NAVIGATING'. estimated name (high)
+  int64 speech_recognizer_error = 19;  // SpeechRecognizer onError(int) code logged on ASSISTANT_AUTO_TRANSCRIPTION_ERROR (evma.java:83-96). estimated name (medium)
+  jpin parsed_notification = 20;  // jpin(package string, message count) logged on NOTIFICATIONS_PARSED_WITH_MESSAGE_INFO (etzg.e). estimated name (medium)
+  AutoHotwordSettingsState hotword_settings_state = 22;  // jphh = ethu.a(): hotword settings flags and 'HOTWORD_ASSISTANT_SETTING' / 'HOTWORD_NAVIGATION_SETTING' ... state, on ASSISTANT_AUTO_HOTWORD_AVAILABILITY_FETCHED. estimated name (medium)
+  AutoSignalToNoiseInfo signal_to_noise_info = 23;  // jpho logged on AUTO_SIGNAL_TO_NOISE_INFO_COLLECTED (evpb.java:326). estimated name (medium)
+  string language_pack_id = 24;  // iosz.f of the LP 'metadata' file ('-1' when absent), on ASSISTANT_LANGUAGE_PACK_VERSION_WITH_LOCALE; iosz.f is the LP name in yor.java logs ('Currently installed language pack %s'). estimated name (medium)
+  AutoMemoryInfo memory_info = 25;  // jpib(availMem>>20, totalMem>>20) from ActivityManager.MemoryInfo, on ASSISTANT_AUTO_SUGGESTION_COOLWALK_SYSTEM_CHECK (fbqs.java:23-50). estimated name (high)
+  ActionsCacheUpdate actions_cache_update = 27;  // jphc built by the ActionsCache update (eufx/euft/exjb, CACHE_UPDATE). estimated name (medium)
+  ConversationDeltaClientOps conversation_delta_client_ops = 28;  // jphv list of client-op names: 'Clientops in conversation delta: %s' on CONVERSATION_DELTA_RECEIVED_CLIENT_OPS (eutr.java:222). estimated name (medium)
+  S3StreamError s3_stream_error = 29;  // jpil(errorCode, cronetInternalErrorCode, immediatelyRetryable) on ASSISTANT_AUTO_S3_STREAM_ERROR (ezrv.java:64-82). estimated name (medium)
+  AutoResourceInfo resource_info = 30;  // jphj (floats/ints) on AUTO_RESOURCE_INFO_COLLECTED (ewoo.java:106). estimated name (medium)
+  AutoSuggestionGeneration suggestion_generation = 31;  // jphz(trigger string qcc.b, int) on ASSISTANT_AUTO_SUGGESTION_GENERATION_START (fbqv, fbsl.java:576). estimated name (medium)
+  AutoSessionHistory session_history = 32;  // jpip list of jpit (session id hash, counter, start time, flag) kept by evxr, attached at ..._FETCH_GH_DIAGNOSTICS_END. estimated name (low)
   oneof oneof0 {
     jphx f3 = 3;
     jpid f12 = 12;
-    jpij f14 = 14;
+    GearheadDiagnostics gearhead_diagnostics = 14;
   }
 }
 
@@ -5879,11 +5879,11 @@ message jqdt {
 }
 
 message InteractionOutcome {  // itel
-  Enum_iteh f1 = 1;
-  Enum_itek f2 = 2;
-  EventId f5 = 5;
+  ChosenResultSource chosen_result_source = 1;  // set by gros on APA_CANONICAL_RESULT_CHOSEN: 2 for CONVERSATION_ONDEVICE_FINAL_PREFETCH_DONE, 1 for CONVERSATION_ONLINE_FINAL_PREFETCH_DONE and ..._ONDEVICE_FINAL_PREFETCH_ONLINE_FALLBACK. estimated name (medium)
+  InteractionType interaction_type = 2;  // set to 1 by gros on APA_CANONICAL_FLOW_METADATA_EVENT for CONVERSATION_START_SPEECH_INTERACTION; values 2-4 not written in this build. estimated name (low)
+  EventId event_id = 5;  // EventId (ikxm) typed; no writer in this build. estimated name (low)
   InteractionNotStartedReason interaction_not_started_reason = 8;  // cqkx reason mapped in cqzi.f (MAIN_ASSISTANT_INTERACTION_NOT_PLANNED_TO_START, VE 871); raw 9-12 come from cpzn/cmmu error paths (not resolved). estimated name (medium)
-  Enum_itei f9 = 9;
+  InputRejectedReason input_rejected_reason = 9;  // ctwe.d(i): i-1 logged with MAIN_ASSISTANT_INTERACTION_INPUT_REJECTED (cpzn): 1 listening timeout, 2 arbitration lost (cqdy ERROR_ARBITRATION_LOST or ghsm.f), 3 'Interaction rejected', 4 ERROR_AUDIO_FOCUS_LOST. estimated name (medium)
 }
 
 message ContextApiLogData {  // jpse
@@ -5941,9 +5941,9 @@ message ApaInvocationMetadata {  // jqbc
 }
 
 message MainAssistantLogData {  // jpwp
-  jpyr f1 = 1;
+  MemoryMetadata memory_metadata = 1;  // debug string (ctxl.java:28) prints it as 'memory_metadata' with an igdc source (ASSISTANT_MEMORY_QUERY, TAP_TO_STASH, ANDROID_SHARE, NATIVE_SCREENSHOT ...); no writer in this build. estimated name (high)
   MainAssistantEntryInfo entry_info = 2;  // estimated name (medium)
-  jpwx f4 = 4;
+  ClientOpErrorMetadata client_op_error_metadata = 4;  // jpwx, the type ctxl prints as 'client_op_error_metadata'; no writer in this build. estimated name (low)
   MainAssistantInteractionInfo interaction_info = 5;  // estimated name (low)
   MainAssistantUiInfo ui_info = 6;  // estimated name (low)
 }
@@ -6062,7 +6062,7 @@ message jple {
 
 message SodaAsrMetadata {  // jpmk
   jgro host_app_id = 1;  // jgro host app id (UNKNOWN_HOST_APP_ID, AGSA_HOTWORD, GBOARD ...) of the SODA client, hgkc.a(hfyo.b) (hgjt.java:146). Not observed. estimated name (medium)
-  jgth_a f2 = 2;  // left unnamed: jgth.a() of the jgti extension (373022908) of a SODA ASR prefetch result (hgju.java:986-1000). Not observed
+  SodaPrefetchResultType prefetch_result_type = 2;  // left unnamed: jgth.a() of the jgti extension (373022908) of a SODA ASR prefetch result (hgju.java:986-1000). Not observed
   repeated string asr_locales = 3;  // the SODA ASR locales: hghm.u (primary) and hghm.v (second, if any), from the compatibility-check locale list (hghm.java:977-988, hgju.java:1031-1036). Observed "en-IE". estimated name (medium)
 }
 
@@ -6097,10 +6097,10 @@ message drnr {
 message DataDownloadLogData {  // jpsi
   string group_name = 1;  // file group name, also logged as 'groupname' (e.g. apa_corrections, apa_dictation_formatting). estimated name (high)
   string locale = 2;  // locale tag, also logged as 'locale'. estimated name (high)
-  Enum_jpsh f3 = 3;  // Enum_jpsh = escl.f ? 1 : 2 (bzzo.java:212); escl.f meaning not found; left unnamed.
+  PrepareOnly prepare_only = 3;  // Enum_jpsh = escl.f ? 1 : 2 (bzzo.java:212); escl.f meaning not found; left unnamed.
   DownloadConditions download_conditions = 4;  // escl.d (fwtk). estimated name (medium)
-  esck_a download_strategy = 5;  // escl.e: raw value 1 makes a failed group cancel the others (DD_CANCELLED_BY_STRATEGY, bzzo.java:542). estimated name (low)
-  Enum_jpsf f6 = 6;  // Enum_jpsf = cabq.c ? 1 : 2 (bzzo.java:844); left unnamed.
+  DownloadStrategy download_strategy = 5;  // escl.e: raw value 1 makes a failed group cancel the others (DD_CANCELLED_BY_STRATEGY, bzzo.java:542). estimated name (low)
+  WithAccount with_account = 6;  // Enum_jpsf = cabq.c ? 1 : 2 (bzzo.java:844); left unnamed.
   DataDownloadCallSiteId call_site_id = 8;  // esbm (Java enum, names kept), e.g. SMART_DICTATION. estimated name (high)
 }
 
@@ -6189,7 +6189,7 @@ message jpne {
 }
 
 message SpeedBumpInfo {  // jqai
-  Enum_jqah speed_bump_result = 1;  // Enum_jqah values 1-3 from croy.t(vcp, 2/3/4); 3 = hotword re-trigger inside debounce window. estimated name (low)
+  SpeedBumpDisabledReason speed_bump_result = 1;  // Enum_jqah values 1-3 from croy.t(vcp, 2/3/4); 3 = hotword re-trigger inside debounce window. estimated name (low)
   int32 invocation_source = 2;  // vcp.cA invocation source (e.g. 140 LONG_PRESS_POWER_BUTTON). estimated name (medium)
   string targeting_reason = 3;  // TargetingResult.reason string (crpr.toString), e.g. 'GRACE_PERIOD', 'RETRIGGER'. estimated name (medium)
 }
@@ -7637,8 +7637,8 @@ message iita {
 }
 
 message iity {
-  Enum_ijiu f2 = 2;
-  iiuc f3 = 3;
+  GsaActivityId f2 = 2;
+  IntentInfo f3 = 3;
   Enum_iitx f4 = 4;
 }
 
@@ -7818,8 +7818,8 @@ message DictationEligibilityInfo {  // jpta
   bool f5 = 5;  // yxq.k (bool, captured true); meaning not found; left unnamed.
   string primary_locale_language_tag = 6;  // yxq.d 'primary_locale_language_tag' or the system locale tag. estimated name (high)
   repeated string multilingual_locales = 7;  // yxq.b 'multilingual_locales'. estimated name (high)
-  bool f8 = 8;  // bool from yyu.e (aamz state != 3); meaning not found; left unnamed.
-  bool f9 = 9;  // yyu.c > 0; meaning not found; left unnamed.
+  bool has_text_after_caret = 8;  // bool from yyu.e (aamz state != 3); meaning not found; left unnamed.
+  bool has_selected_text = 9;  // yyu.c > 0; meaning not found; left unnamed.
   ywu_a f10 = 10;  // ywu enum from yyu.b; left unnamed.
   string asi_version_name = 11;  // PackageManager versionName of com.google.android.as (Android System Intelligence), e.g. 'V.15.playstore.pixel7.699115960'. estimated name (high)
   bool is_internal_field = 12;  // yxq.g; cjtl.java:201-237 treats it as an internal (keyboard-internal) input field. estimated name (medium)
@@ -7837,7 +7837,7 @@ message DictationEligibilityInfo {  // jpta
   bool f24 = 24;  // constant true written in ckgk.b(); left unnamed.
 }
 
-message jput {
+message DictationParams {  // jput
   Enum_bxxq f1 = 1;
   iwwr_b f2 = 2;
   bool f3 = 3;
@@ -7856,12 +7856,12 @@ message jpsw {
   jptg f1 = 1;
 }
 
-message jpsu {
+message DictationAlternatives {  // jpsu
   int32 f1 = 1;
   int32 f2 = 2;
 }
 
-message jptz {
+message EmojiSuggestionsInfo {  // jptz
   oneof oneof0 {
     jptv f2 = 2;
     jpty f3 = 3;
@@ -7874,12 +7874,12 @@ message jpur {
   Enum_aane f3 = 3;
 }
 
-message jptm {
+message FulfillmentChannelDecision {  // jptm
   Enum_jptk f1 = 1;
   DictationEligibility f2 = 2;
 }
 
-message jpti {
+message FulfillmentResultComparison {  // jpti
   repeated string f1 = 1;
   repeated string f2 = 2;
   Duration f3 = 3;
@@ -7899,7 +7899,7 @@ message jpuj {
   int32 f1 = 1;
 }
 
-message jpux {
+message SuggestionChipsDisplayed {  // jpux
   oneof oneof0 {
     jpuw f1 = 1;
   }
@@ -7909,7 +7909,7 @@ message IvrEligibilityFailure {  // jpud
   repeated int32 ineligibility_reasons = 1;  // packed list of cshg values (Java enum, names kept: EXPERIMENT_FLAG_DISABLED, WORK_PROFILE_ENABLED, DND_ENABLED, ...). Empty in captures. estimated name (high)
 }
 
-message jpsl {
+message FalseEndpointAnalysis {  // jpsl
   jpss f1 = 1;
   jpss f2 = 2;
   jpss f3 = 3;
@@ -7927,7 +7927,7 @@ message MultilangMetadata {  // jpuh
   int32 locale_count = 9;  // estimated name (high)
   bool enabled = 10;  // automatic switching enabled. estimated name (high)
   string other_language_tag = 11;  // first locale argument of ckfs.h/j/k (switch from?). estimated name (low)
-  string f12 = 12;  // string argument of ckfs.h (ASSISTANT_DICTATION_AUTOMATIC_LANGUAGE_SWITCH); meaning not found; left unnamed.
+  string langid_confidence = 12;  // string argument of ckfs.h (ASSISTANT_DICTATION_AUTOMATIC_LANGUAGE_SWITCH); meaning not found; left unnamed.
   repeated string locales = 13;  // ckhf.f locales as language tags. estimated name (high)
 }
 
@@ -7981,14 +7981,14 @@ message ghlv {
 message jphx {
 }
 
-message jphm {
+message AutoSpeechEvent {  // jphm
   Enum_jphl f1 = 1;
   int64 f2 = 2;
   int64 f3 = 3;
   int64 f4 = 4;
 }
 
-message jpiw {
+message AutoMediaAppFlowMetadata {  // jpiw
   string f1 = 1;
   Enum_jpiv f2 = 2;
   hxdj_a f3 = 3;
@@ -8003,7 +8003,7 @@ message jpih {
   jpig_a f1 = 1;
 }
 
-message jpij {
+message GearheadDiagnostics {  // jpij
   jphr f1 = 1;
   jpht f2 = 2;
   repeated ikgx f3 = 3;
@@ -8015,7 +8015,7 @@ message jpin {
   int32 f3 = 3;
 }
 
-message jphh {
+message AutoHotwordSettingsState {  // jphh
   bool f1 = 1;
   bool f2 = 2;
   bool f3 = 3;
@@ -8028,7 +8028,7 @@ message jphh {
   string f10 = 10;
 }
 
-message jpho {
+message AutoSignalToNoiseInfo {  // jpho
   float f1 = 1;
   float f2 = 2;
   float f3 = 3;
@@ -8058,12 +8058,12 @@ message jpho {
   int32 f27 = 27;
 }
 
-message jpib {
+message AutoMemoryInfo {  // jpib
   int64 f1 = 1;
   int64 f2 = 2;
 }
 
-message jphc {
+message ActionsCacheUpdate {  // jphc
   repeated jphb f1 = 1;
   repeated jphb f2 = 2;
   int32 f3 = 3;
@@ -8071,17 +8071,17 @@ message jphc {
   Enum_jpgz f5 = 5;
 }
 
-message jphv {
+message ConversationDeltaClientOps {  // jphv
   repeated string f1 = 1;
 }
 
-message jpil {
+message S3StreamError {  // jpil
   int32 f1 = 1;
   int32 f2 = 2;
   bool f3 = 3;
 }
 
-message jphj {
+message AutoResourceInfo {  // jphj
   float f1 = 1;
   float f2 = 2;
   float f3 = 3;
@@ -8095,12 +8095,12 @@ message jphj {
   int32 f11 = 11;
 }
 
-message jphz {
+message AutoSuggestionGeneration {  // jphz
   string f1 = 1;
   int32 f2 = 2;
 }
 
-message jpip {
+message AutoSessionHistory {  // jpip
   repeated jpit f1 = 1;
 }
 
@@ -8217,7 +8217,7 @@ message ResourceAcquisition {  // jqav
   InvocationResource resource = 1;  // jqau RESOURCE_* number - 1 (gpue.java:1296-1306; also logged as "apa_invocation_resource_acquisition_name"). Observed 2 AUDIO_INPUT, 3 AUDIO_FOCUS, 4 MEDIA_CONTEXT, 6 SCREEN_CONTEXT. estimated name (high)
 }
 
-message jpyr {
+message MemoryMetadata {  // jpyr
   igdc_a f1 = 1;
 }
 
@@ -8225,28 +8225,28 @@ message MainAssistantEntryInfo {  // jpxu
   int32 invocation_source = 1;  // vcp.cA invocation source; captured 141 LOCKSCREEN_LONG_PRESS_POWER_BUTTON. estimated name (medium)
 }
 
-message jpwx {
+message ClientOpErrorMetadata {  // jpwx
   map<string, int32> f1 = 1;
 }
 
 message MainAssistantInteractionInfo {  // jpxp
-  jpwu f1 = 1;
-  jpwx f2 = 2;
-  jpvc f3 = 3;
-  string f4 = 4;
-  jpxo f5 = 5;
+  CancellationMetadata cancellation_metadata = 1;  // ctxl debug string 'cancellation_metadata { cancellation_reason }'; jpwu from cqlh via cpzn.n (KEYBOARD_OPENED, GLOW_CLICK, ASSISTANT_DISMISSED ...). estimated name (high)
+  ClientOpErrorMetadata client_op_error_metadata = 2;  // ctxl 'client_op_error_metadata { client_op_error_details_map }': client-op name -> non-OK hwqd status (cpzn.java:445-500). estimated name (high)
+  FcfMetadata fcf_metadata = 3;  // ctxl 'fcf_metadata': per-feature (jpvh: QUICK_PHRASES, SMART_DICTATION, ON_DEVICE_ASR ...) enabled/failure_reasons/change_reason (csgw). estimated name (high)
+  string source = 4;  // ctxl prints jpxp.e as 'source'; cqzi writes ctxh.a(invocation) e.g. 'and.opa.hotword'. estimated name (high)
+  ApaErrorMetadata error_metadata = 5;  // ctxl 'error_metadata { apa_error_space, apa_error_code }' (cpzn.java:786-803). estimated name (high)
   InteractionNotStartedInfo not_started_info = 6;  // set in MAIN_ASSISTANT_INTERACTION_NOT_PLANNED_TO_START. estimated name (medium)
-  AssistantClientState f7 = 7;
-  iztf_b f8 = 8;
-  jpxm_a f9 = 9;
+  AssistantClientState opa_android_experience = 7;  // ctxl 'opa_android_experience { request_source, tng_state ... }': the ibha AssistantClientState. estimated name (high)
+  SelectedAsrEngine selected_asr_engine = 8;  // ctxl 'selected_asr_engine' (ctxl.java:553-556); set via ghtf.r: 3 when the online result is used, 4 for the on-device graph. estimated name (high)
+  FailureCancellationReason failure_cancellation_reason = 9;  // ctxl 'failure_cancellation_reason' (ctxl.java:562-571); cqzi sets 6/9 for cqar/cpzv exceptions. estimated name (high)
 }
 
 message MainAssistantUiInfo {  // jpye
-  string interaction_id = 5;  // interaction id string (ghos.a, also logged as 'interaction'). estimated name (medium)
-  jpxj f6 = 6;
-  jpyb f7 = 7;
-  jpxf f8 = 8;
-  jpxb f9 = 9;
+  string client_op_name = 5;  // estimated name (high): ctxl.java:89-100, the debug toString of jpwp, prints jpye's has-bit-1 field (5) as "client_op_name" inside "milestone_metadata"
+  KeyboardQuerySuggestions keyboard_query_suggestions = 6;  // jpxj list of keyboard query suggestion items (type, index, ...) built by dezv.b when a keyboard suggestion is shown/clicked (dezl.java:134, 322). estimated name (medium)
+  StartRequestMetadata start_request_metadata = 7;  // ctxl 'start_request_metadata { preferred_asr_engine_metadata { preferred_asr_engine_reason } }' on MAIN_ASSISTANT_INTERACTION_START_REQUEST_SENT. estimated name (high)
+  ConversationApiConnectionMetadata conversation_api_connection_metadata = 8;  // ctxl 'conversation_api_connection_metadata { is_reusing_connection | connection_reason }'. estimated name (high)
+  ContextApiConnectionMetadata context_api_connection_metadata = 9;  // ctxl 'context_api_connection_metadata { is_reusing_connection | connection_reason }'. estimated name (high)
   EnsureUiVisibleInfo ensure_ui_visible = 10;  // set on MAIN_ASSISTANT_ENSURE_UI_VISIBLE (1013). estimated name (medium)
 }
 
@@ -8266,7 +8266,7 @@ message jppq {
 message HotwordRequestHandlingMetadata {  // jpzv
   HotwordActionRequester requester = 1;  // ActionRequestInfo.requester (hgkw.java:42), hgll.b(): the HDM action that triggered handling. Observed 1 INITIALIZE. estimated name (high)
   string last_app_flow_logging_tag = 2;  // hgos.v = appFlowLoggingTag of the last hotword start (hgos.java:2514, 2521-2528). Not observed. estimated name (low)
-  Enum_hgus previous_hotword_detection_error = 3;  // hguh.f(hgos.w)-2, the previous hotword detection error (hgos.java:2529-2533). Not observed. estimated name (low)
+  HotwordDetectionError previous_hotword_detection_error = 3;  // hguh.f(hgos.w)-2, the previous hotword detection error (hgos.java:2529-2533). Not observed. estimated name (low)
   HotwordMode hotword_mode = 4;  // hgay mode of the hotword config (hfys.c hgaz.b; hguh.java:297-308). Observed DEFAULT_PERSONAL. estimated name (medium)
   string voice_locale = 5;  // HotwordInformation.g, toString "voiceLocale". Observed "en-IE". estimated name (high)
   string hotword_keyphrase = 6;  // HotwordInformation.h, toString "hotwordKeyphrase". Observed "X Google". estimated name (high)
@@ -8281,8 +8281,8 @@ message HotwordRequestHandlingMetadata {  // jpzv
   bool can_use_download_dsp_model = 15;  // DspAvailableResult canUseDownloadDspModel (hgqo.c()). estimated name (high)
   string exception_class_name = 16;  // exc.getClass().getName() on a hotword-config fetch failure (hgos.java:2227-2233). Not observed. estimated name (medium)
   string exception_message = 17;  // igtn.d(exc.getMessage()) (hgos.java:2234-2238). Not observed. estimated name (medium)
-  Enum_hgus hotword_detection_error = 18;  // hguh.f(error)-2 for the current hotword detection error (hgop.java:66-71, hgos.java:2534-2537). Not observed. estimated name (medium)
-  hgzk_a f19 = 19;  // left unnamed: an int from hgos.java:659, 683, 714 (a counter or index - 1). Not observed
+  HotwordDetectionError hotword_detection_error = 18;  // hguh.f(error)-2 for the current hotword detection error (hgop.java:66-71, hgos.java:2534-2537). Not observed. estimated name (medium)
+  HotwordConfigUpdateRequester config_update_requester = 19;  // left unnamed: an int from hgos.java:659, 683, 714 (a counter or index - 1). Not observed
   int32 hotword_enrollment_state = 20;  // HotwordInformation.i, toString "hotwordEnrollmentState". Observed 2. estimated name (high)
   bool hotword_enabled = 21;  // HotwordInformation.b, toString "hotwordEnabled". estimated name (high)
   string dsp_locale = 22;  // DspAvailableResult dspLocale, only when it differs from voice_locale (hguh.java:406-414). estimated name (high)
@@ -8293,12 +8293,12 @@ message HotwordRequestHandlingMetadata {  // jpzv
   bool disable_dsp_in_test = 27;  // DspAvailableResult disableDspInTest (hgqo.d()). estimated name (high)
   string dsp_supported_model_arch = 28;  // SoundTrigger.ModuleProperties.getSupportedModelArch() (2nd comma part if any), hgrg.java:111-123. Observed a UUID-like string. estimated name (high)
   int32 dsp_firmware_version = 29;  // DSP hotword firmware version (ModuleProperties.getVersion() or 1st part of model arch; hgrg.java:94-111 "hotword firmware version"). Observed 630075724. estimated name (high)
-  int32 f30 = 30;  // left unnamed in effect: hgqu.b int from the DSP properties (hgos.java:2390-2400); named only by position. Not observed
+  int32 keyphrase_sound_model_version = 30;  // left unnamed in effect: hgqu.b int from the DSP properties (hgos.java:2390-2400); named only by position. Not observed
   string dsp_keyphrase = 32;  // DspAvailableResult dspKeyphrase, only when it differs from hotword_keyphrase. estimated name (high)
   string dsp_model_arch_key = 33;  // key of the map entry whose value equals the supported model arch (hgrg.java:133-146). Not observed. estimated name (low)
   bool dsp_model_arch_supported = 34;  // true when the supported model arch is found in that map (hgrg.java:124-140). Observed true. estimated name (medium)
-  string f35 = 35;
-  Enum_jpzu f36 = 36;
+  string exception_simple_name = 35;  // exc.getClass().getSimpleName() when the hotword-information fetch fails with an exception that is neither hgsf nor TimeoutException (hgos.java:2266-2272). estimated name (medium)
+  HotwordInfoFetchError hotword_info_fetch_error = 36;  // hgsf.a - 1 (hgsf codes 2/4/5 from hgsz) or 5 for TimeoutException (hgos.java:2255-2265). estimated name (medium)
 }
 
 message jpwa {
@@ -9867,9 +9867,9 @@ message izzd {
 message DictationEligibilityResult {  // cibi
   int32 compat_eligibility = 1 [features.field_presence = IMPLICIT];  // open enum: class not recorded cibh number for old keyboard versions (cjtl.java:2794-2806 sets UNKNOWN for range). estimated name (low)
   int32 eligibility = 2;  // open enum: class not recorded cibh via cibj.b. estimated name (high)
-  bool f3 = 3 [features.field_presence = IMPLICIT];
+  bool eligible_or_voice_typing_setting_disabled = 3 [features.field_presence = IMPLICIT];  // cibi.d = cjtm.a.contains(eligibility), cjtm.a = {ELIGIBLE, NON_ELIGIBLE_ASSISTANT_VOICE_TYPING_SETTING_DISABLED}; when true no ineligibility message (cibi.4) is filled. estimated name (medium)
   string ineligibility_message = 4 [features.utf8_validation = VERIFY, features.field_presence = IMPLICIT];  // user-visible ineligibility string (R.string.assistant_dictation_ineligible_generic). estimated name (medium)
-  cibc f5 = 5;
+  cibc eligibility_config = 5;  // cibc built in cjtl from server flags (xho.gb/gc/gd/ge, q/r) and the keyboard-version compat range; meaning of each flag not settled. estimated name (low)
 }
 
 message LocaleEligibility {  // jpts
@@ -10005,15 +10005,15 @@ message AudioInputDetails {  // jqaz
   AudioRoute audio_route = 2;  // jqax AUDIO_ROUTE_* of the audio input (gpue.java:54). Observed 2 BUILTIN. estimated name (high)
 }
 
-message jpwu {
+message CancellationMetadata {  // jpwu
   jpwt_a f1 = 1;
 }
 
-message jpvc {
+message FcfMetadata {  // jpvc
   repeated jpvl f1 = 1;
 }
 
-message jpxo {
+message ApaErrorMetadata {  // jpxo
   int32 f1 = 1;
   int32 f2 = 2;
 }
@@ -10022,22 +10022,22 @@ message InteractionNotStartedInfo {  // jpyj
   InteractionNotStartedReasonV2 reason = 1;  // cqkx reason, numbering of cqzi.java:269-312. estimated name (high)
 }
 
-message jpxj {
+message KeyboardQuerySuggestions {  // jpxj
   repeated jpxi f1 = 1;
 }
 
-message jpyb {
-  jpya f1 = 1;
+message StartRequestMetadata {  // jpyb
+  PreferredAsrEngineMetadata f1 = 1;
 }
 
-message jpxf {
+message ConversationApiConnectionMetadata {  // jpxf
   oneof oneof0 {
     jpxe_a f1 = 1;
     bool f2 = 2;
   }
 }
 
-message jpxb {
+message ContextApiConnectionMetadata {  // jpxb
   oneof oneof0 {
     jpxa_a f1 = 1;
     bool f2 = 2;
@@ -10580,7 +10580,7 @@ message ijlm {
 message ijlx {
   string f1 = 1;
   string f2 = 2;
-  awbw f3 = 3;
+  HotwordPhrase f3 = 3;
 }
 
 message ijlt {
@@ -10594,7 +10594,7 @@ message ijlt {
 message ijlv {
   int32 f1 = 1;
   string f2 = 2;
-  awbw f3 = 3;
+  HotwordPhrase f3 = 3;
 }
 
 message ijlr {
@@ -10721,7 +10721,7 @@ message jpxi {
   int32 f3 = 3;
 }
 
-message jpya {
+message PreferredAsrEngineMetadata {  // jpya
   string f1 = 1;
   jpxx_a f2 = 2;
 }
@@ -11521,9 +11521,9 @@ extend ClientEvent {
   jaan ClientEvent_1000 = 1000;  // jaaq.a
 }
 
-extend ffkz {
-  imoi ffkz_291463014 = 291463014;  // ffkm.a
-  ibhq ffkz_291463015 = 291463015;  // fflq.a
+extend TapasQueryLog {
+  imoi TapasQueryLog_291463014 = 291463014;  // ffkm.a
+  ibhq TapasQueryLog_291463015 = 291463015;  // fflq.a
 }
 
 extend VisualElement {
@@ -11567,9 +11567,9 @@ extend VisualElement {
   ijur VisualElement_996 = 996;  // ijur.f
 }
 
-extend iket {
-  jesj iket_4368298 = 4368298;  // jesn.b
-  itef iket_286007634 = 286007634;  // itdj.a
+extend VeEventRootInfo {
+  jesj VeEventRootInfo_4368298 = 4368298;  // jesn.b
+  itef VeEventRootInfo_286007634 = 286007634;  // itdj.a
 }
 
 extend ProductLogContext {
@@ -11809,67 +11809,67 @@ enum Enum_aiza {  // inline verifier aiza (values only)
   ENUM_AIZA_0 = 0;
 }
 
-enum Enum_allj {  // inline verifier allj (values only)
-  ENUM_ALLJ_0 = 0;
-  ENUM_ALLJ_1 = 1;
+enum NgaLifecycleComponent {  // Enum_allj; inline verifier allj (values only)
+  NGA_LIFECYCLE_COMPONENT_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; adii.n() writes o()-1 only when o()!=0 and no aahg component returns o()=1
+  AUM_WORKER = 1;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); zco.java o()=2, l()="AumWorker" (an adbm/adbi/adbr aahg lifecycle component)
   ENUM_ALLJ_2 = 2;
   ENUM_ALLJ_3 = 3;
-  ENUM_ALLJ_4 = 4;
-  ENUM_ALLJ_5 = 5;
-  ENUM_ALLJ_6 = 6;
+  APP_ACTIONS_ICING_CACHE = 4;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); zrc.java o()=5, l()="AppActionsIcingCache" (an adbm/adbi/adbr aahg lifecycle component)
+  APP_DATA_ACCESSOR = 5;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); ztm.java o()=6, l()="AppDataAccessorImpl" (an adbm/adbi/adbr aahg lifecycle component)
+  ANDROID_BIASING_RESOURCES = 6;
   ENUM_ALLJ_7 = 7;
   ENUM_ALLJ_8 = 8;
-  ENUM_ALLJ_9 = 9;
-  ENUM_ALLJ_10 = 10;
-  ENUM_ALLJ_11 = 11;
-  ENUM_ALLJ_12 = 12;
-  ENUM_ALLJ_13 = 13;
-  ENUM_ALLJ_14 = 14;
-  ENUM_ALLJ_15 = 15;
+  ASSISTANT_DEVICES_CACHE = 9;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); aamt.java o()=10, l()="AssistantDevicesCache" (an adbm/adbi/adbr aahg lifecycle component)
+  NGA_ACCESS_POLICY_OR_SYS_UI_CONNECTION_MANAGER = 10;
+  QUERY_SUGGESTIONS = 11;
+  QUICK_ACTIONS_CHALKBOARD_SUGGESTION_PROVIDER = 12;
+  PIE_ELIGIBILITY_CHECKER = 13;
+  PIE_LIFECYCLE_HANDLER = 14;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); aaze.java o()=15, l()="PieLifecycleHandler" (an adbm/adbi/adbr aahg lifecycle component)
+  SCREENSHOT_NOTIFICATION_CONTROLLER = 15;
   ENUM_ALLJ_16 = 16;
-  ENUM_ALLJ_17 = 17;
-  ENUM_ALLJ_18 = 18;
-  ENUM_ALLJ_19 = 19;
-  ENUM_ALLJ_20 = 20;
+  FEEDBACK_EXECUTION = 17;
+  PREFETCH_FILTER = 18;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); abix.java o()=19, l()="PrefetchFilter" (an adbm/adbi/adbr aahg lifecycle component)
+  SERVICE_CONFIGURATION_UPDATER = 19;
+  GELLER_CONTENT_UPDATE_LISTENER = 20;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); acwm.java o()=21, l()="GellerContentUpdateListener" (an adbm/adbi/adbr aahg lifecycle component)
   ENUM_ALLJ_21 = 21;
-  ENUM_ALLJ_22 = 22;
-  ENUM_ALLJ_23 = 23;
-  ENUM_ALLJ_24 = 24;
-  ENUM_ALLJ_25 = 25;
-  ENUM_ALLJ_26 = 26;
-  ENUM_ALLJ_27 = 27;
-  ENUM_ALLJ_28 = 28;
-  ENUM_ALLJ_29 = 29;
-  ENUM_ALLJ_30 = 30;
-  ENUM_ALLJ_31 = 31;
-  ENUM_ALLJ_32 = 32;
-  ENUM_ALLJ_33 = 33;
-  ENUM_ALLJ_34 = 34;
-  ENUM_ALLJ_35 = 35;
+  NGA_HANDLER_SWITCHER = 22;
+  GENERIC_ICING_CACHE = 23;
+  GMAIL_SUBJECT_CACHE = 24;
+  NGA_LIFECYCLE_STATE_TRACKER = 25;  // estimated name (low): adbs.java o()=26; its l() is getClass().getSimpleName() (obfuscated); adbs is an aahg + adbk listener that records lifecycle start/completion (adbw "LifecycleStart()", adbv "LifecycleCompletion(..)") into adbu flags
+  NGA_FEEDBACK_DUMP_INITIALIZER = 26;
+  NGA_USER_APP_FLOW_LOGGER = 27;
+  NGA_EVENT_LOGGER_SUBSCRIBER = 28;
+  NGA_INTERACTOR_MEMORY_MONITOR = 29;
+  OPA_TO_NGA_EVENT_HANDLER = 30;
+  OPA_VISIBILITY_MONITOR = 31;
+  APP_PACKAGE_CACHE = 32;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); adyf.java o()=33, l()="AppPackageCache" (an adbm/adbi/adbr aahg lifecycle component)
+  AUDIO_PLAYBACK_CHANGE_HANDLER = 33;
+  APP_FOREGROUND_LISTENER = 34;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); aeak.java o()=35, l()="AppForegroundListenerImpl" (an adbm/adbi/adbr aahg lifecycle component)
+  SCREEN_STATE_OBSERVABLE = 35;
   ENUM_ALLJ_36 = 36;
-  ENUM_ALLJ_37 = 37;
-  ENUM_ALLJ_38 = 38;
+  NGA_SCREENSHOT_MANAGER = 37;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); aegr.java o()=38, l()="NgaScreenshotManager" (an adbm/adbi/adbr aahg lifecycle component)
+  MIC_EXCLUSIVE_CHECKER = 38;
   ENUM_ALLJ_39 = 39;
-  ENUM_ALLJ_40 = 40;
-  ENUM_ALLJ_41 = 41;
-  ENUM_ALLJ_42 = 42;
-  ENUM_ALLJ_43 = 43;
-  ENUM_ALLJ_44 = 44;
-  ENUM_ALLJ_45 = 45;
-  ENUM_ALLJ_46 = 46;
+  SODA_LIFECYCLE_HANDLER = 40;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); aeth.java o()=41, l()="SodaLifecycleHandler" (an adbm/adbi/adbr aahg lifecycle component)
+  SWITCH_MANAGER = 41;
+  SENSOR_REGISTRY_STATE = 42;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); aezn.java o()=43, l()="SensorRegistryState" (an adbm/adbi/adbr aahg lifecycle component)
+  DESK_CLOCK_STATE_OBSERVABLE = 43;
+  CONTACTS_HELPER = 44;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); afje.java o()=45, l()="ContactsHelper" (an adbm/adbi/adbr aahg lifecycle component)
+  NOTIFICATION_SETUP_HELPER = 45;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); afre.java o()=46, l()="NotificationSetupHelper" (an adbm/adbi/adbr aahg lifecycle component)
+  TORCH_MANAGER = 46;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); afbb.java o()=47, l()="TorchManager" (an adbm/adbi/adbr aahg lifecycle component)
   ENUM_ALLJ_47 = 47;
   ENUM_ALLJ_48 = 48;
-  ENUM_ALLJ_49 = 49;
-  ENUM_ALLJ_50 = 50;
-  ENUM_ALLJ_51 = 51;
-  ENUM_ALLJ_52 = 52;
+  SYNC_MANAGER = 49;
+  DELIBERATE_INPUT_QUERY_CLASSIFIER = 50;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); agje.java o()=51, l()="DeliberateInputQueryClassifierImpl" (an adbm/adbi/adbr aahg lifecycle component)
+  GESTURE_RECOGNIZER_CONTROLLER = 51;
+  PICK_UP_EVENT_LISTENER = 52;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); agrk.java o()=53, l()="PickUpEventListenerImpl" (an adbm/adbi/adbr aahg lifecycle component)
   ENUM_ALLJ_53 = 53;
-  ENUM_ALLJ_54 = 54;
-  ENUM_ALLJ_55 = 55;
+  EVENTS_HISTORY = 54;
+  NAV_BAR_GLOBAL_LOCALE_OBSERVER = 55;
   ENUM_ALLJ_56 = 56;
   ENUM_ALLJ_57 = 57;
-  ENUM_ALLJ_58 = 58;
-  ENUM_ALLJ_59 = 59;
+  CALL_SETUP_HELPER = 58;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); aisr.java o()=59, l()="CallSetupHelper" (an adbm/adbi/adbr aahg lifecycle component)
+  WARM_ACTIONS_MANAGER = 59;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); aixr.java o()=60, l()="WarmActionsManager" (an adbm/adbi/adbr aahg lifecycle component)
   ENUM_ALLJ_60 = 60;
   ENUM_ALLJ_61 = 61;
   ENUM_ALLJ_62 = 62;
@@ -11878,10 +11878,10 @@ enum Enum_allj {  // inline verifier allj (values only)
   ENUM_ALLJ_65 = 65;
   ENUM_ALLJ_66 = 66;
   ENUM_ALLJ_67 = 67;
-  ENUM_ALLJ_68 = 68;
-  ENUM_ALLJ_69 = 69;
-  ENUM_ALLJ_70 = 70;
-  ENUM_ALLJ_71 = 71;
+  SHORTCUTS_CONTEXT_PROVIDER = 68;  // estimated name (medium): value = aahg.o() - 1 (adii.java:158-163); zul.java o()=69, l()="ShortcutsContextProvider" (an adbm/adbi/adbr aahg lifecycle component)
+  NAV_BAR_ASSISTANT_USERNAME_OBSERVER = 69;
+  BLUETOOTH_ROUTE_HELPER = 70;
+  SPEED_BUMP_HELPER = 71;
 }
 
 enum Enum_almw {  // inline verifier almw (values only)
@@ -12094,6 +12094,7 @@ enum Enum_fflj {  // inline verifier fflj (values only)
 enum DeviceNetworkPolicy {  // Enum_fwti; inline verifier fwti (values only)
   DOWNLOAD_ONLY_ON_WIFI = 0;
   DOWNLOAD_ON_ANY_NETWORK = 1;
+  ENUM_FWTI_2 = 2;
 }
 
 enum DeviceStoragePolicy {  // Enum_fwtj; inline verifier fwtj (values only)
@@ -12141,10 +12142,12 @@ enum Enum_gedq {  // inline verifier gedq (values only)
 enum HotwordActionRequester {  // Enum_hglk; inline verifier hglk (values only)
   HotwordActionRequester_UNSPECIFIED = 0;
   INITIALIZE = 1;
-  SHUTDOWN = 2;
+  HotwordActionRequester_SHUTDOWN = 2;
   CONFIG_UPDATE_FROM_APA = 3;
   INTERNAL_CONFIG_CHANGE = 4;
   HOTWORD_TIMEOUT = 5;
+  ENUM_HGLK_6 = 6;
+  ENUM_HGLK_7 = 7;
   HOTWORD_START_ERROR = 8;
   HOTWORD_RUNTIME_ERROR = 9;
   RECONFIG_HOTWORD_DETECTORS = 10;
@@ -12159,8 +12162,8 @@ enum HotwordActionRequester {  // Enum_hglk; inline verifier hglk (values only)
   HOTWORD_BUMP = 19;
 }
 
-enum Enum_hgus {  // inline verifier hgus (values only)
-  ENUM_HGUS_0 = 0;
+enum HotwordDetectionError {  // Enum_hgus; inline verifier hgus (values only)
+  HOTWORD_DETECTION_ERROR_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; field = hguh.f()-2 and hguh.f returns only 17..59 (hguh.java:561-650)
   ENUM_HGUS_1 = 1;
   ENUM_HGUS_2 = 2;
   ENUM_HGUS_3 = 3;
@@ -12175,49 +12178,49 @@ enum Enum_hgus {  // inline verifier hgus (values only)
   ENUM_HGUS_12 = 12;
   ENUM_HGUS_13 = 13;
   ENUM_HGUS_14 = 14;
-  ENUM_HGUS_15 = 15;
-  ENUM_HGUS_16 = 16;
-  ENUM_HGUS_17 = 17;
+  DSP_MODEL_NOT_SUPPORTED = 15;
+  DSP_MODEL_NOT_READY_RETRY_REQUIRED = 16;
+  DSP_START_ERROR = 17;
   ENUM_HGUS_18 = 18;
-  ENUM_HGUS_19 = 19;
-  ENUM_HGUS_20 = 20;
-  ENUM_HGUS_21 = 21;
-  ENUM_HGUS_22 = 22;
-  ENUM_HGUS_23 = 23;
-  ENUM_HGUS_24 = 24;
-  ENUM_HGUS_25 = 25;
-  ENUM_HGUS_26 = 26;
+  SODA_DOUBLE_START_ERROR = 19;
+  SODA_START_CAPTURE_ERROR = 20;
+  AUDIO_START_ERROR = 21;
+  HANDLE_HOTWORD_VERIFICATION_RESULT_ERROR = 22;
+  DSP_HOTWORD_DOUBLE_START_ERROR = 23;
+  AUDIO_PUSH_ERROR = 24;
+  AUDIO_END_ERROR = 25;
+  DSP_ERROR = 26;
   ENUM_HGUS_27 = 27;
   ENUM_HGUS_28 = 28;
   ENUM_HGUS_29 = 29;
   ENUM_HGUS_30 = 30;
-  ENUM_HGUS_31 = 31;
+  DSP_HOTWORD_DETECTOR_CREATION_ERROR = 31;
   ENUM_HGUS_32 = 32;
-  ENUM_HGUS_33 = 33;
-  ENUM_HGUS_34 = 34;
-  ENUM_HGUS_35 = 35;
-  ENUM_HGUS_36 = 36;
-  ENUM_HGUS_37 = 37;
-  ENUM_HGUS_38 = 38;
-  ENUM_HGUS_39 = 39;
-  ENUM_HGUS_40 = 40;
-  ENUM_HGUS_41 = 41;
-  ENUM_HGUS_42 = 42;
-  ENUM_HGUS_43 = 43;
-  ENUM_HGUS_44 = 44;
-  ENUM_HGUS_45 = 45;
-  ENUM_HGUS_46 = 46;
-  ENUM_HGUS_47 = 47;
-  ENUM_HGUS_48 = 48;
-  ENUM_HGUS_49 = 49;
-  ENUM_HGUS_50 = 50;
-  ENUM_HGUS_51 = 51;
-  ENUM_HGUS_52 = 52;
-  ENUM_HGUS_53 = 53;
-  ENUM_HGUS_54 = 54;
-  ENUM_HGUS_55 = 55;
-  ENUM_HGUS_56 = 56;
-  ENUM_HGUS_57 = 57;
+  TRUSTED_INIT_ERROR_UNKNOWN = 33;
+  TRUSTED_INIT_ERROR_UNDEFINED = 34;
+  TRUSTED_ERROR_UPDATING_SPEAKER_ID_REQUIREMENT = 35;
+  TRUSTED_ERROR_RUNNING_HOTWORD = 36;
+  TRUSTED_ERROR_RUNNING_HOTWORD_UNINITIALIZED = 37;
+  TRUSTED_ERROR_RUNNING_HOTWORD_UNKNOWN_REJECTION = 38;
+  TRUSTED_DSP_ERROR = 39;
+  TRUSTED_INIT_ERROR_NO_HOTWORD_MODEL = 40;
+  TRUSTED_HOTWORD_DETECTOR_ERROR = 41;
+  TRUSTED_HOTWORD_DETECTOR_CREATION_ERROR = 42;
+  TRUSTED_HOTWORD_DETECTOR_CREATION_TIMEOUT = 43;
+  TRUSTED_START_ERROR = 44;
+  TRUSTED_HOTWORD_DOUBLE_START_ERROR = 45;
+  SODA_INIT_UNKNOWN_FAILURE = 46;
+  SODA_INIT_DOUBLE_INIT = 47;
+  SODA_INIT_INVALID_CONFIG = 48;
+  SODA_INIT_UNSUPPORTED_LOCALE = 49;
+  SODA_INIT_INVALID_LANGUAGE_PACK = 50;
+  SODA_INIT_UNDEFINED_BEHAVIOR = 51;
+  SODA_INIT_MISSING_HOTWORD = 52;
+  SODA_INIT_UNSUPPORTED_LANGUAGE_PACK = 53;
+  SODA_INIT_INVALID_LANGUAGE_PACK_FOR_LANGID = 54;
+  SODA_INIT_INVALID_LANGUAGE_PACK_FOR_DIARIZATION = 55;
+  SODA_INIT_INCOMPATIBLE_SPEAKERID_AND_HOTWORD_MODEL = 56;
+  SODA_INIT_THREAD_SCHEDULING_FAILURE = 57;
 }
 
 enum Enum_hsyl {  // inline verifier hsyl (values only)
@@ -12618,12 +12621,12 @@ enum Enum_iiqc {  // inline verifier iiqc (values only)
   ENUM_IIQC_3 = 3;
 }
 
-enum Enum_iiqd {  // inline verifier iiqd (values only)
-  ENUM_IIQD_0 = 0;
-  ENUM_IIQD_1 = 1;
-  ENUM_IIQD_2 = 2;
-  ENUM_IIQD_3 = 3;
-  ENUM_IIQD_4 = 4;
+enum AssistDataType {  // Enum_iiqd; inline verifier iiqd (values only)
+  AssistDataType_UNSPECIFIED = 0;
+  CONTEXTUAL = 1;
+  VOICE = 2;
+  AssistDataType_SCREENSHOT = 3;
+  LIGHTWEIGHT = 4;
 }
 
 enum Enum_iiqg {  // inline verifier iiqg (values only)
@@ -12656,7 +12659,7 @@ enum Enum_iiqj {  // inline verifier iiqj (values only)
   ENUM_IIQJ_1 = 1;
 }
 
-enum Enum_iiqw {  // inline verifier iiqw (values only)
+enum FeedRequestType {  // Enum_iiqw; inline verifier iiqw (values only)
   ENUM_IIQW_0 = 0;
   ENUM_IIQW_1 = 1;
   ENUM_IIQW_2 = 2;
@@ -12682,55 +12685,55 @@ enum Enum_iirf {  // inline verifier iirf (values only)
   ENUM_IIRF_3 = 3;
 }
 
-enum Enum_iirk {  // inline verifier iirk (values only)
-  ENUM_IIRK_0 = 0;
-  ENUM_IIRK_1 = 1;
-  ENUM_IIRK_2 = 2;
-  ENUM_IIRK_3 = 3;
-  ENUM_IIRK_4 = 4;
-  ENUM_IIRK_5 = 5;
+enum OpaInteractionViolation {  // Enum_iirk; inline verifier iirk (values only)
+  VIOLATION_UNKNOWN = 0;
+  MISSING_CLIENT_CONVERSATION_DONE = 1;
+  FAILED_TO_START_GRAPH = 2;
+  STUCK_IN_PLAYING_TTS = 3;
+  STUCK_IN_PLAYING_TTS_OUTSIDE_OF_UTTERANCE = 4;
+  GRAPH_FAILED = 5;
 }
 
-enum Enum_iirm {  // inline verifier iirm (values only)
-  ENUM_IIRM_0 = 0;
-  ENUM_IIRM_1 = 1;
-  ENUM_IIRM_2 = 2;
+enum PreloadState {  // Enum_iirm; inline verifier iirm (values only)
+  NOT_PRELOADED = 0;
+  PREFETCHED = 1;
+  PRERENDERED = 2;
 }
 
-enum Enum_iirn {  // inline verifier iirn (values only)
-  ENUM_IIRN_0 = 0;
-  ENUM_IIRN_1 = 1;
-  ENUM_IIRN_2 = 2;
+enum KeyguardState {  // Enum_iirn; inline verifier iirn (values only)
+  KEYGUARD_STATE_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; bewe.java:736-739 writes only 1 (locked) or 2
+  LOCKED = 1;
+  UNLOCKED = 2;
 }
 
-enum Enum_iirq {  // inline verifier iirq (values only)
-  ENUM_IIRQ_0 = 0;
-  ENUM_IIRQ_1 = 1;
-  ENUM_IIRQ_2 = 2;
-  ENUM_IIRQ_3 = 3;
-  ENUM_IIRQ_4 = 4;
-  ENUM_IIRQ_5 = 5;
-  ENUM_IIRQ_6 = 6;
-  ENUM_IIRQ_7 = 7;
-  ENUM_IIRQ_8 = 8;
+enum VoiceTriggerType {  // Enum_iirq; inline verifier iirq (values only)
+  OTHER = 0;
+  VoiceTriggerType_HOTWORD = 1;
+  USER_MIC_TAP = 2;
+  WIRED_HEADSET_BUTTON = 3;
+  BT_HEADSET_BUTTON = 4;
+  VoiceTriggerType_BISTO = 5;
+  VoiceTriggerType_LONG_PRESS = 6;
+  ACTIVE_EDGE = 7;
+  VoiceTriggerType_FOLLOW_ON = 8;
 }
 
-enum Enum_iirr {  // inline verifier iirr (values only)
-  ENUM_IIRR_0 = 0;
+enum TtsType {  // Enum_iirr; inline verifier iirr (values only)
+  TTS_TYPE_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; bwtg.java:87-105 writes only 2/3/4/5
   ENUM_IIRR_1 = 1;
-  ENUM_IIRR_2 = 2;
-  ENUM_IIRR_3 = 3;
-  ENUM_IIRR_4 = 4;
-  ENUM_IIRR_5 = 5;
+  TtsType_LOCAL = 2;
+  NETWORK = 3;
+  LOCAL_FROM_NETWORK_SYNTHESIZER = 4;
+  OTHER_LOCAL = 5;
 }
 
-enum Enum_iirs {  // inline verifier iirs (values only)
-  ENUM_IIRS_0 = 0;
-  ENUM_IIRS_1 = 1;
-  ENUM_IIRS_2 = 2;
-  ENUM_IIRS_3 = 3;
-  ENUM_IIRS_4 = 4;
-  ENUM_IIRS_5 = 5;
+enum VaaConsentResult {  // Enum_iirs; inline verifier iirs (values only)
+  VAA_CONSENT_RESULT_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; iirt.a() names only 1-5 (wire = i-1, beja.java:61-69)
+  SKIPPED = 1;
+  ON = 2;
+  OFF = 3;
+  NETWORK_ERROR = 4;
+  VAA_ERROR = 5;
 }
 
 enum Enum_iiru {  // inline verifier iiru (values only)
@@ -12761,30 +12764,32 @@ enum Enum_iisf {  // inline verifier iisf (values only)
 }
 
 enum AppFlowStatus {  // Enum_iisj; inline verifier iisj (values only)
-  APPFLOWSTATUS_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  APP_FLOW_STATUS_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; avli.java:17-23 writes avkq.e()-1 and avlf only sets status 2/4/5/6; bjru.java:662 writes 1
   COMPLETED = 1;
+  ENUM_IISJ_2 = 2;
   NO_START_EVENT = 3;
   ALREADY_REPORTED = 4;
   START_EQUALS_END = 5;
 }
 
 enum OverlayAnimationType {  // Enum_iiss; inline verifier iiss (values only)
-  OVERLAYANIMATIONTYPE_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  ENUM_IISS_0 = 0;
   OverlayAnimationType_NONE = 1;
   SLIDE = 2;
   FADE = 3;
 }
 
 enum OverlayGestureType {  // Enum_iisu; inline verifier iisu (values only)
-  OVERLAYGESTURETYPE_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  ENUM_IISU_0 = 0;
+  ENUM_IISU_1 = 1;
   FLING = 2;
   OverlayGestureType_DRAG = 3;
 }
 
-enum Enum_iisw {  // inline verifier iisw (values only)
-  ENUM_IISW_0 = 0;
-  ENUM_IISW_1 = 1;
-  ENUM_IISW_2 = 2;
+enum DiscoverLoadOrder {  // Enum_iisw; inline verifier iisw (values only)
+  DISCOVER_LOAD_ORDER_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; dtuc.java:47-55 writes only 1 or 2
+  FIRST_IN_PROCESS = 1;
+  LATER = 2;
 }
 
 enum Enum_iiti {  // inline verifier iiti (values only)
@@ -13167,10 +13172,10 @@ enum Enum_ijeq {  // inline verifier ijeq (values only)
 }
 
 enum VeInteractionType {  // Enum_ijgi; inline verifier ijgi (values only)
-  ENUM_IJGI_0 = 0;
-  ENUM_IJGI_1 = 1;
-  ENUM_IJGI_2 = 2;
-  ENUM_IJGI_3 = 3;
+  VE_INTERACTION_TYPE_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; writers use 1-3 only
+  SHOW = 1;  // estimated name (medium): fvli.g(fvlp, z=true) writes 2-1 (fvli.java:134-144); fvqw writes it for graft kind 2 (fvqw.java:300-307); hdii.h(2) when a VE view is attached (dfvn.java:36)
+  HIDE = 2;  // estimated name (medium): fvli.g(fvlp, z=false) writes 3-1; fvqw default for graft kind 3; hdii.h(3) when a VE element expired (dtyv.java:37). Captured 89 times in VeInteraction.type (pixel7 AGSA_PROACTIVE_ASSISTANT)
+  INSERT = 3;  // estimated name (low): written on VE-tree impression events (fvli.b(.., 472) in bixj.java:862-874, bsab, anaj.java:84) and for a new graft (fvqb kind 1, fvqw.java:300-307 and 394); the GIL VE logger ("go/gil-android") grafting a node; captured once (pixel8 AGSA_GOOGLE_APP)
   ENUM_IJGI_4 = 4;
   ENUM_IJGI_5 = 5;
 }
@@ -13401,15 +13406,15 @@ enum Enum_ijiq {  // inline verifier ijiq (values only)
   ENUM_IJIQ_56 = 56;
 }
 
-enum Enum_ijiu {  // inline verifier ijiu (values only)
-  ENUM_IJIU_0 = 0;
+enum GsaActivityId {  // Enum_ijiu; inline verifier ijiu (values only)
+  GSA_ACTIVITY_ID_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; avkk.f throws on id 0 and no awfs subclass passes id 1
   ENUM_IJIU_2 = 2;
   ENUM_IJIU_4 = 4;
   ENUM_IJIU_8 = 8;
-  ENUM_IJIU_12 = 12;
-  ENUM_IJIU_14 = 14;
+  MONET_ACTIVITY = 12;  // estimated name (medium): MonetActivity() calls this(13) -> awfs("MonetActivity", 13) (MonetActivity.java:98-100, ytl.java:14); avkk.java:91-95 stores id - 1
+  OPT_IN_ACTIVITY = 14;
   ENUM_IJIU_15 = 15;
-  ENUM_IJIU_21 = 21;
+  PAYMENTS_AUTH_ACTIVITY = 21;
   ENUM_IJIU_22 = 22;
   ENUM_IJIU_23 = 23;
   ENUM_IJIU_24 = 24;
@@ -13435,30 +13440,30 @@ enum Enum_ijiw {  // inline verifier ijiw (values only)
   ENUM_IJIW_3 = 3;
 }
 
-enum Enum_ijix {  // inline verifier ijix (values only)
-  ENUM_IJIX_0 = 0;
-  ENUM_IJIX_1 = 1;
-  ENUM_IJIX_2 = 2;
-  ENUM_IJIX_3 = 3;
-  ENUM_IJIX_4 = 4;
-  ENUM_IJIX_5 = 5;
-  ENUM_IJIX_6 = 6;
-  ENUM_IJIX_7 = 7;
-  ENUM_IJIX_8 = 8;
+enum SearchCorpus {  // Enum_ijix; inline verifier ijix (values only)
+  OTHER_CORPUS = 0;
+  WEB = 1;
+  SUMMONS = 2;
+  SearchCorpus_IMAGES = 3;
+  NEWS = 4;
+  VIDEOS = 5;
+  SearchCorpus_APPS = 6;
+  BOOKS = 7;
+  SearchCorpus_SHOPPING = 8;
   ENUM_IJIX_9 = 9;
 }
 
-enum Enum_ijiy {  // inline verifier ijiy (values only)
-  ENUM_IJIY_0 = 0;
-  ENUM_IJIY_1 = 1;
-  ENUM_IJIY_2 = 2;
+enum QueryRetryType {  // Enum_ijiy; inline verifier ijiy (values only)
+  REISSUED = 0;  // estimated name (low): arpf.java:309-313 writes 1-1 when Query.cl() holds through bA() only (flag 1<<55), which bvrv.o() sets when it rebuilds and re-issues the committed query with a new timestamp (bvrv.java:1089-1104)
+  BACK_STACK = 1;
+  AUTO_RETRIED = 2;
   ENUM_IJIY_3 = 3;
 }
 
-enum Enum_ijiz {  // inline verifier ijiz (values only)
-  ENUM_IJIZ_0 = 0;
-  ENUM_IJIZ_1 = 1;
-  ENUM_IJIZ_2 = 2;
+enum TelemetryDiscardReason {  // Enum_ijiz; inline verifier ijiz (values only)
+  TELEMETRY_DISCARD_REASON_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; bxfe.e() is called only with 2 and 3 (bxfe.java:16-26)
+  STORED_WINDOW_START_LATER = 1;
+  STORED_VERSION_DIFFERS = 2;  // estimated name (low): bxfe.b() e(3): stored statistics discarded because the stored aqsx.d (an injected Integer stamped on every record, bxfa.java:55-59) differs from the new record's; such a stamp is presumably a config/app version
 }
 
 enum Enum_ijjt {  // inline verifier ijjt (values only)
@@ -13568,22 +13573,24 @@ enum Enum_ijlo {  // inline verifier ijlo (values only)
 }
 
 enum SodaEnrollmentOutcome {  // Enum_ijmd; inline verifier ijmd (values only)
-  SODAENROLLMENTOUTCOME_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  SODA_ENROLLMENT_OUTCOME_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; ymr.g() returns 1 only for ymq ordinals >4, which do not exist (ymq has 5 constants)
+  REQUEST_SUCCEEDED_UPDATED = 1;  // estimated name (low): ymr.g(): ymq ALREADY_UPDATED_ON_DEVICE/UPDATE and the SODA enrollment status OK with jgpm.c (bool field 3) true -> 2, stored minus 1 (ymr.java:53-71); the bool is taken to be a model-updated flag
+  REQUEST_SUCCEEDED_NOT_UPDATED = 2;  // estimated name (low): ymr.g(): status OK with jgpm.c false -> 3, stored minus 1 (ymr.java:53-71)
   REQUEST_FAILED = 3;
   CANCEL_DISABLED = 4;
   CANCEL_UNSUPPORTED = 5;
   CANCEL_NO_MODEL = 6;
 }
 
-enum Enum_ijmi {  // inline verifier ijmi (values only)
-  ENUM_IJMI_0 = 0;
-  ENUM_IJMI_1 = 1;
-  ENUM_IJMI_2 = 2;
-  ENUM_IJMI_3 = 3;
-  ENUM_IJMI_4 = 4;
-  ENUM_IJMI_5 = 5;
-  ENUM_IJMI_6 = 6;
-  ENUM_IJMI_7 = 7;
+enum EnrollmentFailureReason {  // Enum_ijmi; inline verifier ijmi (values only)
+  REASON_UNSPECIFIED = 0;
+  REASON_GENERIC = 1;
+  REASON_CANNOT_HAPPEN = 2;
+  REASON_LOCALE_UNSUPPORTED = 3;
+  REASON_DEVICES_MISSING = 4;
+  REASON_DEVICES_CANNOT_ENROLL = 5;
+  REASON_DEVICES_NOT_SAME_LOCALE = 6;
+  REASON_DEVICES_DO_NOT_CONTAIN_LOCALE = 7;
 }
 
 enum Enum_ijmm {  // inline verifier ijmm (values only)
@@ -13896,7 +13903,7 @@ enum Enum_ijvx {  // inline verifier ijvx (values only)
 }
 
 enum AssistantVeSurface {  // Enum_ijvz; inline verifier ijvz (values only)
-  ENUM_IJVZ_0 = 0;
+  ASSISTANT_VE_SURFACE_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; writers set only 1, 4 or 10 (bsab.java:6492, bsvo.java:88, dipk.java:139, axhr.java:109, dhjt.java:1113-1116)
   VALYRIAN_ZERO_STATE = 1;
   ENUM_IJVZ_2 = 2;
   ENUM_IJVZ_3 = 3;
@@ -13909,19 +13916,19 @@ enum AssistantVeSurface {  // Enum_ijvz; inline verifier ijvz (values only)
   AssistantVeSurface_BLUECHIP_SMARTSPACE = 10;
 }
 
-enum Enum_ijwa {  // inline verifier ijwa (values only)
-  ENUM_IJWA_0 = 0;
-  ENUM_IJWA_1 = 1;
-  ENUM_IJWA_2 = 2;
-  ENUM_IJWA_3 = 3;
-  ENUM_IJWA_4 = 4;
-  ENUM_IJWA_5 = 5;
-  ENUM_IJWA_6 = 6;
-  ENUM_IJWA_7 = 7;
-  ENUM_IJWA_8 = 8;
-  ENUM_IJWA_9 = 9;
-  ENUM_IJWA_10 = 10;
-  ENUM_IJWA_11 = 11;
+enum ZeroStateEntryAction {  // Enum_ijwa; inline verifier ijwa (values only)
+  ZeroStateEntryAction_UNKNOWN_ACTION = 0;
+  ZeroStateEntryAction_SWIPE = 1;
+  RESPONSE_SHOWN = 2;
+  INITIALIZATION = 3;
+  OPA_BRICK_SHORTCUT_CLICKING = 4;
+  NOTIFICATION_TO_ZERO_STATE = 5;
+  SMART_SPACE_TO_ZERO_STATE = 6;
+  HOMESCREEN_SHORTCUT_TO_ZERO_STATE = 7;
+  EXTERNAL_TO_ZERO_STATE = 8;
+  ASSISTANT_QUERY_TO_ZERO_STATE = 9;
+  ASSISTANT_SHELL_APP_TO_ZERO_STATE = 10;
+  AGSA_MORE_MENU_TO_ZERO_STATE = 11;
   ENUM_IJWA_12 = 12;
 }
 
@@ -14052,7 +14059,7 @@ enum Enum_ikfp {  // inline verifier ikfp (values only)
 }
 
 enum HotwordEnrollmentState {  // Enum_ikfu; inline verifier ikfu (values only)
-  HOTWORDENROLLMENTSTATE_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  HOTWORD_ENROLLMENT_STATE_UNRECOGNIZED = 0;  // estimated name (high): ctxu.java:86-98 maps gnfr ordinals 0-3 to 2-5 and any other ordinal (gnfr.UNRECOGNIZED) to 1, stored minus 1
   HOTWORD_ENROLLMENT_STATE_NOT_SET = 1;
   HOTWORD_ENROLLMENT_STATE_ENROLLED = 2;
   HOTWORD_ENROLLMENT_STATE_DECLINED = 3;
@@ -14060,7 +14067,7 @@ enum HotwordEnrollmentState {  // Enum_ikfu; inline verifier ikfu (values only)
 }
 
 enum LongPressPowerAssistant {  // Enum_ikfv; inline verifier ikfv (values only)
-  LONGPRESSPOWERASSISTANT_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  LONG_PRESS_POWER_ASSISTANT_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; ctxu.java:71 writes (2 or 3) - 1 only
   NOT_ASSISTANT = 1;
   LongPressPowerAssistant_ASSISTANT = 2;
 }
@@ -14127,19 +14134,19 @@ enum FactAnswer {  // Enum_iknq; inline verifier iknq (values only)
 }
 
 enum NavigationMode {  // Enum_iknt; inline verifier iknt (values only)
-  NAVIGATIONMODE_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  NAVIGATION_MODE_UNKNOWN = 0;  // estimated name (medium): smali hbnz.a 0x00e9-0x0108: hche result null (navigation_mode not readable) -> 1, stored minus 1
   GESTURE_NAVIGATION = 1;
   BUTTON_NAVIGATION = 2;
 }
 
 enum SettingState {  // Enum_ikoc; inline verifier ikoc (values only)
-  SETTINGSTATE_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  SETTING_STATE_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; edee.b() returns only 2 or 3 (edee.java:27)
   SettingState_ENABLED = 1;
   SettingState_DISABLED = 2;
 }
 
 enum FactState {  // Enum_ikof; inline verifier ikof (values only)
-  FACTSTATE_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  FACT_STATE_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; hbny.java:98-160 writes 3, 2-1 or 3-1 only
   FactState_YES = 1;
   FactState_NO = 2;
   FactState_ERROR = 3;
@@ -14295,8 +14302,8 @@ enum Enum_ikwe {  // inline verifier ikwe (values only)
   ENUM_IKWE_7 = 7;
 }
 
-enum Enum_ilch {  // inline verifier ilch (values only)
-  ENUM_ILCH_0 = 0;
+enum ErrorComponent {  // Enum_ilch; inline verifier ilch (values only)
+  ERROR_COMPONENT_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; the only write is 10 (apib.java:166)
   ENUM_ILCH_1 = 1;
   ENUM_ILCH_2 = 2;
   ENUM_ILCH_3 = 3;
@@ -14306,7 +14313,7 @@ enum Enum_ilch {  // inline verifier ilch (values only)
   ENUM_ILCH_7 = 7;
   ENUM_ILCH_8 = 8;
   ENUM_ILCH_9 = 9;
-  ENUM_ILCH_10 = 10;
+  CANVAS_RENDERER = 10;  // estimated name (low): the only write: apib.d() reports a renderer error received over the apiu binder, with the error (iiuk) and a parsed CanvasEvent (ilcg) (apib.java:161-190)
   ENUM_ILCH_11 = 11;
   ENUM_ILCH_12 = 12;
   ENUM_ILCH_13 = 13;
@@ -14605,18 +14612,18 @@ enum Enum_itee {  // inline verifier itee (values only)
   ENUM_ITEE_4 = 4;
 }
 
-enum Enum_iteh {  // inline verifier iteh (values only)
-  ENUM_ITEH_0 = 0;
-  ENUM_ITEH_1 = 1;
-  ENUM_ITEH_2 = 2;
+enum ChosenResultSource {  // Enum_iteh; inline verifier iteh (values only)
+  CHOSEN_RESULT_SOURCE_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; gros.java writes only 1 or 2
+  ChosenResultSource_ONLINE = 1;
+  ChosenResultSource_ON_DEVICE = 2;
 }
 
-enum Enum_itei {  // inline verifier itei (values only)
-  ENUM_ITEI_0 = 0;
-  ENUM_ITEI_1 = 1;
-  ENUM_ITEI_2 = 2;
-  ENUM_ITEI_3 = 3;
-  ENUM_ITEI_4 = 4;
+enum InputRejectedReason {  // Enum_itei; inline verifier itei (values only)
+  INPUT_REJECTED_REASON_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; ctwe.d() is called with 2-5 only (cpzn.java)
+  LISTENING_TIMEOUT = 1;
+  ARBITRATION_LOST = 2;
+  CONVERSATION_REJECTED = 3;
+  AUDIO_FOCUS_LOST = 4;
   ENUM_ITEI_5 = 5;
 }
 
@@ -14630,15 +14637,19 @@ enum InteractionNotStartedReason {  // Enum_itej; inline verifier itej (values o
   InteractionNotStartedReason_REASON_LONG_PRESS_POWER_EDUCATION_ENABLED = 6;
   InteractionNotStartedReason_REASON_DEBOUNCE = 7;
   InteractionNotStartedReason_UNSUPPORTED_LOCALE = 8;
+  REASON_NETWORK_ERROR = 9;  // estimated name (high): cpzn.java:748-777: conversation error cqdy ordinal 1 (ERROR_NETWORK) -> ctwe.e(.., 10), stored minus 1 (ctwe.java:38-46), with MAIN_ASSISTANT_INTERACTION_FAILED_OFFLINE_UI_SHOWN; cmmu.java:393 also writes 9 on AMBIENT_CLIENT_NETWORK_FAILURE
+  REASON_AUTH_RECOVERABLE = 10;  // estimated name (high): cpzn.java:748-777: conversation error cqdy ordinal 9 (ERROR_AUTH_RECOVERABLE) -> ctwe.e(.., 11), stored minus 1 (ctwe.java:38-46), with MAIN_ASSISTANT_INTERACTION_CONVERSATION_EARLY_REJECTION
+  REASON_MIC_ERROR = 11;  // estimated name (high): cpzn.java:748-777: conversation error cqdy ordinal 3 (ERROR_MIC) -> ctwe.e(.., 12), stored minus 1 (ctwe.java:38-46), with MAIN_ASSISTANT_INTERACTION_CONVERSATION_EARLY_REJECTION
+  REASON_AUDIO_PERMISSION_DENIED = 12;  // estimated name (high): cpzn.java:748-777: conversation error cqdy ordinal 7 (ERROR_AUDIO_PERMISSION_DENIED) -> ctwe.e(.., 13), stored minus 1 (ctwe.java:38-46), with MAIN_ASSISTANT_INTERACTION_CONVERSATION_EARLY_REJECTION
   InteractionNotStartedReason_REASON_VOICE_SEARCH_INTERSTITIAL_ENABLED = 13;
   InteractionNotStartedReason_REASON_TAGORE_ENABLED = 14;
   InteractionNotStartedReason_REASON_VOICE_SEARCH = 15;
   InteractionNotStartedReason_REASON_HEADSET_DISALLOWED_LOCKSCREEN_QUERY = 16;
 }
 
-enum Enum_itek {  // inline verifier itek (values only)
-  ENUM_ITEK_0 = 0;
-  ENUM_ITEK_1 = 1;
+enum InteractionType {  // Enum_itek; inline verifier itek (values only)
+  INTERACTION_TYPE_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; gros.java:33-39 writes only 1
+  SPEECH = 1;
   ENUM_ITEK_2 = 2;
   ENUM_ITEK_3 = 3;
   ENUM_ITEK_4 = 4;
@@ -14902,20 +14913,20 @@ enum Enum_ixba {  // inline verifier ixba (values only)
   ENUM_IXBA_2 = 2;
 }
 
-enum Enum_izsx {  // inline verifier izsx (values only)
-  ENUM_IZSX_0 = 0;
-  ENUM_IZSX_1 = 1;
-  ENUM_IZSX_2 = 2;
-  ENUM_IZSX_3 = 3;
-  ENUM_IZSX_4 = 4;
-  ENUM_IZSX_5 = 5;
-  ENUM_IZSX_6 = 6;
-  ENUM_IZSX_7 = 7;
-  ENUM_IZSX_8 = 8;
-  ENUM_IZSX_9 = 9;
-  ENUM_IZSX_10 = 10;
-  ENUM_IZSX_11 = 11;
-  ENUM_IZSX_12 = 12;
+enum DictationOnboardingFeature {  // Enum_izsx; inline verifier izsx (values only)
+  DictationOnboardingFeature_UNKNOWN = 0;
+  TRY_DICTATION = 1;
+  STICKY_MIC = 2;
+  ACTION_BUTTONS = 3;
+  VOICE_CORRECTION = 4;
+  HEYG_TYPE = 5;
+  ACTION_BUTTON_SAY_PREFIX = 6;
+  OVERLAY_LEARNING_CENTER = 7;
+  STOP_CHIP = 8;
+  CLEAR_ALL_CHIP = 9;
+  SPELL_IT_OUT = 10;
+  EMOJI_SUGGESTION_CHIP = 11;
+  MULTILANG = 12;
 }
 
 enum Enum_izut {  // inline verifier izut (values only)
@@ -14980,10 +14991,10 @@ enum Enum_izve {  // inline verifier izve (values only)
 enum AttentionExitReason {  // Enum_izwb; inline verifier izwb (values only)
   ATTENTIONEXITREASON_UNSET_0 = 0;  // not sent by the client; zero added for decoders
   ENUM_IZWB_1 = 1;
-  ENUM_IZWB_2 = 2;
+  SURFACE_HIDDEN = 2;  // estimated name (medium): fgfe (attention event 3 handler) logs EXIT with reason 2 when the tracked surface stops being visible; event 3 is posted when the zero-state / Discover surface is hidden or stopped (bsvj.b(), bsde.java:218, dtzl.a()) (fgfe.java:15-27). Captured once (pixel7 AGSA_GOOGLE_APP)
   ENUM_IZWB_3 = 3;
   ENUM_IZWB_4 = 4;
-  ENUM_IZWB_5 = 5;
+  ROOT_VE_CHANGED = 5;  // estimated name (medium): fgff (attention event 7 handler) logs EXIT with reason 5 when a new page id / root VE replaces the tracked one (fgff.java:15-33)
 }
 
 enum Enum_izxa {  // inline verifier izxa (values only)
@@ -15850,16 +15861,16 @@ enum Enum_jpre {  // inline verifier jpre (values only)
   ENUM_JPRE_4 = 4;
 }
 
-enum Enum_jpsf {  // inline verifier jpsf (values only)
-  ENUM_JPSF_0 = 0;
-  ENUM_JPSF_1 = 1;
-  ENUM_JPSF_2 = 2;
+enum WithAccount {  // Enum_jpsf; inline verifier jpsf (values only)
+  WITH_ACCOUNT_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; bzzo.java:844, cabo.java:194 write (2 or 3) - 1 only
+  WithAccount_TRUE = 1;
+  WithAccount_FALSE = 2;
 }
 
-enum Enum_jpsh {  // inline verifier jpsh (values only)
-  ENUM_JPSH_0 = 0;
-  ENUM_JPSH_1 = 1;
-  ENUM_JPSH_2 = 2;
+enum PrepareOnly {  // Enum_jpsh; inline verifier jpsh (values only)
+  PREPARE_ONLY_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; bzzo.java:212-233 writes (2 or 3) - 1 only
+  PrepareOnly_TRUE = 1;
+  PrepareOnly_FALSE = 2;
 }
 
 enum Enum_jpsm {  // inline verifier jpsm (values only)
@@ -15890,14 +15901,14 @@ enum Enum_jptw {  // inline verifier jptw (values only)
 }
 
 enum LanguageSwitchMethod {  // Enum_jpuf; inline verifier jpuf (values only)
-  LANGUAGESWITCHMETHOD_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  LANGUAGE_SWITCH_METHOD_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; value 0 is only the default branch of the ciei switch (cjmt.java:709), unreachable inside its case labels
   GLOBE_KEY_PRESSED = 1;
   LANGUAGE_PICKER_ITEM_SELECTED = 2;
   AUTOMATIC = 3;
 }
 
 enum LanguagePickerTrigger {  // Enum_jpug; inline verifier jpug (values only)
-  LANGUAGEPICKERTRIGGER_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  LANGUAGE_PICKER_TRIGGER_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; value 0 is only the default branch of the ciei switch (cjmt.java:691), unreachable inside its case labels
   MIC_LONG_PRESSED = 1;
   GLOBE_KEY_LONG_PRESSED = 2;
   SPACE_BAR_LONG_PRESSED = 3;
@@ -15943,13 +15954,13 @@ enum Enum_jpwk {  // inline verifier jpwk (values only)
   ENUM_JPWK_3 = 3;
 }
 
-enum Enum_jpzu {  // inline verifier jpzu (values only)
-  ENUM_JPZU_0 = 0;
-  ENUM_JPZU_1 = 1;
+enum HotwordInfoFetchError {  // Enum_jpzu; inline verifier jpzu (values only)
+  HOTWORD_INFO_FETCH_ERROR_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; hgsf codes are 2/4/5 (hgsz.java:58,73,126) and TimeoutException writes 5 (hgos.java:2251-2265)
+  SODA_RESOURCE_MANAGER_NOT_INITIALIZED = 1;
   ENUM_JPZU_2 = 2;
-  ENUM_JPZU_3 = 3;
-  ENUM_JPZU_4 = 4;
-  ENUM_JPZU_5 = 5;
+  HOTWORD_AND_TDSID_RESOURCES_NOT_AVAILABLE = 3;
+  HOTWORD_INFORMATION_NOT_AVAILABLE = 4;
+  HotwordInfoFetchError_TIMEOUT = 5;
 }
 
 enum Enum_jpzy {  // inline verifier jpzy (values only)
@@ -15964,11 +15975,11 @@ enum Enum_jqaa {  // inline verifier jqaa (values only)
   ENUM_JQAA_2 = 2;
 }
 
-enum Enum_jqah {  // inline verifier jqah (values only)
-  ENUM_JQAH_0 = 0;
-  ENUM_JQAH_1 = 1;
-  ENUM_JQAH_2 = 2;
-  ENUM_JQAH_3 = 3;
+enum SpeedBumpDisabledReason {  // Enum_jqah; inline verifier jqah (values only)
+  SPEED_BUMP_DISABLED_REASON_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; croy.t() is called with 2/3/4 only
+  ELIGIBLE_ENTRYPOINT = 1;
+  USAGE_SUPPRESSED = 2;
+  HOTWORD_RETRIGGER = 3;
 }
 
 enum InvocationResource {  // Enum_jqat; inline verifier jqat (values only)
@@ -16071,13 +16082,13 @@ enum Enum_jqbw {  // inline verifier jqbw (values only)
 }
 
 enum LocationRequestType {  // Enum_jqcr; inline verifier jqcr (values only)
-  LOCATIONREQUESTTYPE_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  LOCATION_REQUEST_TYPE_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; hbdr.i() returns 2 (hbdq) or 3 (hbdp) only; hbds.java:45 stores minus 1
   LAST_LOCATION = 1;
   CURRENT_LOCATION = 2;
 }
 
 enum LocationSource {  // Enum_jqcs; inline verifier jqcs (values only)
-  LOCATIONSOURCE_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  LOCATION_SOURCE_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; hbds.java:103,132 write only 1 or 2
   CACHED = 1;
   FRESH = 2;
 }
@@ -16364,25 +16375,25 @@ enum Enum_vfz {  // inline verifier vfz (values only)
   ENUM_VFZ_3 = 3;
 }
 
-enum Enum_vhg {  // inline verifier vhg (values only)
-  ENUM_VHG_0 = 0;
-  ENUM_VHG_1 = 1;
-  ENUM_VHG_2 = 2;
-  ENUM_VHG_3 = 3;
-  ENUM_VHG_4 = 4;
-  ENUM_VHG_5 = 5;
-  ENUM_VHG_6 = 6;
-  ENUM_VHG_7 = 7;
-  ENUM_VHG_8 = 8;
-  ENUM_VHG_9 = 9;
-  ENUM_VHG_10 = 10;
-  ENUM_VHG_11 = 11;
-  ENUM_VHG_12 = 12;
-  ENUM_VHG_13 = 13;
-  ENUM_VHG_14 = 14;
+enum AgsaActivationClientType {  // Enum_vhg; inline verifier vhg (values only)
+  UNDEFINED = 0;
+  EVENT_BUS = 1;
+  CAR_ASSISTANT = 2;
+  AgsaActivationClientType_CLOCKWORK = 3;
+  AgsaActivationClientType_VOICE_ACCESS = 4;
+  AgsaActivationClientType_TRANSCRIPTION = 5;
+  AgsaActivationClientType_TV = 6;
+  AgsaActivationClientType_BISTO = 7;
+  TISID = 8;
+  AgsaActivationClientType_HOTWORD = 9;
+  AgsaActivationClientType_PRONUNCIATION_LEARNING = 10;
+  DSP_HOTWORD = 11;
+  AUTO_EMBEDDED_VOICE_INTERACTION = 12;
+  AgsaActivationClientType_NGA = 13;
+  ASSIST_LAYER = 14;
   ENUM_VHG_15 = 15;
-  ENUM_VHG_16 = 16;
-  ENUM_VHG_17 = 17;
+  AUDIO_SESSION_STATE = 16;
+  SILK = 17;
 }
 
 enum aano_a {  // R8-unboxed enum aano.a() (values only)
@@ -16413,7 +16424,7 @@ enum aiyz {  // Java enum aiyz (names kept)
   aiyz_TIMER = 2;
   CALL = 3;
   aiyz_NOTIFICATION = 4;
-  KEYBOARD = 5;
+  aiyz_KEYBOARD = 5;
   TTS = 6;
   CALL_CONTACT = 7;
   CALL_NUMBER = 8;
@@ -17659,7 +17670,7 @@ enum Workload {  // apkb; Java enum apkb (names kept)
   CRASH_REPORTER = 310;
   Workload_CRONET = 311;
   ICING = 312;
-  IMAGES = 313;
+  Workload_IMAGES = 313;
   LAUNCHER = 314;
   PREFERENCES = 315;
   RECENTLY = 316;
@@ -21443,8 +21454,8 @@ enum AppFlowType {  // avlt; Java enum avlt (names kept)
   UPDATE_USER_L28_DATA = 323;
 }
 
-enum awbw {  // Java enum awbw (names kept)
-  awbw_UNKNOWN = 0;
+enum HotwordPhrase {  // awbw; Java enum awbw (names kept)
+  HotwordPhrase_UNKNOWN = 0;
   OK_GOOGLE = 1;
   OK_HEY_GOOGLE = 2;
 }
@@ -21523,16 +21534,16 @@ enum bxpv {  // Java enum bxpv (names kept)
   WALLET_SUGGESTIONS = 70;
 }
 
-enum bxxp_b {  // R8-unboxed enum bxxp.b() (values only)
-  BXXP_B_0 = 0;
-  BXXP_B_1 = 1;
+enum DictationRequester {  // bxxp_b; R8-unboxed enum bxxp.b() (values only)
+  DICTATION_REQUESTER_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention: bxxp.b() maps the incoming DictationRequest requester (bxys.c) 0 to internal 2 = logged 0 (cjrr.java:236-240), i.e. a request that names no requester
+  DictationRequester_KEYBOARD = 1;
   BXXP_B_2 = 2;
   BXXP_B_3 = 3;
   BXXP_B_4 = 4;
   BXXP_B_5 = 5;
   BXXP_B_6 = 6;
-  BXXP_B_7 = 7;
-  BXXP_B_8 = 8;
+  DictationRequester_SHUTDOWN = 7;
+  OTHER_KEYBOARD = 8;  // estimated name (low): internal requester 10 is logged with ASSISTANT_DICTATION_KEYBOARD_REQUESTED_DICTATION like KEYBOARD (internal 3), every other requester with ASSISTANT_DICTATION_ASSISTANT_REQUESTED_DICTATION (ckfw.java:428-436)
   BXXP_B_9 = 9;
 }
 
@@ -21652,9 +21663,10 @@ enum cieo {  // Java enum cieo (names kept)
 }
 
 enum EnsureUiVisibleReason {  // cqnu_a; R8-unboxed enum cqnu.a() (values only)
-  ENSUREUIVISIBLEREASON_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  NO_BLOCKING_REASON = 0;  // estimated name (low): cqhv.p(joms, 1) (cqhv.java:1253, 1274, 1285) logs MAIN_ASSISTANT_ENSURE_UI_VISIBLE with 1-1 on the paths that show the UI without a cqfb not-started reason; the reasoned path uses cqfc.b(cqfb) which returns 2..15
   TOUCH_MODALITY = 1;
   ASSISTANT_DISABLED = 2;
+  CQNU_A_3 = 3;
   FILES_MISSING = 4;
   BLOCKING_OOBE = 5;
   LONG_PRESS_POWER_EDU = 6;
@@ -21960,10 +21972,10 @@ enum DataDownloadCallSiteId {  // esbm; Java enum esbm (names kept)
   FF_INTEGRATION_TESTS = 20;
 }
 
-enum esck_a {  // R8-unboxed enum esck.a() (values only)
-  ESCK_A_0 = 0;
-  ESCK_A_1 = 1;
-  ESCK_A_2 = 2;
+enum DownloadStrategy {  // esck_a; R8-unboxed enum esck.a() (values only)
+  DOWNLOAD_STRATEGY_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; the raw escl.e value 0 (field unset) maps to 0 (esck.java); bzzo treats it like INDEPENDENT (bzzo.java:715-716)
+  CANCEL_ALL_ON_FAILURE = 1;
+  INDEPENDENT = 2;
 }
 
 enum ewwe_a {  // R8-unboxed enum ewwe.a() (values only)
@@ -22140,7 +22152,7 @@ enum ghlr {  // Java enum ghlr (names kept)
   DEFAULT_ENGINE = 1;
   FAKE = 2;
   ghlr_ONLINE = 3;
-  ON_DEVICE = 4;
+  ghlr_ON_DEVICE = 4;
   ON_DEVICE_SERVER_FALLBACK = 5;
   UTTERANCE_TIME_SELECTION = 7;
   ONLINE_WITH_ONDEVICE_PARTIALS = 8;
@@ -22639,9 +22651,10 @@ enum hazd_b {  // R8-unboxed enum hazd.b() (values only)
 }
 
 enum LocationConsentState {  // hbfp_a; R8-unboxed enum hbfp.a() (values only)
-  LOCATIONCONSENTSTATE_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  LOCATION_CONSENT_STATE_UNSPECIFIED = 0;  // estimated name (medium): the stored consent proto hbeb.b passes through hbfp.a(); 0 is its unset default, which hbfb.java:107-125 treats like ASK_EVERY_TIME
   ALWAYS_USE = 1;
   DO_NOT_USE = 2;
+  HBFP_A_3 = 3;
   TEMPORARY_ALLOW = 4;
   ASK_EVERY_TIME = 5;
 }
@@ -22652,7 +22665,7 @@ enum Product {  // hbjh; Java enum hbjh (names kept)
   Product_ASSISTANT = 7;
   LENS_NBU = 1626;
   PODCASTS = 1628;
-  TRANSCRIPTION = 1673;
+  Product_TRANSCRIPTION = 1673;
   Product_LENS = 1739;
   Product_SOUND_SEARCH = 1770;
   NIU = 1771;
@@ -22836,19 +22849,19 @@ enum HotwordMode {  // hgay; Java enum hgay (names kept)
   RETAIL = 5;
 }
 
-enum hgzk_a {  // R8-unboxed enum hgzk.a() (values only)
-  HGZK_A_0 = 0;
-  HGZK_A_1 = 1;
-  HGZK_A_2 = 2;
-  HGZK_A_3 = 3;
-  HGZK_A_4 = 4;
-  HGZK_A_5 = 5;
-  HGZK_A_6 = 6;
-  HGZK_A_7 = 7;
-  HGZK_A_8 = 8;
-  HGZK_A_9 = 9;
-  HGZK_A_10 = 10;
-  HGZK_A_11 = 11;
+enum HotwordConfigUpdateRequester {  // hgzk_a; R8-unboxed enum hgzk.a() (values only)
+  REQUESTER_UNSPECIFIED = 0;
+  HOTWORD_SETTINGS_CHANGED = 1;
+  HOTWORD_MODEL_AND_SPEAKER_ID_MODEL_CHANGED = 2;
+  VOICE_MATCH_ENROLLMENT_RESUME = 3;
+  VOICE_MATCH_ENROLLMENT_PAUSE = 4;
+  SCREEN_ON = 5;
+  HotwordConfigUpdateRequester_SCREEN_OFF = 6;
+  USER_PRESENT = 7;
+  TRY_TO_START_NON_VOICE_MATCH_HOTWORD = 8;
+  TRY_TO_STOP_NON_VOICE_MATCH_HOTWORD = 9;
+  SCREEN_CHANGED = 10;
+  HOTWORD_INFO_FROM_SRM_READY = 11;
 }
 
 enum hpyt_a {  // R8-unboxed enum hpyt.a() (values only)
@@ -23234,7 +23247,7 @@ enum AccessibilityService {  // ibge; Java enum ibge (names kept)
 }
 
 enum NgaDisabledReason {  // ibgn_a; R8-unboxed enum ibgn.a() (values only)
-  NGADISABLEDREASON_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  NGA_DISABLED_REASON_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; bfcz.e() is called with 2-5 only (bfdc.java:438-501)
   NgaDisabledReason_NOT_ELIGIBLE = 1;
   FORCED_UPDATE_REQUIRED = 2;
   GSA_NOT_DEFAULT_ASSISTANT = 3;
@@ -23242,7 +23255,7 @@ enum NgaDisabledReason {  // ibgn_a; R8-unboxed enum ibgn.a() (values only)
 }
 
 enum NgaPausedReason {  // ibgt_a; R8-unboxed enum ibgt.a() (values only)
-  NGAPAUSEDREASON_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  IBGT_A_0 = 0;
   DREAMLINER_OR_AMBIENT = 1;
   OPA_RESUMED = 2;
   OPA_INTERPRETER_MODE = 3;
@@ -23259,11 +23272,11 @@ enum OnDeviceStackStatus {  // ibgx; Java enum ibgx (names kept)
   ON_DEVICE_STACK_DISABLED = 2;
 }
 
-enum ibgz_a {  // R8-unboxed enum ibgz.a() (values only)
-  IBGZ_A_0 = 0;
-  IBGZ_A_1 = 1;
-  IBGZ_A_2 = 2;
-  IBGZ_A_3 = 3;
+enum RequestSource {  // ibgz_a; R8-unboxed enum ibgz.a() (values only)
+  UNKNOWN_REQUEST_SOURCE = 0;
+  TNG = 1;
+  AGSAC = 2;
+  APVS = 3;
 }
 
 enum ibiq_a {  // R8-unboxed enum ibiq.a() (values only)
@@ -23506,16 +23519,16 @@ enum iipw_a {  // R8-unboxed enum iipw.a() (values only)
   IIPW_A_3 = 3;
 }
 
-enum iiqy_a {  // R8-unboxed enum iiqy.a() (values only)
-  IIQY_A_0 = 0;
-  IIQY_A_1 = 1;
-  IIQY_A_100 = 100;
-  IIQY_A_102 = 102;
-  IIQY_A_103 = 103;
-  IIQY_A_104 = 104;
-  IIQY_A_105 = 105;
-  IIQY_A_106 = 106;
-  IIQY_A_107 = 107;
+enum FeedLaunchCancelReason {  // iiqy_a; R8-unboxed enum iiqy.a() (values only)
+  FEED_LAUNCH_CANCEL_UNKNOWN = 0;
+  FEED_LAUNCH_CANCEL_ACTIVITY_PAUSED = 1;
+  FEED_LAUNCH_CANCEL_TAB_SWITCH = 100;
+  FEED_LAUNCH_CANCEL_CONFIGURATION_CHANGE = 102;
+  FEED_LAUNCH_CANCEL_NAVIGATION_DRAWER_OVERLAID = 103;
+  FEED_LAUNCH_CANCEL_OK_GOOGLE = 104;
+  FEED_LAUNCH_CANCEL_TEXT_SEARCH = 105;
+  FEED_LAUNCH_CANCEL_VOICE_SEARCH = 106;
+  FEED_LAUNCH_CANCEL_MUSIC_SEARCH = 107;
 }
 
 enum iird_a {  // R8-unboxed enum iird.a() (values only)
@@ -23703,7 +23716,7 @@ enum ijhr_a {  // R8-unboxed enum ijhr.a() (values only)
   IJHR_A_25 = 25;
 }
 
-enum ijjg_a {  // R8-unboxed enum ijjg.a() (values only)
+enum LatencyInjectionType {  // ijjg_a; R8-unboxed enum ijjg.a() (values only)
   IJJG_A_0 = 0;
   IJJG_A_1 = 1;
   IJJG_A_2 = 2;
@@ -23734,12 +23747,12 @@ enum ijjn_a {  // R8-unboxed enum ijjn.a() (values only)
   IJJN_A_4 = 4;
 }
 
-enum ijkt_a {  // R8-unboxed enum ijkt.a() (values only)
-  IJKT_A_UNSET_0 = 0;  // not sent by the client; zero added for decoders
-  IJKT_A_1 = 1;
-  IJKT_A_2 = 2;
-  IJKT_A_3 = 3;
-  IJKT_A_4 = 4;
+enum DeviceLockState {  // ijkt_a; R8-unboxed enum ijkt.a() (values only)
+  DEVICELOCKSTATE_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  SCREEN_ON_UNLOCKED = 1;
+  LOCKED_INSECURE = 2;
+  LOCKED_SECURE = 3;
+  DeviceLockState_SCREEN_OFF = 4;
 }
 
 enum ijll_a {  // R8-unboxed enum ijll.a() (values only)
@@ -23830,8 +23843,8 @@ enum SmartspaceSurface {  // ijya; Java enum ijya (names kept)
   SmartspaceSurface_BLUECHIP_SMARTSPACE = 6;
 }
 
-enum ijyc_a {  // R8-unboxed enum ijyc.a() (values only)
-  IJYC_A_0 = 0;
+enum SystemUiScreen {  // ijyc_a; R8-unboxed enum ijyc.a() (values only)
+  UNKNOWN_SYSTEM_UI_SCREEN = 0;  // estimated name (low): raw SYSTEM_UI_SCREEN_EXTRA int passes through ijyc.a() (aoov.java:41-49), 0 being the extra's default; the sibling AMBIENT_SCREEN_EXTRA enum ijxu names its 0 UNKNOWN_AMBIENT_SCREEN
   IJYC_A_1 = 1;
   IJYC_A_2 = 2;
 }
@@ -23875,29 +23888,29 @@ enum SmartspaceSetting {  // ijyn; Java enum ijyn (names kept)
   SmartspaceSetting_COMMUTE = 28;
 }
 
-enum ikaj {  // Java enum ikaj (names kept)
-  ikaj_UNKNOWN = 0;
+enum SearchClient {  // ikaj; Java enum ikaj (names kept)
+  SearchClient_UNKNOWN = 0;
   GEL = 1;
   VELVET = 2;
   HEADLESS = 3;
   HOTWORD_SERVICE = 5;
   SPEAKER_ID_ENROLLMENT = 6;
-  CLOCKWORK = 7;
+  SearchClient_CLOCKWORK = 7;
   LOCKSCREEN_ENTRY = 9;
   SEARCH_NOW = 11;
-  ikaj_ANDROID_AUTO = 12;
+  SearchClient_ANDROID_AUTO = 12;
   GMM = 13;
   EYESFREE_SCREENLESS = 14;
   OPA_ANDROID = 15;
   ACETONE_NOW = 16;
   ANDROID_AUTO_PHONE = 17;
   ANDROID_AUTO_PROJECTED = 18;
-  ikaj_BISTO = 19;
+  SearchClient_BISTO = 19;
   SEARCH_API_SERVICE = 21;
-  ikaj_INTENT_API = 24;
+  SearchClient_INTENT_API = 24;
   VOICE_IME = 25;
   UNIFIED_IME = 26;
-  ikaj_DEEPLINK = 29;
+  SearchClient_DEEPLINK = 29;
   WUWA = 31;
   VOICE_COMMAND = 32;
   VOICE_INTERACTION_SERVICE = 33;
@@ -23907,8 +23920,8 @@ enum ikaj {  // Java enum ikaj (names kept)
   MONET = 42;
   BACKGROUND_RETRY = 43;
   GSA_CONFIG_TASK_BACKGROUND = 44;
-  ikaj_GCM = 45;
-  ikaj_PRONUNCIATION_LEARNING = 46;
+  SearchClient_GCM = 45;
+  SearchClient_PRONUNCIATION_LEARNING = 46;
   COMMON_BROADCAST = 49;
   COMMON_CONTENT_PROVIDER = 50;
   BACKGROUND_TASK = 51;
@@ -23916,7 +23929,7 @@ enum ikaj {  // Java enum ikaj (names kept)
   BISTO_BULK_PRE_CACHING = 53;
   BISTO_START_ACTIVITY = 55;
   BACKUP_AND_RESTORE = 56;
-  ikaj_WIDGET = 57;
+  SearchClient_WIDGET = 57;
   PODCAST_PLAYER = 60;
   REMOTE_SEARCH_SERVICE = 61;
   PIXEL_LAUNCHER = 64;
@@ -23924,24 +23937,24 @@ enum ikaj {  // Java enum ikaj (names kept)
   BISTO_WORK_REQUEST = 66;
   STARTUP_RECEIVER = 67;
   HTTP = 69;
-  ikaj_VOICE_ACCESS = 70;
-  TV = 71;
-  ikaj_LENS = 72;
+  SearchClient_VOICE_ACCESS = 70;
+  SearchClient_TV = 71;
+  SearchClient_LENS = 72;
   NOW_OPTIN = 73;
-  ikaj_SMARTSPACE = 74;
+  SearchClient_SMARTSPACE = 74;
   OPA_MEDIA_PLAYER = 75;
   MEDIA_BROWSER_SERVICE = 76;
   OPA_APP_INTEGRATION_SERVICE = 77;
   OPA_AMBIENT = 78;
   LENS_BACKGROUND = 79;
   PRIMES = 80;
-  ikaj_NGA = 81;
+  SearchClient_NGA = 81;
   CONTACT_UPLOAD = 82;
   OPA_CHARGING_AMBIENT = 83;
   TI_SID_ENROLLMENT = 84;
   OPA_BUBBLE = 85;
   OPA_CONCIERGE = 86;
-  ikaj_TAPAS = 87;
+  SearchClient_TAPAS = 87;
   ASSIST_SETTINGS = 88;
   PCP = 89;
   CAR_ASSISTANT_SUGGESTION_SIDE_CARD = 90;
@@ -24256,7 +24269,7 @@ enum ikiu {  // Java enum ikiu (names kept)
 }
 
 enum AcetoneDisabledReason {  // ikno_a; R8-unboxed enum ikno.a() (values only)
-  ACETONEDISABLEDREASON_UNSET_0 = 0;  // not sent by the client; zero added for decoders
+  ACETONE_DISABLED_REASON_UNSPECIFIED = 0;  // estimated name (low): proto3/Google convention, never written; the raw iknp.b passes through ikno.a() (dvjo.java:154-160); the setters write only 1 (dvlw.java:50) and 2 (dvjf.java:41)
   OVERLAY_DISABLED = 1;
   DMA_THIRD_PARTY_SEARCH_ENGINE = 2;
 }
@@ -24310,7 +24323,7 @@ enum ilbl {  // Java enum ilbl (names kept)
   RESIZE_BROWSER = 18;
   ROTATE_SCREEN = 19;
   DIRECTIONAL_MOVEMENT = 20;
-  SWIPE = 21;
+  ilbl_SWIPE = 21;
   SCROLL_BAR = 22;
   MOUSE_WHEEL = 23;
   ARROW_KEYS = 24;
@@ -24320,7 +24333,7 @@ enum ilbl {  // Java enum ilbl (names kept)
   HEAD_MOVEMENT = 28;
   SHAKE = 29;
   ilbl_DRAG = 30;
-  LONG_PRESS = 31;
+  ilbl_LONG_PRESS = 31;
   KEY_PRESS = 32;
   ACTION_BY_TIMER = 33;
   DOUBLE_CLICK = 34;
@@ -24680,7 +24693,7 @@ enum itfs {  // Java enum itfs (names kept)
   ASSISTANT_CORPUS = 2;
   SEARCH_CORPUS = 3;
   itfs_APP_ACTION = 4;
-  APPS = 6;
+  itfs_APPS = 6;
   APP_ACTION_SHORTCUT = 7;
   itfs_CHALKBOARD = 8;
   OFFLINE_CLIENT = 9;
@@ -25311,12 +25324,12 @@ enum ActivityLevel {  // izqj; Java enum izqj (names kept)
   PENDING_ACTIVITY = 5;
 }
 
-enum iztf_b {  // R8-unboxed enum iztf.b() (values only)
-  IZTF_B_0 = 0;
-  IZTF_B_1 = 1;
-  IZTF_B_2 = 2;
-  IZTF_B_3 = 3;
-  IZTF_B_4 = 4;
+enum SelectedAsrEngine {  // iztf_b; R8-unboxed enum iztf.b() (values only)
+  SELECTED_ASR_ENGINE_UNKNOWN = 0;
+  S3 = 1;
+  SelectedAsrEngine_SODA = 2;
+  NATCON = 3;
+  SPEECHX = 4;
 }
 
 enum izty {  // Java enum izty (names kept)
@@ -25338,10 +25351,18 @@ enum AttentionEventType {  // izwa_a; R8-unboxed enum izwa.a() (values only)
   VISIBLE_ELEMENT = 1;
   PAUSE = 2;
   SCROLL = 3;
+  IZWA_A_4 = 4;
+  IZWA_A_5 = 5;
   EXIT = 6;
+  IZWA_A_7 = 7;
+  IZWA_A_8 = 8;
   SW = 9;
   DOM_CHANGE = 10;
   ELEMENT_INFO = 11;
+  IZWA_A_12 = 12;
+  IZWA_A_13 = 13;
+  IZWA_A_14 = 14;
+  IZWA_A_15 = 15;
 }
 
 enum izzl {  // Java enum izzl (names kept)
@@ -25634,7 +25655,7 @@ enum jddu {  // Java enum jddu (names kept)
   UNKNOWN_FILTER_TYPE = 0;
   DEPRECATED_DOCUMENT_SCANNER = 1;
   jddu_TRANSLATE = 2;
-  SHOPPING = 3;
+  jddu_SHOPPING = 3;
   DINING = 4;
   jddu_TEXT = 5;
   OUTDOOR = 6;
@@ -25657,7 +25678,7 @@ enum jddw {  // Java enum jddw (names kept)
   COMMAND = 12;
   COMMAND_PHONETIC = 13;
   VERTICAL_NOW_ON_CHAT = 16;
-  LOCAL = 18;
+  jddw_LOCAL = 18;
   INTENT = 19;
   TRUSTED_PATTERN = 20;
   NOUN_PHRASE_REPLACEMENTS = 21;
@@ -26201,7 +26222,7 @@ enum jgru_a {  // R8-unboxed enum jgru.a() (values only)
   JGRU_A_2 = 2;
 }
 
-enum jgth_a {  // R8-unboxed enum jgth.a() (values only)
+enum SodaPrefetchResultType {  // jgth_a; R8-unboxed enum jgth.a() (values only)
   JGTH_A_0 = 0;
   JGTH_A_1 = 1;
   JGTH_A_2 = 2;
@@ -26271,7 +26292,7 @@ enum jhdb {  // Java enum jhdb (names kept)
 enum jpga {  // Java enum jpga (names kept)
   UNKNOWN_INVOCATION_TYPE = 0;
   ASSIST_DATA = 1;
-  SCREENSHOT = 2;
+  jpga_SCREENSHOT = 2;
 }
 
 enum ApaClientType {  // jpgc; Java enum jpgc (names kept)
@@ -26527,10 +26548,10 @@ enum jpxe_a {  // R8-unboxed enum jpxe.a() (values only)
   JPXE_A_3 = 3;
 }
 
-enum jpxm_a {  // R8-unboxed enum jpxm.a() (values only)
-  JPXM_A_0 = 0;
-  JPXM_A_5 = 5;
-  JPXM_A_8 = 8;
+enum FailureCancellationReason {  // jpxm_a; R8-unboxed enum jpxm.a() (values only)
+  FailureCancellationReason_UNKNOWN = 0;
+  EXCEPTION_BY_CONTEXT_SESSION_CREATION = 5;
+  EXCEPTION_BY_CONNECT_TO_CONVERSATION_API = 8;
 }
 
 enum jpxx_a {  // R8-unboxed enum jpxx.a() (values only)
@@ -26754,83 +26775,83 @@ enum qjk_a {  // R8-unboxed enum qjk.a() (values only)
   QJK_A_6 = 6;
 }
 
-enum uol {  // Java enum uol (names kept)
-  uol_UNKNOWN_ENTRY = 0;
-  uol_FIRST_TIME_HOTWORD_ONBOARDING = 1;
-  uol_VOICE_SETTINGS = 2;
-  uol_NOW_HOTWORD_CARD = 3;
-  uol_HOTWORD_RETRAINING_NOTIFICATION = 4;
-  uol_ANDROID_SETUP_WIZARD = 5;
-  uol_SRP_VOICE_FEATURE_TIPS = 6;
-  uol_VOICE_SETTINGS_HOTWORD_RETRAINING = 7;
-  uol_HOTWORD_MULTI_USER_ENROLLMENT = 11;
-  uol_HOTWORD_RETRAINING_NOTIFICATION_ACCOUNT_CHANGED = 12;
-  uol_HOTWORD_RETRAINING_NOTIFICATION_AUDIO_HISTORY_DISABLED = 13;
-  uol_HOTWORD_RETRAINING_NOTIFICATION_LANGUAGE_CHANGED = 14;
-  uol_PUBLIC_SETTINGS_ACTIVITY = 15;
-  uol_ASSISTANT_GOOGLE_HOME_SETTINGS = 16;
-  uol_OPA_HOTWORD_ENROLLMENT = 17;
-  uol_OPA_LAUNCH = 18;
-  uol_ASSISTANT_GOOGLE_HOME_RETRAINING = 19;
-  uol_ASSISTANT_GOOGLE_HOME_DISCOVERY = 20;
-  uol_ASSISTANT_GOOGLE_HOME_OOBE = 21;
-  uol_ASSISTANT_CHROME_OS_SETUP_WIZARD = 23;
-  uol_DEFERRED_ANDROID_SETUP_WIZARD = 24;
-  uol_ASSISTANT_CHROME_OS_LAUNCH = 25;
-  uol_WEAR_ONBOARDING = 26;
-  uol_AUTO_ONBOARDING = 27;
-  uol_BISTO_ONBOARDING = 28;
-  uol_DEVICE_REGISTRATION_ONBOARDING = 29;
-  uol_ASSISTANT_SETTINGS_UDC_DEEPLINK = 30;
-  uol_OPA_ANDROID_UDC_PUNT_CARD = 31;
-  uol_ASSISTANT_SETTINGS_STARTUP = 32;
-  uol_HQ_STARTUP = 33;
-  uol_AGENT_DIRECTORY_STARTUP = 34;
-  uol_HOTWORD_RETRAINING_NOTIFICATION_HOTWORD_UPGRADE = 35;
-  uol_ASSISTANT_GOOGLE_HOME_CLOUD = 36;
-  uol_ASSISTANT_GOOGLE_HOME_OOBE_CLOUD = 37;
-  uol_ASSISTANT_GOOGLE_HOME_CONSENT_ONBOARDING = 41;
-  uol_OPA_PAYMENTS_ONBOARDING = 42;
-  uol_OPA_EXIT_SIGNED_OUT = 43;
-  uol_FACE_MATCH_ENROLLMENT_ASSISTANT_SETTINGS = 44;
-  uol_ASSISTANT_GOOGLE_HOME_CONSENT_PERSISTENT_CTA = 45;
-  uol_VOICE_MATCH_ENROLLMENT_DEEPLINK = 46;
-  uol_OPA_ZERO_STATE_LOCATION_CONSENT_ONBOARDING = 47;
-  uol_OPA_DREAMLINER_ONBOARDING = 48;
-  uol_OPA_DREAMLINER_PF_SETUP = 49;
-  uol_OPA_HOTWORD_TRAINING = 50;
-  uol_UPGRADE_VOICE_MATCH = 51;
-  uol_ASSISTANT_SETTINGS_ANDROID_DEVICE = 52;
-  uol_FACE_MATCH_RETRAINING_ASSISTANT_SETTINGS = 53;
-  uol_FACE_MATCH_ENROLLMENT_FROM_VOICE_MATCH = 54;
-  uol_OPA_AMBIENT_MODE_ONBOARDING = 55;
-  uol_OPA_DEFERRED_VOICE_MATCH_SUGGESTION_CHIP = 56;
-  uol_DEVICES_SCAN_SEQUENCE_FROM_VOICE_MATCH = 57;
-  uol_VOICE_MATCH_SETTINGS_UNDECIDED = 58;
-  uol_OPA_DEFERRED_VOICE_MATCH_POST_QUERY_CHIP = 59;
-  uol_ASSISTANT_SETTINGS_VOICE_MATCH_LEGACY = 60;
-  uol_ASSISTANT_SETTINGS_VOICE_MATCH = 61;
-  uol_DEVICE_REGISTRATION_ACCOUNT_LINKING = 62;
-  uol_ASSISTANT_GOOGLE_HOME_RETRAINING_BTW_UPGRADE = 63;
-  uol_OPA_VOICE_MATCH_FROM_FRE_INPUT_PLATE = 64;
-  uol_PHONE_ENROLLMENT_DEEPLINK_FROM_VOICE_SEARCH = 65;
-  uol_OPA_IRIS_PROMO = 66;
-  uol_INCOMPLETE_STATE_ONBOARDING = 67;
-  uol_VOICE_MATCH_ENROLLMENT_FROM_SRP_PROMO = 68;
-  uol_ASSISTANT_GOOGLE_HOME_RETRAINING_UPGRADE_PUNT = 69;
-  uol_ASSISTANT_STRUCTURE_LEVEL_GOOGLE_HOME_OOBE = 70;
-  uol_ASSISTANT_STRUCTURE_LEVEL_MANAGER_ONBOARDING = 71;
-  uol_ASSISTANT_STRUCTURE_LEVEL_ASSISTANT_SETTINGS = 72;
-  uol_HOTWORD_RETRAINING_NOTIFICATION_SILENT_ENROLLMENT_FAILED = 73;
-  uol_BLOCKING_VOICE_MATCH_FROM_ASSISTANT_INVOCATION = 74;
-  uol_ASSISTANT_TITAN_RECOVERY_FIRST_DOCK = 75;
-  uol_ASSISTANT_TITAN_RECOVERY_SIDE_PANEL = 76;
-  uol_ASSISTANT_TITAN_RECOVERY_VOICE_PLATE_UNLOCKED = 77;
-  uol_ASSISTANT_TITAN_RECOVERY_VOICE_PLATE_LOCKED = 78;
-  uol_ASSISTANT_TITAN_RECOVERY_NOTIFICATION = 79;
-  uol_ASSISTANT_TITAN_RECOVERY_DREAM_ACTIVITY = 80;
-  uol_ASSISTANT_TITAN_RECOVERY_NTH_DOCK = 81;
-  uol_ASSISTANT_AOL_NOTIFICATION = 82;
+enum HotwordRetrainingNotificationSource {  // uol; Java enum uol (names kept)
+  HotwordRetrainingNotificationSource_UNKNOWN_ENTRY = 0;
+  HotwordRetrainingNotificationSource_FIRST_TIME_HOTWORD_ONBOARDING = 1;
+  HotwordRetrainingNotificationSource_VOICE_SETTINGS = 2;
+  HotwordRetrainingNotificationSource_NOW_HOTWORD_CARD = 3;
+  HotwordRetrainingNotificationSource_HOTWORD_RETRAINING_NOTIFICATION = 4;
+  HotwordRetrainingNotificationSource_ANDROID_SETUP_WIZARD = 5;
+  HotwordRetrainingNotificationSource_SRP_VOICE_FEATURE_TIPS = 6;
+  HotwordRetrainingNotificationSource_VOICE_SETTINGS_HOTWORD_RETRAINING = 7;
+  HotwordRetrainingNotificationSource_HOTWORD_MULTI_USER_ENROLLMENT = 11;
+  HotwordRetrainingNotificationSource_HOTWORD_RETRAINING_NOTIFICATION_ACCOUNT_CHANGED = 12;
+  HotwordRetrainingNotificationSource_HOTWORD_RETRAINING_NOTIFICATION_AUDIO_HISTORY_DISABLED = 13;
+  HotwordRetrainingNotificationSource_HOTWORD_RETRAINING_NOTIFICATION_LANGUAGE_CHANGED = 14;
+  HotwordRetrainingNotificationSource_PUBLIC_SETTINGS_ACTIVITY = 15;
+  HotwordRetrainingNotificationSource_ASSISTANT_GOOGLE_HOME_SETTINGS = 16;
+  HotwordRetrainingNotificationSource_OPA_HOTWORD_ENROLLMENT = 17;
+  HotwordRetrainingNotificationSource_OPA_LAUNCH = 18;
+  HotwordRetrainingNotificationSource_ASSISTANT_GOOGLE_HOME_RETRAINING = 19;
+  HotwordRetrainingNotificationSource_ASSISTANT_GOOGLE_HOME_DISCOVERY = 20;
+  HotwordRetrainingNotificationSource_ASSISTANT_GOOGLE_HOME_OOBE = 21;
+  HotwordRetrainingNotificationSource_ASSISTANT_CHROME_OS_SETUP_WIZARD = 23;
+  HotwordRetrainingNotificationSource_DEFERRED_ANDROID_SETUP_WIZARD = 24;
+  HotwordRetrainingNotificationSource_ASSISTANT_CHROME_OS_LAUNCH = 25;
+  HotwordRetrainingNotificationSource_WEAR_ONBOARDING = 26;
+  HotwordRetrainingNotificationSource_AUTO_ONBOARDING = 27;
+  HotwordRetrainingNotificationSource_BISTO_ONBOARDING = 28;
+  HotwordRetrainingNotificationSource_DEVICE_REGISTRATION_ONBOARDING = 29;
+  HotwordRetrainingNotificationSource_ASSISTANT_SETTINGS_UDC_DEEPLINK = 30;
+  HotwordRetrainingNotificationSource_OPA_ANDROID_UDC_PUNT_CARD = 31;
+  HotwordRetrainingNotificationSource_ASSISTANT_SETTINGS_STARTUP = 32;
+  HotwordRetrainingNotificationSource_HQ_STARTUP = 33;
+  HotwordRetrainingNotificationSource_AGENT_DIRECTORY_STARTUP = 34;
+  HotwordRetrainingNotificationSource_HOTWORD_RETRAINING_NOTIFICATION_HOTWORD_UPGRADE = 35;
+  HotwordRetrainingNotificationSource_ASSISTANT_GOOGLE_HOME_CLOUD = 36;
+  HotwordRetrainingNotificationSource_ASSISTANT_GOOGLE_HOME_OOBE_CLOUD = 37;
+  HotwordRetrainingNotificationSource_ASSISTANT_GOOGLE_HOME_CONSENT_ONBOARDING = 41;
+  HotwordRetrainingNotificationSource_OPA_PAYMENTS_ONBOARDING = 42;
+  HotwordRetrainingNotificationSource_OPA_EXIT_SIGNED_OUT = 43;
+  HotwordRetrainingNotificationSource_FACE_MATCH_ENROLLMENT_ASSISTANT_SETTINGS = 44;
+  HotwordRetrainingNotificationSource_ASSISTANT_GOOGLE_HOME_CONSENT_PERSISTENT_CTA = 45;
+  HotwordRetrainingNotificationSource_VOICE_MATCH_ENROLLMENT_DEEPLINK = 46;
+  HotwordRetrainingNotificationSource_OPA_ZERO_STATE_LOCATION_CONSENT_ONBOARDING = 47;
+  HotwordRetrainingNotificationSource_OPA_DREAMLINER_ONBOARDING = 48;
+  HotwordRetrainingNotificationSource_OPA_DREAMLINER_PF_SETUP = 49;
+  HotwordRetrainingNotificationSource_OPA_HOTWORD_TRAINING = 50;
+  HotwordRetrainingNotificationSource_UPGRADE_VOICE_MATCH = 51;
+  HotwordRetrainingNotificationSource_ASSISTANT_SETTINGS_ANDROID_DEVICE = 52;
+  HotwordRetrainingNotificationSource_FACE_MATCH_RETRAINING_ASSISTANT_SETTINGS = 53;
+  HotwordRetrainingNotificationSource_FACE_MATCH_ENROLLMENT_FROM_VOICE_MATCH = 54;
+  HotwordRetrainingNotificationSource_OPA_AMBIENT_MODE_ONBOARDING = 55;
+  HotwordRetrainingNotificationSource_OPA_DEFERRED_VOICE_MATCH_SUGGESTION_CHIP = 56;
+  HotwordRetrainingNotificationSource_DEVICES_SCAN_SEQUENCE_FROM_VOICE_MATCH = 57;
+  HotwordRetrainingNotificationSource_VOICE_MATCH_SETTINGS_UNDECIDED = 58;
+  HotwordRetrainingNotificationSource_OPA_DEFERRED_VOICE_MATCH_POST_QUERY_CHIP = 59;
+  HotwordRetrainingNotificationSource_ASSISTANT_SETTINGS_VOICE_MATCH_LEGACY = 60;
+  HotwordRetrainingNotificationSource_ASSISTANT_SETTINGS_VOICE_MATCH = 61;
+  HotwordRetrainingNotificationSource_DEVICE_REGISTRATION_ACCOUNT_LINKING = 62;
+  HotwordRetrainingNotificationSource_ASSISTANT_GOOGLE_HOME_RETRAINING_BTW_UPGRADE = 63;
+  HotwordRetrainingNotificationSource_OPA_VOICE_MATCH_FROM_FRE_INPUT_PLATE = 64;
+  HotwordRetrainingNotificationSource_PHONE_ENROLLMENT_DEEPLINK_FROM_VOICE_SEARCH = 65;
+  HotwordRetrainingNotificationSource_OPA_IRIS_PROMO = 66;
+  HotwordRetrainingNotificationSource_INCOMPLETE_STATE_ONBOARDING = 67;
+  HotwordRetrainingNotificationSource_VOICE_MATCH_ENROLLMENT_FROM_SRP_PROMO = 68;
+  HotwordRetrainingNotificationSource_ASSISTANT_GOOGLE_HOME_RETRAINING_UPGRADE_PUNT = 69;
+  HotwordRetrainingNotificationSource_ASSISTANT_STRUCTURE_LEVEL_GOOGLE_HOME_OOBE = 70;
+  HotwordRetrainingNotificationSource_ASSISTANT_STRUCTURE_LEVEL_MANAGER_ONBOARDING = 71;
+  HotwordRetrainingNotificationSource_ASSISTANT_STRUCTURE_LEVEL_ASSISTANT_SETTINGS = 72;
+  HotwordRetrainingNotificationSource_HOTWORD_RETRAINING_NOTIFICATION_SILENT_ENROLLMENT_FAILED = 73;
+  HotwordRetrainingNotificationSource_BLOCKING_VOICE_MATCH_FROM_ASSISTANT_INVOCATION = 74;
+  HotwordRetrainingNotificationSource_ASSISTANT_TITAN_RECOVERY_FIRST_DOCK = 75;
+  HotwordRetrainingNotificationSource_ASSISTANT_TITAN_RECOVERY_SIDE_PANEL = 76;
+  HotwordRetrainingNotificationSource_ASSISTANT_TITAN_RECOVERY_VOICE_PLATE_UNLOCKED = 77;
+  HotwordRetrainingNotificationSource_ASSISTANT_TITAN_RECOVERY_VOICE_PLATE_LOCKED = 78;
+  HotwordRetrainingNotificationSource_ASSISTANT_TITAN_RECOVERY_NOTIFICATION = 79;
+  HotwordRetrainingNotificationSource_ASSISTANT_TITAN_RECOVERY_DREAM_ACTIVITY = 80;
+  HotwordRetrainingNotificationSource_ASSISTANT_TITAN_RECOVERY_NTH_DOCK = 81;
+  HotwordRetrainingNotificationSource_ASSISTANT_AOL_NOTIFICATION = 82;
 }
 
 enum vcp {  // Java enum vcp (names kept)
@@ -26839,7 +26860,7 @@ enum vcp {  // Java enum vcp (names kept)
   vcp_BLUETOOTH = 2;
   vcp_DEEPLINK = 3;
   GSA_MIC = 4;
-  HOTWORD = 5;
+  vcp_HOTWORD = 5;
   LAUNCHER_ICON = 6;
   LOCKSCREEN = 7;
   LOCKSCREEN_HOTWORD = 8;
@@ -26886,7 +26907,7 @@ enum vcp {  // Java enum vcp (names kept)
   STANDALONE_ZERO_STATE_FOOTER_OPA_ICON = 51;
   OPA_BRICK_SHORTCUT = 52;
   GMM_MIC = 53;
-  FOLLOW_ON = 54;
+  vcp_FOLLOW_ON = 54;
   LOCKSCREEN_NOW_PLAYING = 55;
   OPA_LOGO = 56;
   ZERO_STATE_OPA_ICON = 57;
