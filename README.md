@@ -64,7 +64,7 @@ Each message contains a sequence of log events, which may be from different log 
 
 - chime_named.proto is decoded protobuf definition
 
-### *_PRIMES log sources (performance metrics from Google apps' Primes library: memory, timers, app startup, jank, network requests, crashes, battery; e.g. ANDROID_MESSAGING_PRIMES, DIALER_ANDROID_PRIMES)
+### **PRIMES log sources (performance metrics from Google apps' Primes library: memory, timers, app startup, jank, network requests, crashes, battery; e.g. ANDROID_MESSAGING_PRIMES, DIALER_ANDROID_PRIMES)**
 
 - primes_named.proto is decoded protobuf definition; primes_hashed_names.txt lists the names recovered for the MD5 hashes Primes sends in place of some event names and request paths
 
@@ -90,7 +90,7 @@ Each message contains a sequence of log events, which may be from different log 
 
 ### CONSENT_INFO (sent with WESTWORLD, LB_AS and other log sources' events)
 
-- consentinfo.proto is decoded protobuf definition of the consent settings Google Play Services checked before uploading the event
+- consentinfo.proto is decoded protobuf definition of the consent settings Google Play Services
 
 ### TRON log source (Google Play Services Tron component, sends AOSP metric logger data)
 
@@ -119,7 +119,7 @@ Each message contains a sequence of log events, which may be from different log 
 
 ## Google Play Services https://android-context-data.googleapis.com/google.internal.android.location.kollektomat.v1.KollektomatService/Offer
 
-- KollektomatRequest within locm.proto is (partially) decoded protobuf definition (note that request is in gRPC format)
+- kollektomat_named.proto is decoded protobuf definition of the request (an lbs.GLocRequest: Wi-Fi scans, sensor samples, GNSS status); KollektomatRequest within locm.proto is the older format (note that request is in gRPC format)
 
 ## Google Messages and Play Protect https://ondevicesafety-pa.googleapis.com/google.internal.abuse.ondevicesafety.v1alpha.ProgramBlobService/DownloadBlob
 
@@ -138,7 +138,6 @@ Each message contains a sequence of log events, which may be from different log 
 ## Google Play Services https://deviceintegritytokens-pa.googleapis.com/v1/getAdEventToken
 
 - GetAdEventTokenRequest and GetAdEventTokenResponse in attok.proto are the decoded protobuf definitions. About once a day Google Play Services sends its event attestation public key, the Google Advertising Id and a DroidGuard result, and gets back a Google-signed token holding the key, a timestamp and the Advertising Id. Every attok token (below) carries this signed token.
-- droidguard.proto is the decoded protobuf definition of the DroidGuard result in the request. Its main payload is encrypted, but its outer fields are not, among them a per-app client_uuid that stays the same until factory reset.
 
 ## AOSP https://remoteprovisioning.googleapis.com/v1/:signCertificates
 
@@ -151,6 +150,12 @@ adparams_decode.py decodes these parameters in request urls and in location resp
 - ms (www.google.com/aclk and other advert links) and dc_ms (ad.doubleclick.net): the AdShield signal added to advert clicks and impressions. Values from the Google Play store app are decrypted and checked against the MD5 they carry. They hold touch, timing, uptime and battery measurements; ms_signal.proto is the decoded protobuf definition, with names from the app code, including the AdShield helper classes the app ships encrypted. Values produced by DroidGuard, encrypted to Google's Tink public key, or made by a different encoder build are reported as encrypted.
 - attok: the event attestation token the Google Mobile Ads SDK adds to in-app advert links. attok.proto is the decoded protobuf definition. A token sent signed but unencrypted is decoded, including the Google-signed integrity token inside it, which holds the Google Advertising Id. A Tink-encrypted token is reported with its key id.
 - gref: the protobuf in the intent:// Play store link returned by www.google.com/aclk. gref.proto is the decoded protobuf definition; no app code parses gref, so its names come from the captured values. It contains the gclid of the same link and an id for the advertised app.
+
+## DroidGuard results
+
+Google apps send a DroidGuard result with many requests, e.g. checkin, auth/devicekey, adAttest, getAdEventToken, Play store fdfe/sync, federatedcompute and cryptauth SyncKeys. decoding_helpers.py finds them in any request body (protobuf, gRPC or form) and decodes them after the body.
+
+- droidguard.proto is the decoded protobuf definition. The main payload is encrypted, but the outer fields are not, among them a per-app client_uuid that stays the same until factory reset.
 
 ## x-goog-spatula header
 

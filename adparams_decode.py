@@ -4,7 +4,7 @@
 #   gref       protobuf in the Play store intent:// link returned by www.google.com/aclk (see gref.proto)
 # decode_url_params(url) returns the text to print, "" when the url carries none of these.  It never
 # raises: a value that is encrypted, or in a format we do not know, is reported as such.
-import base64, datetime, hashlib, os, re, struct, urllib.parse
+import base64, datetime, hashlib, os, re, struct, urllib.parse, zlib
 from decode_raw import decode_raw, DecodeRawError
 from decode_named import decode_named, DecodeNamedError, message_class
 
@@ -311,6 +311,20 @@ def decode_get_ad_event_token_response(buf):
 
 # ---------------------------------------------------------------- DroidGuard result
 
+def _varint(n):
+    out = b""
+    while n > 0x7f:
+        out += bytes([n & 0x7f | 0x80]); n >>= 7
+    return out + bytes([n])
+
+def _field_bytes(f, t, v):
+    # one field, as _fields returned it, encoded again
+    if t == 0:
+        return _varint(f << 3) + _varint(v)
+    if t == 2:
+        return _varint(f << 3 | 2) + _varint(len(v)) + v
+    return _varint(f << 3 | t) + v
+
 def _summarise_vm_output(vm):
     # the encrypted and opaque byte fields are kilobytes long; print their size in their place
     for f in ("encrypted_payload", "f123", "f219"):
@@ -327,16 +341,88 @@ def decode_droidguard_result(value):
     if buf is None:
         return "not base64: %d characters\n" % len(value)
     r = _parse("DroidGuardResult", buf, "droidguard.proto")
-    if r is None or len(r.nonce) != 6 or not r.vm_output.HasField("encrypted_payload"):
+    opaque = None
+    if r is None:
+        # some results (one GetEnforcement call in the Dec 2024 captures) have the same outer fields, but field 2
+        # is one opaque blob rather than a VmOutput: decode the rest
+        fields = _fields(buf) or []
+        vm = [v for f, t, v in fields if f == 2 and t == 2]
+        if len(vm) == 1:
+            opaque = len(vm[0])
+            r = _parse("DroidGuardResult", b"".join(_field_bytes(f, t, v) for f, t, v in fields if f != 2), "droidguard.proto")
+    if r is None or len(r.nonce) != 6 or not (opaque or r.vm_output.HasField("encrypted_payload")):
         return "not a DroidGuard result we can read: %d bytes, encrypted or unknown format\n" % len(buf)
     _summarise_vm_output(r.vm_output)
     try:
         out = decode_named("DroidGuardResult", "droidguard.proto", r.SerializeToString())
     except DecodeNamedError as e:
         return "(could not decode as DroidGuardResult: %s)\n" % e
+    if opaque:
+        first, rest = out.split("\n", 1)
+        out = first + "\nvm_output: <%d bytes, not a VmOutput: encrypted as a whole>\n" % opaque + rest
     if r.HasField("client_uuid"):
         out += "client_uuid: %s\n" % _uuid(r.client_uuid)
     return out
+
+# base64 of a protobuf whose field 1 is 6 bytes (0a 06 ...), as every DroidGuard result begins
+_DG_PREFIX = re.compile(rb"Cg[YZab]")
+_DG_RE = re.compile(rb"Cg[YZab][A-Za-z0-9+/_\-]{1000,}={0,2}")
+
+def _pb_strings(buf, depth=0):
+    # every length-delimited value in a protobuf, nested messages included, each whole
+    fields = _fields(buf) if depth < 12 else None
+    for f, t, v in fields or []:
+        if t == 2:
+            yield v
+            yield from _pb_strings(v, depth + 1)
+
+def _dg_candidates(part):
+    # a protobuf body: its string fields, which hold a result exactly; any other body (form, JSON): base64 runs,
+    # which end at the text's delimiters
+    if _fields(part):
+        return [v for v in _pb_strings(part) if len(v) > 1000 and _DG_PREFIX.match(v)]
+    return [m.group(0) for m in _DG_RE.finditer(part)]
+
+def _body_parts(body):
+    # the body, plus its gzip or gRPC (possibly compressed) frames unwrapped, plus its form-unquoted text
+    parts = [body]
+    if body[:2] == b"\x1f\x8b":
+        try:
+            parts.append(zlib.decompress(body, 32 + zlib.MAX_WBITS))
+        except zlib.error:
+            pass
+    pos, frames = 0, []
+    while pos + 5 <= len(body) and body[pos] in (0, 1):
+        n = struct.unpack("!I", body[pos + 1:pos + 5])[0]
+        if pos + 5 + n > len(body):
+            break
+        frames.append((body[pos], body[pos + 5:pos + 5 + n]))
+        pos += 5 + n
+    if frames and pos == len(body):
+        for compressed, m in frames:
+            try:
+                parts.append(zlib.decompress(m, 32 + zlib.MAX_WBITS) if compressed else m)
+            except zlib.error:
+                pass
+    if b"%2B" in body or b"%2F" in body or b"%3D" in body:
+        parts.append(urllib.parse.unquote_to_bytes(body))
+    return parts
+
+def decode_droidguard_results_in(body):
+    # every DroidGuard result in a request body, decoded; "" when there is none
+    try:
+        out, seen = "", set()
+        for part in _body_parts(body):
+            for v in _dg_candidates(part):
+                if v in seen:
+                    continue
+                seen.add(v)
+                text = decode_droidguard_result(v.decode("latin-1"))
+                if text.startswith("nonce"):   # skip base64 that is not a DroidGuard result
+                    out += "DroidGuard result (%d characters of base64) in POST body (decoded):\n%s" % (len(v), text)
+        return out
+    except Exception as e:
+        return "***ERROR decoding DroidGuard result: %r\n" % e
 
 # ---------------------------------------------------------------- gref
 

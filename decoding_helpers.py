@@ -284,6 +284,11 @@ def printRequest(url, request):
                 break
         if not decoded:
             printUsingMimeType(postData,requestMimeType)
+        # DroidGuard results (checkin, adAttest, fdfe/sync, ...); the getAdEventToken decoder prints its own
+        if 'getAdEventToken' not in url:
+            res = adparams_decode.decode_droidguard_results_in(postData)
+            if res:
+                print(res, end='')
 
     return request_content_sum
 

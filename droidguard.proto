@@ -8,6 +8,8 @@ syntax = "proto2";
 
 message DroidGuardResult {
   optional bytes nonce = 1;               // 6 bytes, different in every result
+  // in one result (a GetEnforcement call, Dec 2024) field 2 is instead a single 4.9 KB opaque blob, encrypted as a
+  // whole; the decoder then prints it by size and decodes the other fields
   optional VmOutput vm_output = 2;
   optional Metrics metrics = 3;
   optional bytes f4 = 4;                  // empty in all
