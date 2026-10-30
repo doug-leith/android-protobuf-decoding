@@ -1,26 +1,64 @@
 // AdShield signal carried (encrypted) in the ms and dc_ms parameters of advert links, as built by the
 // Google Play store app (2022 build, signal message class eaq; adparams_decode.py decrypts it).
-// Field numbers and types are from the protobuf-lite message info, which keeps no names.  Names are
+// Field numbers and wire types are from the protobuf-lite message info, which keeps no names.  Names are
 // from the code that computes each field: partly the Play store app, partly the AdShield helper classes
 // (package com.google.android.ads.z__, class named in brackets), which the app ships encrypted inside
 // its own code and loads at runtime.  Where neither shows a meaning the name is f<number>.
-// Enum fields are declared int32 since the enum value names are stripped from the app.
+// The app's enums have their value names stripped; the enums below are named from the code that sets
+// them.  A few int64 fields that only ever hold a code are declared as enums too (same wire format).
 syntax = "proto2";
 
 message AfmaSignal {
+  enum BatteryStatus {                         // [m], from BatteryManager EXTRA_STATUS
+    BATTERY_STATUS_UNKNOWN = 0;
+    BATTERY_DISCHARGING_OR_NOT_CHARGING = 1;
+    BATTERY_CHARGING = 2;
+    BATTERY_FULL = 3;
+  }
+  enum NetworkTransport {                      // [s], from NetworkCapabilities.hasTransport
+    NETWORK_NONE = -1;
+    NETWORK_CELLULAR = 0;
+    NETWORK_WIFI = 1;
+    NETWORK_VPN = 2;
+  }
+  enum ScreenOrientation {                     // [t], from Configuration.orientation
+    ORIENTATION_UNDEFINED = -1;
+    ORIENTATION_PORTRAIT = 1;
+    ORIENTATION_LANDSCAPE = 3;
+    ORIENTATION_SQUARE = 20;
+  }
+  enum RootOrEmulator {                        // [q]
+    ROOT_EMULATOR_NOT_DETECTED = 0;
+    ROOT_SUPERUSER_APK = 1;                    // /system/app/Superuser.apk exists (old SuperSU root; Magisk is not detected)
+    EMULATOR = 2;                              // Build.MODEL google_sdk/Emulator/sdk or Build.HARDWARE goldfish/ranchu; wins over ROOT
+  }
+  enum CheckResult {                           // a yes/no check that can fail
+    CHECK_NO = 0;
+    CHECK_YES = 1;
+    CHECK_FAILED = 2;                          // the check threw, or (adb_enabled) the setting is missing
+  }
+  enum ClickPath {                             // [ab]: View click methods in the stack when the signal was made
+    CLICK_VIA_PERFORM_CLICK_RUNNABLE = 0;      // View.performClick called from View$PerformClick.run: a normal tap on a View
+    CLICK_DIRECT_PERFORM_CLICK = 1;            // View.performClick called directly, e.g. by code or accessibility
+    CLICK_NO_PERFORM_CLICK = 2;                // neither: the click did not come through a View's click handling
+  }
+
   optional string android_version = 1;         // Build.VERSION.RELEASE [u]; "E" on failure
   optional string client_name = 2;             // set by the caller; the Play store's user agent
-  optional int64 foreground_flag_noisy = 3;    // random 1-64, bit 0x10 set iff the app's process is foreground/visible [v]
-  optional int64 battery_status = 5;           // 0 unknown, 1 discharging/not charging, 2 charging, 3 full [m]
+  // foreground flag hidden in noise [v]: a random number 1-64 with bit 0x10 set if the app's process is
+  // foreground or visible (importance 100 or 200) and cleared otherwise.  Read it as (value & 0x10) != 0;
+  // the other bits are random.
+  optional int64 foreground_flag_noisy = 3;
+  optional BatteryStatus battery_status = 5;
   optional int64 battery_level_percent = 6;    // [m]
-  optional int64 network_transport = 11;       // -1 none, 0 cellular, 1 wifi, 2 VPN [s]
-  optional int64 screen_orientation = 12;      // 1 portrait, 3 landscape, 20 square, -1 undefined [t]
+  optional NetworkTransport network_transport = 11;
+  optional ScreenOrientation screen_orientation = 12;
   optional int64 last_up_x_dp = 14;            // last ACTION_UP touch [ag]
   optional int64 last_up_y_dp = 15;
-  optional int64 last_up_duration_ms = 16;     // up time - down time
+  optional int64 last_up_tap_duration_ms = 16; // finger down to finger up
   optional int64 seconds_since_sdk_init = 17;  // time_s - sdk_init_time_s
   optional int64 status_flags = 20;            // 4096 empty signal, 16384 no signal tasks, 32768
-  optional int64 root_or_emulator = 22;        // 0 neither, 1 /system/app/Superuser.apk exists, 2 emulator Build.MODEL/HARDWARE [q]
+  optional RootOrEmulator root_or_emulator = 22;
   optional int64 sdk_init_time_s = 23;         // time the signal collector was initialised
   optional string device_id = 24;              // ad request signals only: the Google Advertising Id (ad_id_type 5); when
                                                // Google Play services is not installed, MD5 of Settings.Secure.ANDROID_ID,
@@ -36,23 +74,26 @@ message AfmaSignal {
   optional string app_version_name = 34;       // [l]
   optional int64 app_version_code = 35;        // [l]
   optional int64 last_up_pressure_x100 = 36;   // last ACTION_UP touch [ag]
-  optional int64 last_up_touch_major_dp = 37;
+  optional int64 last_up_finger_contact_size_dp = 37;  // MotionEvent.getTouchMajor(): major axis of the contact area
   optional int64 touch_up_count = 39;          // ACTION_UP events
   optional int64 touch_move_sample_count = 40; // ACTION_MOVE samples, history included
   optional int64 touch_down_count = 41;        // ACTION_DOWN events
   optional int64 touch_cancel_count = 42;      // ACTION_CANCEL events
   repeated TouchDetails previous_up_events = 43;  // up to 5 earlier ACTION_UP touches, x and y only
   optional int64 cpu_cores = 44;               // Runtime.availableProcessors() [n]
-  optional int64 stack_depth = 45;             // stack frames below the first com.google.android.ads/gms frame [ab]
+  // stack trace taken when the signal was made [ab]: number of frames counted from the bottom of the
+  // stack (the thread's entry point) up to the first com.google.android.ads or com.google.android.gms
+  // frame.  The Play store's AdShield code is not in those packages, so here it is the whole stack depth.
+  optional int64 stack_depth = 45;
   optional string app_package_name = 46;       // [l]
   optional string app_installer = 47;          // installer package name, "unknown" if none [l]
-  optional int32 usb_connected = 48;           // 1 yes, 0 no, 2 failed [ah]
-  optional int32 adb_enabled = 49;             // 1 yes, 0 no, 2 setting missing [k]
+  optional CheckResult usb_connected = 48;     // USB_STATE broadcast extra "connected" [ah]
+  optional CheckResult adb_enabled = 49;       // Settings.Global adb_enabled [k]
   optional TouchDetails last_touch = 50;
   optional int64 elapsed_realtime_ms = 51;     // SystemClock.elapsedRealtime() [ac]
   optional int64 uptime_ms = 52;               // SystemClock.uptimeMillis() [ac]
   optional int64 ms_since_caller_event = 53;   // elapsedRealtime() - a time passed by the caller, click signals only [ad]
-  optional int32 click_path = 56;              // stack has View.performClick: 0 via View$PerformClick.run, 1 directly; 2 not at all [ab]
+  optional ClickPath click_path = 56;          // from the same stack trace as stack_depth
   optional ViewInfo view_info = 57;            // the advert's View [ai]
   optional int64 battery_temperature_decidegrees_c = 59;  // [m]
   optional int64 process_importance = 60;      // RunningAppProcessInfo.importance, 100 foreground, 200 visible [v]
@@ -61,8 +102,8 @@ message AfmaSignal {
   optional int64 activity_task_size = 63;      // number of activities in the Activity's task [j]
   optional string activity_class_name = 67;    // simple class name of the Activity, last 32 characters [j]
   optional RequestString request_string = 69;  // copied from the ad request, query signals only
-  optional int32 http_proxy_set = 73;          // 1 if System property http.proxyHost is set, 0 not, 2 failed [w]
-  optional int32 has_launcher_activity = 76;   // 1 if the app has a MAIN/LAUNCHER activity [r]
+  optional CheckResult http_proxy_set = 73;    // System property http.proxyHost set [w]
+  optional bool has_launcher_activity = 76;    // the app has a MAIN/LAUNCHER activity [r]
   optional int64 network_f83 = 83;             // values passed by the caller with the network transport [s]
   optional int64 network_f84 = 84;
   optional string f89 = 89;                    // newer than the 2022 build; "1.460000000" in captures
@@ -73,16 +114,16 @@ message AfmaSignal {
 message TouchDetails {
   optional int64 x_dp = 1;
   optional int64 y_dp = 2;
-  optional int64 touch_major_dp_x100 = 3;
-  optional int64 move_mean_touch_major_dp_x100 = 4;  // mean over ACTION_MOVE samples
+  optional int64 finger_contact_size_dp_x100 = 3;       // MotionEvent.getTouchMajor(), x 100
+  optional int64 move_mean_finger_contact_size_dp_x100 = 4;  // mean over ACTION_MOVE samples
   optional int64 pressure_x100 = 5;
-  optional int64 move_mean_pressure_x100 = 6;        // mean over ACTION_MOVE samples
-  optional int32 window_obscured = 7;          // 1 if FLAG_WINDOW_IS_OBSCURED (another window over the app)
-  optional int64 duration_ms = 8;              // up time - down time, ACTION_UP only
+  optional int64 move_mean_pressure_x100 = 6;           // mean over ACTION_MOVE samples
+  optional bool window_obscured = 7;           // FLAG_WINDOW_IS_OBSCURED: another window was over the app
+  optional int64 tap_duration_ms = 8;          // finger down to finger up, ACTION_UP only
   optional int64 tool_type = 9;                // MotionEvent.getToolType(0), 1 finger
   optional int64 source = 10;                  // MotionEvent.getSource(), 4098 touchscreen
-  optional int32 device_id_nonzero = 11;       // 1 if MotionEvent.getDeviceId() != 0
-  optional int64 up_stack_depth = 12;          // stack_depth at the last ACTION_UP [ab]
+  optional bool device_id_nonzero = 11;        // MotionEvent.getDeviceId() != 0 (injected events often have 0)
+  optional int64 up_stack_depth = 12;          // stack_depth, but for the stack at the last ACTION_UP [ab]
   optional int64 travel_distance_dp = 13;      // path length from ACTION_DOWN
   optional int64 down_window_offset_x_dp = 14; // rawX - x at ACTION_DOWN
   optional int64 down_window_offset_y_dp = 15;
