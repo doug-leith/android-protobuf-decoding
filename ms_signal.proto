@@ -84,6 +84,10 @@ message AfmaSignal {
   // stack trace taken when the signal was made [ab]: number of frames counted from the bottom of the
   // stack (the thread's entry point) up to the first com.google.android.ads or com.google.android.gms
   // frame.  The Play store's AdShield code is not in those packages, so here it is the whole stack depth.
+  // A larger value means the signal was built further down a chain of calls; presumably Google compares
+  // it with the usual value for the app to spot clicks made another way.  In the Dec 2024 captures
+  // it is 19, 91 or 92, in the same order in both tests (19 for each test's first click, then 91, 92),
+  // so it depends on the code path in the Play store that built the signal.
   optional int64 stack_depth = 45;
   optional string app_package_name = 46;       // [l]
   optional string app_installer = 47;          // installer package name, "unknown" if none [l]
@@ -123,7 +127,11 @@ message TouchDetails {
   optional int64 tool_type = 9;                // MotionEvent.getToolType(0), 1 finger
   optional int64 source = 10;                  // MotionEvent.getSource(), 4098 touchscreen
   optional bool device_id_nonzero = 11;        // MotionEvent.getDeviceId() != 0 (injected events often have 0)
-  optional int64 up_stack_depth = 12;          // stack_depth, but for the stack at the last ACTION_UP [ab]
+  // stack_depth counted the same way, but for the stack captured when the touch event of the last
+  // ACTION_UP (finger lifted) was handled [ab], i.e. the depth of the touch dispatch path.  13 in every
+  // capture that has touch data; presumably used to spot touches delivered another way (e.g. injected
+  // or replayed events).
+  optional int64 up_stack_depth = 12;
   optional int64 travel_distance_dp = 13;      // path length from ACTION_DOWN
   optional int64 down_window_offset_x_dp = 14; // rawX - x at ACTION_DOWN
   optional int64 down_window_offset_y_dp = 15;
@@ -132,6 +140,27 @@ message TouchDetails {
   optional int64 down_x_dp = 18;               // x at ACTION_DOWN
   optional int64 down_y_dp = 19;
 }
+
+// The envelope: what the base64url ms / dc_ms value decodes to (Play store class eav; the Google Mobile
+// Ads SDK uses the same layout, class com.google.ads.afma.proto2api.l).  adparams_decode.py reads it
+// directly; it is declared here to document the format.
+message AdShieldEnvelope {
+  enum Producer {
+    // field 4 absent: the Play store's own encoder.  Each block is 256 bytes, encrypted with the fixed
+    // transform in afma_circuit.py and RC4 keyed by the link's ai value; md5 is the MD5 of the
+    // decrypted AfmaSignal, so a decryption can be checked.  adparams_decode.py decrypts these.
+    PRODUCER_TINK = 2;         // a single block of Tink hybrid (ECIES P-256, AES-CTR-HMAC) ciphertext,
+                               // encrypted to a Google public key carried in the app; cannot be decrypted
+                               // without Google's private key
+    PRODUCER_DROIDGUARD = 4;   // the output of the DroidGuard VM (flow msa-r), Google Mobile Ads SDK;
+                               // encrypted by the VM, cannot be decrypted offline
+  }
+  repeated bytes block = 1;
+  optional bytes md5 = 2;      // only for the Play store's own encoder
+  optional Producer producer = 4;
+}
+// A value that is exactly 256 bytes and not an envelope is the Play store encoder's fallback for an
+// empty signal: one block holding MD5(rest) + a length byte + the signal, encrypted the same way.
 
 message ViewInfo {                             // eap [ai]
   optional int64 visible_area_percent = 1;     // on-screen area as % of the View's area, -2 not visible
