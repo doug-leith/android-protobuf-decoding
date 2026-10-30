@@ -12,6 +12,8 @@
 # - every entry of a map is kept, duplicate keys included, and printed stable-sorted by key with its key
 #   and value always shown (defaults when missing) and nothing else; for this the map entry types are
 #   compiled as ordinary messages, so a map parses as a repeated field
+# - a group field that arrives length-delimited is kept as an unknown field (python's parser rejects the
+#   message): it is renumbered to an unused field number before parsing and printed under its own number
 # - missing required fields give protoc's warning line before the message
 import ctypes, io, os, subprocess, tempfile
 from google.protobuf import descriptor, descriptor_pb2, descriptor_pool, message_factory, text_format
@@ -73,10 +75,115 @@ def _enum_value(value):
     value &= 0xffffffff
     return value | 0xffffffff00000000 if value & 0x80000000 else value
 
+def _has_groups(desc, seen=None):
+    # whether desc or a message it reaches has a group (delimited) field
+    seen = set() if seen is None else seen
+    if desc.full_name in seen:
+        return False
+    seen.add(desc.full_name)
+    for fd in desc.fields:
+        if fd.type == descriptor.FieldDescriptor.TYPE_GROUP:
+            return True
+        if fd.message_type is not None and _has_groups(fd.message_type, seen):
+            return True
+    return False
+
+def _encode_varint(n):
+    out = b""
+    while True:
+        b, n = n & 0x7f, n >> 7
+        if n:
+            out += bytes([b | 0x80])
+        else:
+            return out + bytes([b])
+
+def _scan(buf, pos, end, group=None):
+    # the fields in buf[pos:end] (or up to group's end tag) as (field, wire type, tag end, value start, value end,
+    # field end) with byte offsets, and the position after them; None if malformed
+    out = []
+    while pos < end:
+        tag, tag_end = decode_raw._varint(buf, pos, 10)
+        field, wiretype = (tag & 0xffffffff) >> 3, tag & 7
+        if wiretype == 0:
+            _v, pos = decode_raw._varint(buf, tag_end, 10)
+            vstart, vend = tag_end, pos
+        elif wiretype in (1, 5):
+            vstart, vend = tag_end, tag_end + (8 if wiretype == 1 else 4)
+            pos = vend
+        elif wiretype == 2:
+            n, vstart = decode_raw._varint(buf, tag_end, 10)
+            vend = pos = vstart + n
+        elif wiretype == 3:
+            inner = _scan(buf, tag_end, end, field)
+            if inner is None:
+                return None
+            vstart, vend, pos = tag_end, inner[2], inner[1]
+        elif wiretype == 4:
+            return (out, tag_end, pos) if field == group else None
+        else:
+            return None
+        if pos > end:
+            return None
+        out.append((field, wiretype, tag_end, vstart, vend, pos))
+    return None if group is not None else (out, pos)
+
+def _field_numbers(buf, out, depth=0):
+    # every field number in buf, including inside length-delimited fields that parse as messages
+    try:
+        fields = decode_raw._parse(buf, 0, 100, nested=depth > 0)[0]
+    except decode_raw.DecodeRawError:
+        return out
+    def walk(fs):
+        for f, w, v in fs:
+            out.add(f)
+            if w == 2 and v and depth < 64:
+                _field_numbers(v, out, depth + 1)
+            elif w == 3:
+                walk(v)
+    walk(fields)
+    return out
+
+def _renumber_delimited(buf, desc, placeholders, used):
+    # protoc keeps a group field that arrives length-delimited as an unknown field; python's parser rejects the
+    # message. Renumber each such field (here and in nested messages and groups) to an unused field number, so it
+    # parses as unknown too; placeholders maps the new numbers back for printing. Returns buf itself if unchanged.
+    try:
+        scanned = _scan(buf, 0, len(buf))
+    except decode_raw.DecodeRawError:
+        return buf
+    if scanned is None:
+        return buf
+    fields, parts, last = scanned[0], [], 0
+    pos = 0
+    for field, wiretype, tag_end, vstart, vend, end in fields:
+        start, pos = pos, end
+        fd = desc.fields_by_number.get(field)
+        if fd is None or fd.message_type is None:
+            continue
+        if fd.type == descriptor.FieldDescriptor.TYPE_GROUP and wiretype == 2:
+            number = next(n for n, orig in placeholders.items() if orig == field) if field in placeholders.values() else \
+                next(n for n in range(0x1fffffff, 0, -1) if n not in used and n not in placeholders)
+            placeholders[number] = field
+            parts += [buf[last:start], _encode_varint(number << 3 | 2)]   # same length prefix and value
+            last = tag_end
+        elif wiretype in (2, 3) and _has_groups(fd.message_type):
+            inner = buf[vstart:vend]
+            new = _renumber_delimited(inner, fd.message_type, placeholders, used)
+            if new is not inner:
+                if wiretype == 2:
+                    parts += [buf[last:tag_end], _encode_varint(len(new)), new]
+                else:
+                    parts += [buf[last:vstart], new, buf[vend:end]]   # the group's own end tag
+                last = end
+    if not parts:
+        return buf
+    return b"".join(parts) + buf[last:]
+
 class _Printer(text_format._Printer):
-    def __init__(self, out, map_entries):
+    def __init__(self, out, map_entries, placeholders=None):
         super().__init__(out, as_utf8=False)
         self.map_entries = map_entries
+        self.placeholders = placeholders or {}
 
     def PrintMessage(self, message):
         # fields in field-number order, then unknown fields; no Any expansion
@@ -96,7 +203,7 @@ class _Printer(text_format._Printer):
             else:
                 self.PrintField(field, value)
         known = message.DESCRIPTOR.fields_by_number
-        fields = [(f, w, _enum_value(v) if w == 0 and f in known and known[f].enum_type is not None else v)
+        fields = [(self.placeholders.get(f, f), w, _enum_value(v) if w == 0 and f in known and known[f].enum_type is not None else v)
                   for f, w, v in _unknown(unknown_fields.UnknownFieldSet(message))]
         out = []
         decode_raw._print(fields, 10, self.indent // 2, out)
@@ -125,13 +232,16 @@ def decode_named(message, proto, data, include=os.path.dirname(os.path.realpath(
         m = message_factory.GetMessageClass(pool.FindMessageTypeByName(message))()
     except KeyError:
         raise DecodeNamedError("type not defined in %s: %s" % (proto, message))
+    data, placeholders = bytes(data), {}
+    if _has_groups(m.DESCRIPTOR):
+        data = _renumber_delimited(data, m.DESCRIPTOR, placeholders, _field_numbers(data, set()))
     try:
-        m.MergeFromString(bytes(data))
+        m.MergeFromString(data)
     except Exception as e:
         raise DecodeNamedError("Failed to parse input (%s --decode=%s): %s" % (proto, message, e))
     missing = m.FindInitializationErrors()
     out = io.StringIO()
     if missing:
         out.write("warning:  Input message is missing required fields:  %s\n" % ", ".join(missing))
-    _Printer(out, map_entries).PrintMessage(m)
+    _Printer(out, map_entries, placeholders).PrintMessage(m)
     return out.getvalue()
