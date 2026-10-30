@@ -690,7 +690,8 @@ def _agsa_grep(ev):
             info.append("flow_data=" + ",".join(exts))
     if ev.HasField("veProducerByteString"):
         ve = ev.veProducerByteString
-        info.append("ve=%s" % (",".join(str(e.ve_type) for e in ve.visual_element) or "-"))
+        ve_type = lambda e: _agsa_value(e.DESCRIPTOR.fields_by_name["ve_type"], e.ve_type)
+        info.append("ve=%s" % (",".join(ve_type(e) for e in ve.visual_element) or "-"))
         exts = []
         for e in ve.visual_element:
             for x in _agsa_leaves(e, skip=("ve_type", "index", "child_index")):
@@ -699,7 +700,7 @@ def _agsa_grep(ev):
         if exts:
             info.append("ve_data=" + ",".join(exts))
         if ve.interactions.interaction:
-            info.append("interactions=%s" % ",".join("%s:%d" % (_agsa_value(i.DESCRIPTOR.fields_by_name["type"], i.type), i.target.ved.ve_type)
+            info.append("interactions=%s" % ",".join("%s:%s" % (_agsa_value(i.DESCRIPTOR.fields_by_name["type"], i.type), ve_type(i.target.ved))
                                                      for i in ve.interactions.interaction))
     # the event's other fields
     other = _agsa_leaves(ce, skip=("current_time_millis", "elapsed_realtime_millis", "elapsed_realtime_nanos", "app_flow",
