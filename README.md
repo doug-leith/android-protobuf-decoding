@@ -142,6 +142,10 @@ Each message contains a sequence of log events, which may be from different log 
 
 - voice_search_named.proto is decoded protobuf definition of the Google app's Assistant queries (on-device transcript with the last 10 earlier queries, foreground app, installed apps, device state) and replies; wallet_client_token_named.proto decodes the Google Play Services Wallet token sent with each query (IMEI, phone number, serial number, location, IP addresses)
 
+## Google Play Services https://phonedeviceverification-pa.googleapis.com/google.internal.communications.phonedeviceverification.v1.PhoneDeviceVerification/ and .../PhoneNumber/GetVerifiedPhoneNumbers
+
+- phonedeviceverification_named.proto is decoded protobuf definition of Google Play Services' phone number verification (Constellation) requests and responses: GetConsent, SetConsent, Sync, Proceed and GetVerifiedPhoneNumbers. Sync and Proceed send each SIM's IMSI, ICCID, phone numbers, the IMEI, the hour of each recent SMS sent or received and service state events, with the Android id and Google account tokens; GetConsent and SetConsent carry the RCS and verification consent
+
 ## Google Play Services https://android.googleapis.com/auth/devicekey
 
 - devicekeyrequest.proto is (partially) decoded protobuf definition for request and response

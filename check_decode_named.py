@@ -21,7 +21,7 @@ PROTOS = ["app_measurement.proto3", "firebase_logbatch.proto", "finsky_protobuf/
           "scoobyevents.proto", "scoobymessageevents.proto", "playstore.proto", "client_logging_named.proto",
           "primes_named.proto", "chime_named.proto", "autofill_named.proto", "on_device_abuse_named.proto",
           "agsa_named.proto", "ondevicesafety_named.proto", "westworld_counters_named.proto", "kollektomat_named.proto", "voilatile_named.proto", "voice_search_named.proto",
-          "wallet_client_token_named.proto",
+          "wallet_client_token_named.proto", "phonedeviceverification_named.proto",
           ("federated_learning_protos", "federatedcompute/eligibility_eval_tasks.proto"),
           ("federated_learning_protos", "federatedcompute/task_assignments.proto"),
           ("federated_learning_protos", "federatedcompute/aggregations.proto"),

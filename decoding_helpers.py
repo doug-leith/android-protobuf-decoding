@@ -254,6 +254,7 @@ def printRequest(url, request):
     'KollektomatService/Offer': decode_kollektomat,
     'ProgramBlobService/DownloadBlob': decode_downloadblob_request,
     'VoilaTileService/FindTiles': decode_voilatile_request,
+    'google.internal.communications.phonedeviceverification.v1.': lambda b: decode_pdv_request(url, b),
     'federatedcompute-pa.googleapis.com/v1/': lambda b: federatedcompute_decode.decode_request(url, b) or decode_pb(b),
     'www.google.com/m/voice-search/up': lambda b: voice_search_decode.decode_up(b) or decode_pb(b),
     'app-measurement.com/a': decode_firebase_analytics,
@@ -327,6 +328,7 @@ def printResponse(url, response, verboseResponse=False):
     'deviceintegritytokens-pa.googleapis.com/v1/getPoIntegrityToken': adparams_decode.decode_get_po_integrity_token_response,
     'ProgramBlobService/DownloadBlob': decode_downloadblob_response,
     'VoilaTileService/FindTiles': decode_voilatile_response,
+    'google.internal.communications.phonedeviceverification.v1.': lambda b: decode_pdv_response(url, b),
     'federatedcompute-pa.googleapis.com/v1/': lambda b: federatedcompute_decode.decode_response(url, b, response.status_code) or decode_pb(b),
     'www.google.com/m/voice-search/down': lambda b: voice_search_decode.decode_down(b) or b.decode('utf-8', 'replace'),
     }
@@ -1157,6 +1159,127 @@ def decode_downloadblob_request(postData, verbose=True, debug=False):
 
 def decode_downloadblob_response(data, verbose=True, debug=False):
     return(decode_gRPC(data, decode_downloadblob_responseproto, "Response data (gRPC decoded)"))
+
+# phonedeviceverification-pa: Google Play services' phone number verification (Constellation), decoded with
+# phonedeviceverification_named.proto. The request and response message of each RPC, by method name.
+PDV_MESSAGES = {
+    'GetConsent': ('GetConsentRequest', 'GetConsentResponse'),
+    'SetConsent': ('SetConsentRequest', 'SetConsentResponse'),
+    'Sync': ('SyncRequest', 'SyncResponse'),
+    'Proceed': ('ProceedRequest', 'ProceedResponse'),
+    'GetVerifiedPhoneNumbers': ('GetVerifiedPhoneNumbersRequest', 'GetVerifiedPhoneNumbersResponse'),
+}
+PDV_STATE = {1: 'NOT_VERIFIED', 2: 'PENDING', 3: 'VERIFIED'}   # Verification.state (fgft)
+PDV_CONSENT = {1: 'CONSENTED', 2: 'NOT_CONSENTED'}             # DeviceConsent.consent (fgdw)
+
+def pdv_header(h):
+    # the RequestHeader every request but GetVerifiedPhoneNumbers carries
+    ci = h.client_info
+    ids = ci.device_id
+    return "trigger=%s session=%s gms=%s sdk=%d iid_token=%s android_id=%s gaia_tokens=%d gaia_signals=%d sims=%s client_auth=%s droidguard=%s" % (
+        pb_enum_name(h.trigger, "trigger"), h.session_id or "-", ci.gms_version.split(" ")[0] or "-", ci.sdk_int,
+        "yes" if ids.iid_token else "no", ids.device_android_id or "-", len(ci.gaia_tokens), len(ci.gaia_signals.signals),
+        ",".join(s.sim_operator for s in ci.sim_hashes) or "-", "yes" if h.HasField("client_auth") else "no",
+        "token" if ci.droidguard.droidguard_token else "result" if ci.droidguard.droidguard_result else "-")
+
+def pdv_verification(v):
+    # one SIM's verification record: its identifiers and state
+    tip = v.sim.sim_info.tip_info
+    ti = v.telephony_info
+    s = "[%s imsi=%s iccid=%s number=%s telephony_numbers=%s imei=%s sim=%s/%s sms_events=%d service_state_events=%d" % (
+        PDV_STATE.get(v.state, v.state), ",".join(tip.imsi) or "-", tip.iccid or "-", tip.number or "-",
+        ",".join("%s(%s)" % (n.phone_number, pb_enum_name(n, "source")) for n in tip.telephony_phone_numbers) or "-",
+        ti.device_id or "-", ti.sim_operator.mcc_mnc or "-", ti.sim_operator.name.replace(" ", "_") or "-", len(ti.sms_events),
+        len(ti.service_state_events))
+    if v.HasField("verified"):
+        s += " verified_number=%s" % v.verified.phone_number
+    elif v.HasField("pending"):
+        c = v.pending.challenge
+        s += " challenge=%s" % pb_enum_name(c, "verification_method")
+        if c.HasField("mo_sms"):
+            s += " sms_to=%s" % c.mo_sms.destination
+    elif v.HasField("unverified"):
+        s += " reason=%s" % pb_enum_name(v.unverified, "reason")
+    if v.verify_request.policy_id:
+        s += " policy=%s caller=%s" % (v.verify_request.policy_id, v.verify_request.calling_package or "-")
+    return s + "]"
+
+def pdv_deadline(d):
+    # ServerDeadline as seconds from the server's now
+    return "%ds" % (d.deadline.seconds - d.server_time.seconds) if d.HasField("deadline") else "-"
+
+def decode_pdv_requestproto(rpc, bytes, verbose=True, debug=False, Grep=True):
+    name = PDV_MESSAGES[rpc][0]
+    try:
+        req = message_class(name, "phonedeviceverification_named.proto")()
+        req.ParseFromString(bytes)
+        decoded = decode_named(name, "phonedeviceverification_named.proto", bytes)
+    except (protobuf_message.DecodeError, DecodeNamedError) as e:
+        if verbose:
+            print("***ERROR %s: " % name, e)
+        return "Failed"
+    grep = ""
+    if Grep:
+        if rpc == 'GetConsent':
+            detail = "client=%s imei=%s params=%s %s" % (pb_enum_name(req, "client"), req.imei or "-",
+                ",".join(p.key for p in req.params) or "-", pdv_header(req.header))
+        elif rpc == 'SetConsent':
+            detail = "client=%s consent=%s automatic_cost=%s version=%d variant=%s consent_trigger=%s audit_token=%dB params=%s %s" % (
+                pb_enum_name(req, "client"), PDV_CONSENT.get(req.device_consent.consent, req.device_consent.consent),
+                req.device_consent.automatic_cost_setting, req.consent_version, req.consent_info.consent_variant or "-",
+                req.consent_info.consent_trigger or "-", len(req.audit_token), ",".join(p.key for p in req.params) or "-",
+                pdv_header(req.header))
+        elif rpc == 'Sync':
+            detail = "%s %s" % (pdv_header(req.header), " ".join(pdv_verification(v) for v in req.verifications) or "-")
+        elif rpc == 'Proceed':
+            r = req.challenge_response
+            answer = ("mo_sms status=%d result_code=%d error_code=%d" % (r.mo_sms_result.status, r.mo_sms_result.result_code,
+                      r.mo_sms_result.error_code)) if r.HasField("mo_sms_result") else (r.WhichOneof("oneof0") or "-")
+            detail = "answer=%s %s %s" % (answer, pdv_header(req.header), pdv_verification(req.verification))
+        else:
+            detail = "session=%s selection=%s caller=%s" % (req.session_id or "-", ",".join(map(str, req.phone_number_selection)) or "-",
+                req.id_token_params.calling_package or "-")
+        grep = "+++PHONEDEVICEVERIFICATION %s request %s\n" % (rpc, detail)
+    return grep + decoded
+
+def decode_pdv_responseproto(rpc, bytes, verbose=True, debug=False, Grep=True):
+    name = PDV_MESSAGES[rpc][1]
+    try:
+        resp = message_class(name, "phonedeviceverification_named.proto")()
+        resp.ParseFromString(bytes)
+        decoded = decode_named(name, "phonedeviceverification_named.proto", bytes)
+    except (protobuf_message.DecodeError, DecodeNamedError) as e:
+        if verbose:
+            print("***ERROR %s: " % name, e)
+        return "Failed"
+    grep = ""
+    if Grep:
+        if rpc == 'GetConsent':
+            detail = "device_consent=%s clients=%s next_check=%s" % (
+                PDV_CONSENT.get(resp.device_consent.consent, resp.device_consent.consent) if resp.HasField("device_consent") else "-",
+                ",".join("%s:%s" % (pb_enum_name(c, "client"), PDV_CONSENT.get(c.consent, c.consent)) for c in resp.client_consents) or "-",
+                pdv_deadline(resp.next_check))
+        elif rpc in ('Sync', 'Proceed'):
+            results = [r.verification for r in resp.results if r.HasField("verification")] if rpc == 'Sync' else [resp.verification]
+            errors = ["%d:%s" % (r.error.code, r.error.message) for r in resp.results if r.HasField("error")] if rpc == 'Sync' else []
+            detail = "next_sync=%s %s errors=%s" % (pdv_deadline(resp.next_sync), " ".join(pdv_verification(v) for v in results) or "-",
+                                                    "|".join(errors) or "-")
+        elif rpc == 'GetVerifiedPhoneNumbers':
+            detail = "numbers=%s" % (",".join(n.phone_number for n in resp.phone_numbers) or "-")
+        else:
+            detail = ""
+        grep = "+++PHONEDEVICEVERIFICATION %s response %s\n" % (rpc, detail)
+    return grep + decoded
+
+def decode_pdv_request(url, postData, verbose=True, debug=False):
+    rpc = url.split("?")[0].rsplit("/", 1)[-1]
+    return(decode_gRPC(postData, lambda b, **kw: decode_pdv_requestproto(rpc, b, **kw)))
+
+def decode_pdv_response(url, data, verbose=True, debug=False):
+    if data[:1] not in (b"\x00", b"\x01"):   # an HTTP error page (403 text/html in the captures), not gRPC
+        return data.decode("utf-8", "replace")
+    rpc = url.split("?")[0].rsplit("/", 1)[-1]
+    return(decode_gRPC(data, lambda b, **kw: decode_pdv_responseproto(rpc, b, **kw), "Response data (gRPC decoded)"))
 
 def base64padding(header):
     if len(header) % 4 == 2:
