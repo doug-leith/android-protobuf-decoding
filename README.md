@@ -37,7 +37,7 @@ Clearcut logger sends messages to https://play.googleapis.com/log/batch endpoint
 
 Each message contains a sequence of log events, which may be from different log sources.  Each event is a protobuf with a header and a sequence of event entries.   The event entries are sent as a binary message that encodes a protobuf array (a sequence of size, protobuf pairs), which needs some extra work to decode.  The format of the individual protobufs in the array depends on the log source. 
 
-- logbatch_decode.py is a python script for decoding these messages, including the protobuf array.  For the ANDROID_MESSAGING, ANDROID_DIALER, LATIN_IME, ICING, CLIENT_LOGGING_PROD, LB_AS (Lockbox), WESTWORLD (aosp statsd service), TRON (aosp metric logger), ACTIVITY_RECOGNITION log sources the individual events are decoded using the protobuf definitions below, otherwise the events are decoded as raw protobufs (so field names are unknown and format of each field might be guessed incorrectly).
+- logbatch_decode.py is a python script for decoding these messages, including the protobuf array.  For the ANDROID_MESSAGING, ANDROID_DIALER, LATIN_IME, ICING, CLIENT_LOGGING_PROD, CHIME, LB_AS (Lockbox), WESTWORLD (aosp statsd service), TRON (aosp metric logger), ACTIVITY_RECOGNITION log sources the individual events are decoded using the protobuf definitions below, otherwise the events are decoded as raw protobufs (so field names are unknown and format of each field might be guessed incorrectly).
 - decoding_helpers.py are helper functions for decoding
 
 ### ANDROID_MESSAGING log source (Google Messages App)
@@ -59,6 +59,10 @@ Each message contains a sequence of log events, which may be from different log 
 ### CLIENT_LOGGING_PROD log source (warning and error log records uploaded by Google apps)
 
 - client_logging_named.proto is decoded protobuf definition
+
+### CHIME log source (push notification events logged by Google apps: delivered, shown, clicked, dismissed, with the app's notification channels and FCM token)
+
+- chime_named.proto is decoded protobuf definition
 
 ### LB_AS log source (Google Play Services Lockbox component which logs app usage data)
 
