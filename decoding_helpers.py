@@ -252,6 +252,7 @@ def printRequest(url, request):
     'play.googleapis.com/log/batch': decode_log_batch,
     'experimentsandconfigs/v1/getExperimentsAndConfigs': decodeHeterodyneRequest,
     'android.googleapis.com/auth/devicekey': decode_deviceKeyRequest,
+    'deviceintegritytokens-pa.googleapis.com/v1/getAdEventToken': adparams_decode.decode_get_ad_event_token_request,
     'play.googleapis.com/play/log':decode_playstore,
     'firebaselogging-pa.googleapis.com/v1/firelog/legacy/batchlog':decode_firebase_logbatch,
     'firebaselogging.googleapis.com/v0cc/log/batch':decode_firebase_logbatch,
@@ -305,6 +306,7 @@ def printResponse(url, response, verboseResponse=False):
     'remoteprovisioning.googleapis.com/v1/:signCertificates' : decode_signedcerts,
     'remoteprovisioning.googleapis.com/v1:signCertificates' : decode_signedcerts,
     'android.googleapis.com/auth/devicekey': decode_deviceKeyResponse,
+    'deviceintegritytokens-pa.googleapis.com/v1/getAdEventToken': adparams_decode.decode_get_ad_event_token_response,
     }
 
     responseMimeType=None

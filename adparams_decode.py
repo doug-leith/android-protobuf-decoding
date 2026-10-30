@@ -4,9 +4,9 @@
 #   gref       protobuf in the Play store intent:// link returned by www.google.com/aclk (see gref.proto)
 # decode_url_params(url) returns the text to print, "" when the url carries none of these.  It never
 # raises: a value that is encrypted, or in a format we do not know, is reported as such.
-import base64, hashlib, os, re, struct, urllib.parse
+import base64, datetime, hashlib, os, re, struct, urllib.parse
 from decode_raw import decode_raw, DecodeRawError
-from decode_named import decode_named, DecodeNamedError
+from decode_named import decode_named, DecodeNamedError, message_class
 
 mypath = os.path.dirname(os.path.realpath(__file__))
 
@@ -263,6 +263,50 @@ def decode_attok(value):
         return ("encrypted: Tink %s ciphertext, key id 0x%s, %d bytes; the destination's key is needed to decrypt\n"
                 % ("TINK" if buf[0] == 1 else "LEGACY", buf[1:5].hex(), len(buf)))
     return "encrypted or unknown format: %d bytes\n" % len(buf)
+
+# ---------------------------------------------------------------- getAdEventToken
+
+# POST body and reply of deviceintegritytokens-pa.googleapis.com/v1/getAdEventToken, where Google Play Services
+# has the event attestation key certified; the reply is the integrity token every attok carries.
+
+def _parse(message, buf):
+    try:
+        m = message_class(message, "attok.proto")()
+        m.MergeFromString(buf)
+        return m
+    except Exception:
+        return None
+
+def decode_get_ad_event_token_request(buf):
+    req = _parse("GetAdEventTokenRequest", buf)
+    # a P-256 public key (33 bytes compressed, 65 uncompressed) and a DroidGuard result, as GMS builds it
+    if req is None or len(req.public_key) not in (33, 65) or not req.droidguard_result:
+        return "not a getAdEventToken request:\n" + _raw(buf)
+    # the DroidGuard result is tens of KB of base64; print its size in its place
+    n = len(req.droidguard_result)
+    req.droidguard_result = "<%d characters of base64: DroidGuard result, encrypted>" % n
+    out = _named("GetAdEventTokenRequest", req.SerializeToString())
+    out += "public_key: %s\n" % req.public_key.hex()
+    if req.HasField("ad_id"):
+        out += "Google Advertising Id: %s\n" % _uuid(req.ad_id)
+    return out
+
+def decode_get_ad_event_token_response(buf):
+    resp = _parse("GetAdEventTokenResponse", buf)
+    if resp is None or len(resp.integrity_token.content.public_key) not in (33, 65) or not resp.integrity_token.signature:
+        return "not a getAdEventToken reply:\n" + _raw(buf)
+    out = _named("GetAdEventTokenResponse", buf)
+    c = resp.integrity_token.content
+    out += "integrity token, signed by Google, signature %d bytes:\n" % len(resp.integrity_token.signature)
+    out += "public_key: %s\n" % c.public_key.hex()
+    if c.HasField("issued_time_s"):
+        try:
+            out += "issued: %s UTC\n" % datetime.datetime.fromtimestamp(c.issued_time_s, datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        except (OverflowError, OSError, ValueError):
+            out += "issued: %d (not a valid time)\n" % c.issued_time_s
+    if c.HasField("ad_id"):
+        out += "Google Advertising Id: %s\n" % _uuid(c.ad_id)
+    return out
 
 # ---------------------------------------------------------------- gref
 

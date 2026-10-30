@@ -1,6 +1,6 @@
 // Event attestation token carried in the attok query parameter of in-app ad tracking links, and the
 // device integrity token Google Play Services fetches from deviceintegritytokens-pa.googleapis.com
-// /v1/getAdEventToken. Recovered from Google Play Services 21.48.15, package
+// /v1/getAdEventToken (request and reply at the end). Recovered from Google Play Services 21.48.15, package
 // com.google.android.gms.ads.identifier.settings (class names in comments are the obfuscated ones).
 // Fields 2 and 5 of IntegrityTokenContent are newer than that build; they are named from captured replies.
 syntax = "proto2";
@@ -80,4 +80,25 @@ message EventAttestation {
     InstallReferrerEvent install_referrer = 11;
     UserDataDeletionEvent user_data_deletion = 12;
   }
+}
+
+// chqo: POST body of https://deviceintegritytokens-pa.googleapis.com/v1/getAdEventToken, sent about once a day
+// (periodic task ads.fetch_integrity_token.periodic) to have Google certify the handset's event attestation key
+message GetAdEventTokenRequest {
+  optional string droidguard_result = 1;  // base64 DroidGuard result of flow ad-event-attest-token, whose content
+                                          // binding is the public key and the Advertising Id; encrypted, ~30-36 KB
+  optional bytes public_key = 2;          // handset event attestation public key (compressed P-256)
+  optional bytes ad_id = 3;               // Google Advertising Id, 16 bytes
+}
+
+// chqp: the reply. GMS stores integrity_token (as event_attestation_integrity_token, after checking that its
+// public key is the handset's) and puts it in every EventAttestation it signs.
+message GetAdEventTokenResponse {
+  optional SignedIntegrityToken integrity_token = 1;
+}
+
+// SignedToken with its content decoded
+message SignedIntegrityToken {
+  optional IntegrityTokenContent content = 1;
+  optional bytes signature = 2;           // Google's signature, 64 bytes
 }

@@ -119,6 +119,10 @@ Each message contains a sequence of log events, which may be from different log 
 - playstore.proto is (partially) decoded protobuf definition, but note that it contains serialized protobufs and so extra work is needed to fully decode data (see playstore_decode.py)
 - playstoreresponse_decode.py decodes the responses sent by https://play-fe.googleapis.com/fdfe
 
+## Google Play Services https://deviceintegritytokens-pa.googleapis.com/v1/getAdEventToken
+
+- GetAdEventTokenRequest and GetAdEventTokenResponse in attok.proto are the decoded protobuf definitions. About once a day Google Play Services sends its event attestation public key, the Google Advertising Id and a DroidGuard result, and gets back a Google-signed token holding the key, a timestamp and the Advertising Id. Every attok token (below) carries this signed token.
+
 ## AOSP https://remoteprovisioning.googleapis.com/v1/:signCertificates
 
 - decodes signed public keys response
