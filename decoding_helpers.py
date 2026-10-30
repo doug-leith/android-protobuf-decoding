@@ -5,7 +5,7 @@ import subprocess
 import textwrap
 import sys
 import os
-#import brotli
+import brotli  # a dependency of mitmproxy
 import urllib.parse
 import zlib
 import base64
@@ -106,7 +106,7 @@ def printUsingMimeType(payload,mimeType,tag="POST Body"):
     if mimeType is None:
         print(payload)
         return
-    if mimeType in ['application/x-protobuf', 'application/x-protobuffer', 'application/x-brotli', 
+    if mimeType in ['application/x-protobuf', 'application/x-protobuffer',
                     'application/octet-stream','application/x-gzip','application/protobuf',
                      'application/vnd.google.octet-stream-compressible'
                     ]:
@@ -124,10 +124,19 @@ def printUsingMimeType(payload,mimeType,tag="POST Body"):
         print(decode_gRPC(payload, decode_pb, tag+" ("+mimeType+" decoded)"))
     elif 'application/json' in mimeType: 
         print(tag+" ("+mimeType+"):")
-        print(payload.decode('utf8'))
+        try:
+            print(payload.decode('utf8'))
+        except UnicodeDecodeError:
+            print(payload)
     elif mimeType == 'application/cbor':
-        print(tag+" ("+mimeType+" decoded):")
-        print(cbor2.loads(payload))
+        try:
+            decoded = cbor2.loads(payload)
+            print(tag+" ("+mimeType+" decoded):")
+            print(decoded)
+        except cbor2.CBORDecodeError as e:
+            print("***ERROR: cbor: ",e)
+            print(tag+" ("+mimeType+"):")
+            print(payload)
     elif mimeType == 'text/plain; charset=utf-8':
         print(tag+" ("+mimeType+"):")
         try:
@@ -143,8 +152,14 @@ def printUsingMimeType(payload,mimeType,tag="POST Body"):
             print(payload)
     elif mimeType == 'application/x-brotli':
         # Microsoft schema only
-        print(tag+" ("+mimeType+" decoded):")
-        print(brotli.decompress(postData).decode('utf8'))
+        try:
+            text = brotli.decompress(payload).decode('utf8')
+            print(tag+" ("+mimeType+" decoded):")
+            print(text)
+        except (brotli.error, UnicodeDecodeError) as e:
+            print("***ERROR: brotli: ",e)
+            print(tag+" ("+mimeType+"):")
+            print(payload)
     else:
         print(tag+" ("+mimeType+"):")
         print(payload)
