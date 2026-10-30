@@ -76,7 +76,7 @@ Each message contains a sequence of log events, which may be from different log 
 
 - on_device_abuse_named.proto is decoded protobuf definition
 
-### **AGSA_* log sources (the Google app: Search, Assistant, At a Glance, Discover: app flows with their named steps, visual elements shown and tapped, settings and permission snapshots, account state and the NID cookie; e.g. AGSA_APA, AGSA_PROACTIVE_ASSISTANT, AGSA_ASSISTANT, AGSA_GOOGLE_APP)**
+### **AGSA_ log sources (the Google app: Search, Assistant, At a Glance, Discover: app flows with their named steps, visual elements shown and tapped, settings and permission snapshots, account state and the NID cookie; e.g. AGSA_APA, AGSA_PROACTIVE_ASSISTANT, AGSA_ASSISTANT, AGSA_GOOGLE_APP)**
 
 - agsa_named.proto is decoded protobuf definition; agsa_flow_names.json names the flow types and steps the events send as numbers
 
@@ -140,9 +140,7 @@ Each message contains a sequence of log events, which may be from different log 
 
 ## Google app https://www.google.com/m/voice-search/up and /down
 
-- voice_search_named.proto is decoded protobuf definition of the Google app's S3 protocol, which carries Assistant queries, Assistant settings and client sync: each spoken query as its on-device transcript together with the last 10 earlier queries, the foreground app, the installed apps, alarms and device state, and the Assistant's replies
-- wallet_client_token_named.proto is decoded protobuf definition of the Google Play Services Wallet client token attached to each Assistant query (IMEI, phone number, serial number, Android ID, IMSI, network location, IP addresses)
-- voice_search_decode.py splits the streams into messages and decodes the typed values inside them
+- voice_search_named.proto is decoded protobuf definition of the Google app's Assistant queries (on-device transcript with the last 10 earlier queries, foreground app, installed apps, device state) and replies; wallet_client_token_named.proto decodes the Google Play Services Wallet token sent with each query (IMEI, phone number, serial number, location, IP addresses)
 
 ## Google Play Services https://android.googleapis.com/auth/devicekey
 
