@@ -17,7 +17,7 @@ PROTOS = ["app_measurement.proto3", "firebase_logbatch.proto", "finsky_protobuf/
           "android_messaging.proto3", "android_dialer.proto3", "gboard_named.proto", "icing_named.proto",
           "consentinfo.proto", "stats_log.proto", "lockbox.proto", "activity_recognition.proto", "netstats.proto",
           "scoobyevents.proto", "scoobymessageevents.proto", "playstore.proto", "client_logging_named.proto",
-          "primes_named.proto", "chime_named.proto", "autofill_named.proto"]
+          "primes_named.proto", "chime_named.proto", "autofill_named.proto", "on_device_abuse_named.proto"]
 F = descriptor.FieldDescriptor
 
 def message_types(pool, proto, map_entries):

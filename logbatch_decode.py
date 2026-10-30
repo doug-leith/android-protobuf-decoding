@@ -334,6 +334,69 @@ def decode_clientlogging_pb(bb, verbose=True, terse=False, Grep=True, debug=Fals
         return "Failed"
 
 
+def ondeviceabuse_event(ml):
+    # one-line summary of the classification, package download or package unpacking an ON_DEVICE_ABUSE event reports
+    def name(m, f):
+        v = getattr(m, f)
+        names = m.DESCRIPTOR.fields_by_name[f].enum_type.values_by_number
+        return names[v].name if v in names else str(v)
+    if ml.HasField("classification"):
+        c = ml.classification
+        classifiers = "|".join("%s:%s"%(r.label, r.version) for r in c.classifier_result) or "-"
+        feedback = " feedback=" + name(c, "user_feedback") if c.HasField("user_feedback") else ""
+        return "CLASSIFICATION verdict=%s/%s latency_ms=%d classifiers=%s%s"%(name(c.verdict, "policy_violation"),
+            name(c.verdict, "action"), c.latency_ms, classifiers, feedback)
+    if ml.HasField("protection_download"):
+        d = ml.protection_download
+        bt = d.binary_transparency
+        check = ("verified" if bt.verified else "failed:" + name(bt, "error")) if d.HasField("binary_transparency") else "-"
+        return "DOWNLOAD %s %s duration_ms=%d binary_transparency=%s"%(name(d, "result"), name(d, "download_type"),
+            d.duration_ms, check)
+    if ml.HasField("protections_extraction"):
+        x = ml.protections_extraction
+        corrupted = " corrupted_stored_package" if x.HasField("corrupted_protections") else ""
+        return "EXTRACTION latency_ms=%d no_rule_script=%s%s"%(x.extraction.latency_ms, x.extraction.no_rule_script, corrupted)
+    return "-"
+
+def decode_ondeviceabuse_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
+    # ON_DEVICE_ABUSE log source: spam/scam classifier reports (verdicts, rule package downloads) from Google's
+    # on-device abuse library Moirai in Google Messages
+    if debug:
+        fname='/tmp/ondeviceabuse_bytes'
+        f = open(fname, 'wb')
+        f.write(bb)
+        f.close()
+    try:
+        ev = message_class("OnDeviceAbuse_LogEntry", "on_device_abuse_named.proto")()
+        ev.MergeFromString(bb)
+    except Exception:
+        ev = None
+    if ev is None or not ev.HasField("currentTimeMillis"):
+        # not one LogEvent (e.g. try_decode_pb_array's first try with the whole length-delimited logEntry array)
+        if verbose:
+            print("***ERROR ON_DEVICE_ABUSE: not a LogEvent")
+        return "Failed"
+    try:
+        decoded = decode_named("OnDeviceAbuse_LogEntry", "on_device_abuse_named.proto", bb)
+        grep=""
+        if Grep:
+            try:
+                ml = ev.moirai_log
+                md = ml.client_metadata
+                counts = " classifications=%d downloads=%d"%(md.classification_count, md.download_count) \
+                    if md.HasField("classification_count") or md.HasField("download_count") else ""
+                grep="+++ON_DEVICE_ABUSE %s %s build=%s%s %s protection_token=%s\n"%(ev.currentTimeMillis,
+                    md.package_name or "-", md.client_build_version if md.HasField("client_build_version") else "-",
+                    counts, ondeviceabuse_event(ml), md.protection_token[:8].hex() or "-")
+            except Exception as e:
+                print("***ERROR ON_DEVICE_ABUSE grep: ",e)
+        return grep+decoded
+    except DecodeNamedError as e:
+        if verbose:
+            print("***ERROR ON_DEVICE_ABUSE: ",e)
+        return "Failed"
+
+
 def autofill_value_names(fd, v):
     # the values of field fd as strings, enum values by name
     vals = v if fd.label == fd.LABEL_REPEATED else [v]
@@ -922,6 +985,8 @@ def decode(data):
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_scoobymessage, verbose=True, debug=False))
             elif inner.logSourceName == "CHIME":
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_chime_pb, verbose=True, debug=False))
+            elif inner.logSourceName == "ON_DEVICE_ABUSE":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_ondeviceabuse_pb, verbose=True, debug=False))
             else:
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_pb, verbose=True, debug=False))
             print("}")
