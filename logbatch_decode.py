@@ -334,6 +334,65 @@ def decode_clientlogging_pb(bb, verbose=True, terse=False, Grep=True, debug=Fals
         return "Failed"
 
 
+def autofill_value_names(fd, v):
+    # the values of field fd as strings, enum values by name
+    vals = v if fd.label == fd.LABEL_REPEATED else [v]
+    if fd.enum_type:
+        names = fd.enum_type.values_by_number
+        return [names[x].name if x in names else str(x) for x in vals]
+    return [str(x) for x in vals]
+
+
+def autofill_grep_fields(msg):
+    # (package, activity, domains, other fields) of an AUTOFILL_WITH_GOOGLE event: the session's app and
+    # activity, the detected forms' domains, and the event's scalar fields as name=value
+    pkg = act = "-"
+    domains, rest = [], []
+    for fd, v in msg.ListFields():
+        t = fd.message_type.name if fd.message_type else None
+        if t == "SessionContext":
+            pkg, act = v.app.package_name or "-", v.activity.class_name or "-"
+        elif t == "DetectedForm":
+            forms = v if fd.label == fd.LABEL_REPEATED else [v]
+            domains += [f.domain for f in forms if f.domain]
+            # the detected types of each form's fields
+            rest.append("%s_fields=%s"%(fd.name, "|".join(",".join(n for fld in f.field for n in autofill_value_names(
+                fld.DESCRIPTOR.fields_by_name["field_type"], fld.field_type)) or "-" for f in forms)))
+        elif t is None:
+            rest.append("%s=%s"%(fd.name, "|".join(autofill_value_names(fd, v))))
+    return pkg, act, domains, rest
+
+
+def decode_autofill_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
+    # AUTOFILL_WITH_GOOGLE log source: Google Play services' Autofill service metrics, with the foreground app and activity
+    if debug:
+        fname='/tmp/autofill_bytes'
+        f = open(fname, 'wb')
+        f.write(bb)
+        f.close()
+    try:
+        decoded = decode_named("Autofill_LogEntry", "autofill_named.proto", bb)
+        grep=""
+        if Grep:
+            try:
+                ev = message_class("Autofill_LogEntry", "autofill_named.proto")()
+                ev.MergeFromString(bb)
+                events = ev.autofill_event.ListFields()  # one event field, numbered as eventId
+                if events:
+                    name = events[0][0].name
+                    pkg, act, domains, rest = autofill_grep_fields(events[0][1])
+                else:
+                    name, pkg, act, domains, rest = "eventId=%s"%(ev.eventId if ev.HasField("eventId") else "-"), "-", "-", [], []
+                grep="+++AUTOFILL %s %s %s %s %s %s\n"%(ev.currentTimeMillis, pkg, act, "|".join(domains) or "-", name, " ".join(rest))
+            except Exception as e:
+                print("***ERROR AUTOFILL grep: ",e)
+        return grep+decoded
+    except DecodeNamedError as e:
+        if verbose:
+            print("***ERROR AUTOFILL: ",e)
+        return "Failed"
+
+
 def _primes_enum(msg, field):
     v = getattr(msg, field)
     e = msg.DESCRIPTOR.fields_by_name[field].enum_type.values_by_number.get(v)
@@ -840,6 +899,8 @@ def decode(data):
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_icing_pb, verbose=True, debug=False))
             elif inner.logSourceName == "CLIENT_LOGGING_PROD":
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_clientlogging_pb, verbose=True, debug=False))
+            elif inner.logSourceName == "AUTOFILL_WITH_GOOGLE":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_autofill_pb, verbose=True, debug=False))
             elif inner.logSourceName.endswith("_PRIMES"):  # ANDROID_MESSAGING_PRIMES, DIALER_ANDROID_PRIMES, GMM_PRIMES, ...
                 print(try_decode_pb_array("logEntry", inner.logEntry, functools.partial(decode_primes_pb, source=inner.logSourceName), verbose=True, debug=False))
             elif inner.logSourceName == "WESTWORLD" or inner.logSourceName == "ANONYMOUS_WESTWORLD":

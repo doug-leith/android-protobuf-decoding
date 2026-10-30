@@ -1,0 +1,2070 @@
+edition = "2023";
+
+// The AUTOFILL_WITH_GOOGLE Clearcut log source: metrics from Google Play services'
+// Autofill service (com.google.android.gms.autofill, the system AutofillService
+// AutofillChimeraService). Each event carries the session context: the foreground
+// app (package, version code, signing-certificate hash) and activity class that
+// asked for autofill, for any app on the phone.
+// Schema from GMS 26.31.31 (the Pixel 8 build, dex files 1 and 5; obfuscated class
+// names in comments), the outer LogEvent as in client_logging_named.proto. Names are
+// from the code that sets each field; "estimated name" marks names the code does
+// not settle. Unnamed messages keep their class name, unnamed fields are f<number>.
+
+option features.utf8_validation = NONE;
+
+message Autofill_LogEntry {  // crai (GMS)
+  int64 currentTimeMillis = 1;
+  string packageName = 2;
+  repeated craj keyValuePairList = 3;
+  AutofillEvent autofill_event = 6;  // wire type bytes; its one set field is the event, numbered as eventId (11)
+  int32 eventId = 11;
+  int64 eventFlowId = 12;
+  sint64 timeZoneOffset = 15;
+  ExperimentIds experiment_ids = 16;
+  int64 elapsedRealtime = 17;
+  bytes veProducerByteString = 18;
+  crah_a f19 = 19;
+  repeated int32 f20 = 20 [features.repeated_field_encoding = EXPANDED];
+  int64 bootCount = 22;
+  NetworkConnectionInfo network_connection_info = 23;
+  bool notDirectBootMode = 25;
+  double applied_sampling_rate = 30;  // only sent when flag ClearcutLogOperation__applied_sampling_rate is on; 1 = not sampled
+}
+
+// One event per LogEvent: AutofillChimeraService's logger (aujt, log tag ClearcutEventLogger)
+// sets the field whose number is the LogEvent's eventId (11). Event names are estimated
+// from the class that builds each event (its log tag in brackets) unless marked otherwise.
+message AutofillEvent {  // ausx
+  FieldDetectionEvent field_detection = 1;  // estimated name (high): aukp (DetectorMetricsDecorator) builds it from the detectors' result
+  DataSourceOperationEvent data_source_operation = 2;  // estimated name (high): aupt built only by auke (DataSourceMetricsWrapper) aujy/auka and avev for every data-source fetch/save
+  SaveShownEvent save_shown = 5;  // estimated name (high): avco handles FillEventHistory TYPE_SAVE_SHOWN (case 3)
+  SaveUiActionEvent save_ui_action = 6;  // estimated name (medium): ausg is the save_ui_action_event_extra (RejectSavePromoOperation.java:66); built in SaveHandlerImpl + *SaveInfoFactory*
+  ActivityFinishedEvent activity_finished = 7;  // estimated name (medium): auhb (activity tracker) logs auor once, when an Autofill activity finishes (avsw.b/e)
+  CredentialWarningEvent credential_warning = 8;  // estimated name (high): aupi built by CredentialWarningActivityController (avwq) / CredentialIntentsUtils (awpa)
+  CredentialPickedEvent credential_picked = 9;  // estimated name (medium): aurc logged when the user picks a credential in the pwm picker (DataIntentActivityController, CredentialsBottomSheetActivityController)
+  auqv f10 = 10;  // no fields in this build
+  FillRequestEvent fill_request = 11;  // estimated name (high): AutofillChimeraService.a(auye) builds it when the onFillRequest() callback is answered
+  FillDatasetsEvent fill_datasets = 12;  // estimated name (medium) [OnboardingFillHandlerImpl, FillHandlerImpl]
+  DatasetSelectedEvent dataset_selected = 13;  // estimated name (high): avco.e() matches the TYPE_DATASET_SELECTED event's dataset id
+  FilledFieldsChangedEvent filled_fields_changed = 14;  // estimated name (medium): context committed, autofilled fields the user changed [EventHandlerImpl]
+  auqg f15 = 15;  // no fields in this build
+  aurz f16 = 16;  // no fields in this build
+  aurm f17 = 17;  // no fields in this build
+  SetupAccountSelectedEvent setup_account_selected = 19;  // estimated name (high): ausq logged in onItemSelected of the account spinner (SetupActivityController awfq, AccountSetupActivityController avvb)
+  PendingRequestDroppedEvent pending_request_dropped = 20;  // estimated name (medium): AutofillChimeraService.onDisconnected() logs each fill/save request still pending
+  AutofillEnabledChangedEvent autofill_enabled_changed = 21;  // estimated name (high): aupb logged when settings close and the autofill_enabled pref differs from its value at open (awne.onDestroy, awfh.h)
+  PaymentFixFlowEvent payment_fix_flow = 22;  // estimated name (medium) [PaymentFixFlowActivityController]
+  SettingsMigrationEvent settings_migration = 23;  // estimated name (high): avmc (SettingsMigrationHelperImpl).a()
+  ImproveAutofillEvent improve_autofill = 24;  // estimated name (medium) [ImproveAutofillController]
+  PasswordGenerationEvent password_generation = 25;  // estimated name (high) [PasswordGenerationActivityController]
+  AccountSetupEvent account_setup = 26;  // estimated name (low) [SaveSetupActivityController, SetupActivityController]
+  ausj f27 = 27;  // no fields in this build
+  PasswordLeakCheckEvent password_leak_check = 28;  // estimated name (medium): auro built by PasswordBreachDetectionActivityController, SaveHandlerImpl ('Password breach check failed.'), CredentialSaveHandler; has latency and leak result
+  LocalFixAddedEvent local_fix_added = 29;  // estimated name (medium): auqz from atqm.g(): fields newly added as local-fix candidates or promoted to active fixes (avco.java:1308,1600); pairs with 30 local_fix_removed
+  LocalFixRemovedEvent local_fix_removed = 30;  // estimated name (medium): has a removal cause (aura)
+  WebDomainIconFetchEvent web_domain_icon_fetch = 31;  // estimated name (medium) [WebDomainIconManager]
+  SettingsSyncEvent settings_sync = 32;  // estimated name (medium) [SettingsProtoDataStore]
+  BreachCheckSkipEvent breach_check_skip = 33;  // estimated name (medium): ausc built only in CredentialIntentsUtils.a() when a breach-check skip pass is valid (awpa.java:30-57)
+  NoSaveUiEvent no_save_ui = 34;  // estimated name (high): avco, TYPE_CONTEXT_COMMITTED with getNoSaveUiReason()
+  UploadFileStagedEvent upload_file_staged = 35;  // estimated name (high): atlh (ScottyFileUploader).f() writes the file to autofill_upload_cache/
+  UploadCacheFlushEvent upload_cache_flush = 36;  // estimated name (high): atlh.k() counts the cache folder's uploads
+  SnackbarShownEvent snackbar_shown = 37;  // estimated name (high): aust logged via augr.ak() right after the Snackbar view is added to the window [PaymentsAuthActivityController] awce.java:471-484
+  SnackbarActionClickedEvent snackbar_action_clicked = 38;  // estimated name (high): auss logged in the snackbar action button's onClick before starting snackbar.a() intent, awce.java:437-456
+  CardFieldCopiedEvent card_field_copied = 39;  // estimated name (high): logged when a card field chip is copied to ClipboardManager in the unmasked-card bottom sheet (awoi, UnmaskedCardPaymentsBottomSheetItem)
+  PasswordBreachDialogEvent password_breach_dialog = 40;  // estimated name (high): avzb/avzl dialog for a breached Credential; aspe.g() 'Cannot mute breach when flag muteBreachAlertDialog is false' aspe.java:231; dialog code 1901 avtd.java:57
+  PasswordTimestampMigrationEvent password_timestamp_migration = 41;  // estimated name (medium): asqc task rewrites password timestamps (iuie.k) from Unix to Windows epoch (+11644473600000000 us, awrd.a) and logs counts
+  FillEventHistoryEvent fill_event_history = 42;  // estimated name (medium): the FillEventHistory event types of a session [EventHandlerImpl]
+  DatasetsShownEvent datasets_shown = 43;  // estimated name (medium): FillEventHistory TYPE_DATASETS_SHOWN [EventHandlerImpl]
+  PaymentsFollowUpIntentEvent payments_follow_up_intent = 44;  // estimated name (low): logged in awqk.k() when a GetRealPanCallback/save-card follow-up item (ivyl type 2) yields a wallet intent (ggbg); old name came from an unrelated warmUpPaymentsUi trace
+  ManuallyFilledFieldsEvent manually_filled_fields = 45;  // estimated name (medium): context committed, fields the user typed in [EventHandlerImpl]
+  FixAutofillLabelingEvent fix_autofill_labeling = 46;  // estimated name (medium): FixAutofillSetupActivityController (awiy) user field labeling; logged after 'Finished labeling' awix.java:20
+  FormDataTypesEvent form_data_types = 47;  // estimated name (medium): awpw.j() logs the data types the form's data sources handle and which one SaveInfo uses, from FillHandlerImpl avdx.java:582
+  PaymentCardSaveDialogEvent payment_card_save_dialog = 48;  // estimated name (medium): awco save-card dialog (STATE_PAYMENT_SAVE_CARD_START_TIME, 'Payments save card nextActivityFuture failed' awcn)
+  ChromesyncMarkStaleEvent chromesync_mark_stale = 49;  // estimated name (medium): astw/astz tasks call asng.d() = ChromeSync markStale (astc.java:2108 'markStale API call for AUTOFILL_WALLET')
+  CardArtDownloadEvent card_art_download = 50;  // estimated name (medium): avtj callback of avtk.g() image download, logs 'Failed to download card art for URL' [CardArtManager]
+  CardArtFetchEvent card_art_fetch = 51;  // estimated name (medium): avti callback of avtk.a() (trace autofill-CardArtManager_fetchIconForCard) [CardArtManager]
+  PaymentCardSaveInfoSkippedEvent payment_card_save_info_skipped = 52;  // estimated name (medium): auvp.k() logged only on early-return paths of PaymentCardSaveInfoFactoryV2 that create no SaveInfo
+  SavePasswordUsernameDialogEvent save_password_username_dialog = 53;  // estimated name (medium): SavePasswordActivityController (awem) dialog asking for a username, with common-username chips ('Populating common usernames failed' awel)
+  FillCallbackFailureEvent fill_callback_failure = 54;  // estimated name (high): AutofillChimeraService.a(): FillCallback.onSuccess() threw
+  ausr f55 = 55;  // no fields in this build
+  FillPluginSkippedEvent fill_plugin_skipped = 56;  // estimated name (medium): avis.c() logged when SmsOtpFillPlugin declines to fill; plugin = autg.SMS_OTP avis.java:63
+  AuthAndFillResultEvent auth_and_fill_result = 57;  // estimated name (medium) [AuthAndFillActivityController, PaymentsAuthActivityController, ...]; has the result (aupw)
+  AccountMetadataUpdateEvent account_metadata_update = 58;  // estimated name (medium) [AccountMetadataUpdateTask]
+  ImeSuggestionEvent ime_suggestion = 59;  // estimated name (medium) [AutofillImeCoreServiceImpl]: keyboard (inline) suggestion UI, with action auoy
+  HatsSurveyEvent hats_survey = 60;  // estimated name (high) [HatsActivityController]
+  SettingsSwitchToggleEvent settings_switch_toggle = 61;  // estimated name (high): awmr (PreferencesFragment) logs ausm for payment_info/credentials/cvc/inline_suggestion/sync_settings switches, not just sync
+  StoredCvcDeletionEvent stored_cvc_deletion = 62;  // estimated name (medium): awmj logs aupj after deleting stored wallet CVCs ("Unable to delete stored wallet credentials"), hides cvc_switch
+  SaveInfoCreationEvent save_info_creation = 63;  // estimated name (medium) [CredentialSaveInfoFactory, PaymentCardSaveInfoFactoryV2, ValuableSaveInfoFactory]
+  StringRebuildEvent string_rebuild = 64;  // estimated name (medium): aujx tag "StringRebuildLogger", logged from FillHandlerImpl (avdx:166) when its node count > 0
+  SettingsBackupEvent settings_backup = 65;  // estimated name (medium): settings backup agent (auzo)
+  CentralizedFillEvent centralized_fill = 66;  // estimated name (low) [CentralizedFillerImpl]
+  ReauthSettingEvent reauth_setting = 67;  // estimated name (medium) [ReauthSettingManager]
+  CardOcrEvent card_ocr = 68;  // estimated name (medium): card OCR intent (awew)
+  PersonalContextSpiiFillEvent personal_context_spii_fill = 69;  // estimated name (medium): awdw log "not logging personal context spii fill event"
+  BillingCustomerNumberCacheLookupEvent billing_customer_number_cache_lookup = 70;  // estimated name (medium): asdf (AccountDataImpl).a()/b(): cached billing customer number read from avow.w()
+  StrikeDatabaseUpdateEvent strike_database_update = 71;  // estimated name (medium): avsp add/clear/decay strike counter; avkq "Missing required StrikeDb"
+  MoreInfoEvent more_info = 72;  // estimated name (medium) [MoreInfoActivityController]
+  BillingCustomerNumberFetchEvent billing_customer_number_fetch = 73;  // estimated name (medium): asdf.h(): billing customer number fetched from WalletApi ("Failed to fetch billing customer number")
+}
+
+// Field-type detection for one fill request (aukp, DetectorMetricsDecorator).
+message FieldDetectionEvent {  // auqu
+  int64 latency_ms = 3;  // estimated name (high): hoyz stopwatch around the detector call, TimeUnit.MILLISECONDS; time the detectors took
+  repeated DetectedForm detected_form = 4;  // estimated name (high): augs.f(aszy) per DetectedForm
+  int32 ignored_field_count = 6;  // estimated name (medium): size of atad.c + atad.d (two sets of the detector result; DetectedForm toString has unknownOrIgnoredFields)
+  int32 detector_kind = 7;  // enum; class not recovered; estimated name (low): always 1 (both writers in aukp)
+  SessionContext session = 8;  // estimated name (high): augs.b(MetricsContext)
+  repeated PredictionProcessorTrace prediction_processor_trace = 9;  // estimated name (high): from atgw, whose toString() is PredictionProcessorTrace
+  repeated FingerprintMatch fingerprint_match = 10;  // estimated name (medium): autj built from a field's fingerprint matched to the window fingerprint (ataj)
+  bool has_focused_field_fingerprint = 11;  // estimated name (low): set when a DetectedForm's aszy.e (aszs, a field+fingerprint) is present, behind flag jhjz.u()
+  repeated ChromeProcessorTrace chrome_processor_trace = 12;  // estimated name (high): aukp.b(atfm), atfm.toString() ChromeProcessorTrace
+}
+
+message DataSourceOperationEvent {  // aupt
+  DataSourceOperation operation = 1;  // estimated name (high): 1 in auke.a (asmp.a fetch, auka.java:97), 2 in auke.b (asmp.b save, aujy)
+  repeated DataType data_types = 3;  // estimated name (high): asmg.c requested DataTypes on fetch (auka.java:149); the saved object's DataType on save (aujy cN)
+  int64 latency_ms = 4;  // estimated name (high): hoyz stopwatch .a(MILLISECONDS) around the data-source call (auka.java:153)
+  bool success = 5;  // estimated name (high): true when the future succeeded, false on ExecutionException (auka, aujy, avev)
+  int32 result_count = 6;  // estimated name (high): asml.a.size() = number of results fetched (auka.java:64, avev.java:837); 1/0 on save
+  bool via_cache = 7;  // estimated name (medium): auke.e, true only for the auke that wraps asmz (DataSourceWithCache, cache dir data_source_cache/) in aual.java:50
+  SessionContext session = 8;  // estimated name (high): augs.b(MetricsContext)
+  int32 api_status_code = 9;  // estimated name (high): auke.d(): ApiException (bkzv).b() status code of the cause, else 0
+  PaymentCardSaveResult payment_card_save_result = 10;  // estimated name (high): aupn from asmo.c / asme.a, logged with 'Payment save failed.' (aujy)
+  DataSource data_source = 11;  // estimated name (high): auke.d DataSource (auta)
+  repeated FilteredEntry filtered_entries = 12;  // estimated name (high): asml.c list of aupk built by valuable/entity filters (asqu, asxu, awtf)
+  bool timed_out = 13;  // estimated name (high): set when the ExecutionException cause is TimeoutException (auka.java:81)
+  int64 timeout_ms = 14;  // estimated name (high): auke.f, the hvrl.r() timeout in ms applied to the call (auke.a)
+  PersonalContextResult personal_context_result = 15;  // estimated name (high): aupq from asmi PersonalContextResult (auka.java:182-242)
+  ValuableSaveResult valuable_save_result = 16;  // estimated name (high): aupr from asmo.d / asmd.a, logged with 'Valuable save failed.' (aujy)
+  WalletValuableResult wallet_valuable_result = 17;  // estimated name (high): aups from asmk WalletValuableResult (auka.java:245)
+}
+
+// FillEventHistory TYPE_SAVE_SHOWN (avco, EventHandlerImpl).
+message SaveShownEvent {  // aush
+  DetectedForm detected_form = 3;  // estimated name (high): fillContext.c() (auth)
+  SessionContext session = 4;  // estimated name (high): augs.b(MetricsContext)
+  DataType data_type = 5;  // estimated name (high): fillContext.d() (autb)
+  bool f6 = 6;  // FillContext e()
+  bool password_only_save = 7;  // estimated name (medium): FillContext g() = auvs.i: SaveInfo built with only a password field ('Pcc requested only password save', auuv; !hasUsernameField in auul.java:456)
+  bool username_inferred = 8;  // estimated name (medium): FillContext f() = auvs.h.isPresent(): a username taken from the single stored credential (auut.b) or auus.d since the form has none
+}
+
+message SaveUiActionEvent {  // ausg
+  int64 latency_ms = 3;  // estimated name (high): hoyz.d().toMillis() since the save request started (avkq.h/n)
+  bool save_succeeded = 4;  // estimated name (medium): avkq.h z: true when the save produced a result, n() sets false
+  bool no_account = 5;  // estimated name (medium): true when no account is signed in (ashy.c == null, avkq.java:410; auur.b z = !account present); save goes to setup dialog
+  SessionContext session = 6;  // estimated name (high): augs.b(MetricsContext)
+  DetectedForm detected_form = 7;  // estimated name (high): FillContext c() / augs.g(IFillForm) DetectedForm
+  DataType data_type = 8;  // estimated name (high): FillContext d() autb
+  SaveUiAction save_ui_action = 9;  // estimated name (medium): 1 onSaveRequest path, 2 prebuilt for the SaveInfo negative action (RejectSavePromoOperation), 3 'action_continue' (avkq.java:806)
+  bool autofill_disabled = 10;  // estimated name (high): RejectSavePromoOperation z2: true after 'Disabling Autofill with Google' (disableAutofillServices)
+  SaveRequestFailure failure_reason = 11;  // estimated name (medium): avkq.n() reason codes at each early return of SaveHandlerImpl.a (avkq.java:410-728)
+}
+
+message ActivityFinishedEvent {  // auor
+  ActivityType activity_type = 1;  // wire type int32; estimated name (high): augq.b(id) of the activity id; values are augq.a() names (SETTINGS, FILL_PASSWORD, ...), wire = id-2
+  int64 duration_ms = 3;  // estimated name (high): accumulated visible time ns/1e6 (ACTIVITY_TRACKER_ELAPSED_NANOS, auhb.f())
+  sint32 result_code = 4;  // estimated name (high): Activity result code from avsx.d(resultCode,...): -1 OK, 0 CANCELED, -2 finished without result (auhb.b)
+  int32 session_id = 5;  // estimated name (medium): third arg of avsx.d; controllers pass MetricsContext.e() session id (awfx.java:37, aweu.java:122), else 0
+}
+
+message CredentialWarningEvent {  // aupi
+  string app_domain = 1;  // estimated name (high): asgc STATE_ANDROID_DOMAIN, the app's android domain (avwq.java:48-53)
+  string credential_domain = 2;  // estimated name (high): STATE_DOMAIN / credential.c, the domain the credential was saved for
+  CredentialWarningAction user_action = 3;  // estimated name (high): avwq.s(): -1 (positive) ->1, otherwise 2; auto-approved paths set 1
+  bool trust_checkbox_checked = 4;  // estimated name (high): avwq.n, state of the dialog CheckBox (is_checkbox_checked)
+  bool already_trusted = 5;  // estimated name (medium): true when the app/domain pair was already trusted (asdr check / allowlist) and no dialog shown (awpa, avwo); false from dialog
+  SessionContext session = 6;  // estimated name (high): augs.b(MetricsContext)
+}
+
+message CredentialPickedEvent {  // aurc
+  string picked_credential_domain = 2;  // estimated name (high): intent extra pwm.DataFieldNames.pickerCredentialDomains (awgq.b)
+  string form_domain = 3;  // estimated name (high): FillForm.d (avwt) / current domain (awkb), the domain asking for fill
+  CredentialPickerSource picker_source = 4;  // estimated name (high): 1 in DataIntentActivityController, 2 in CredentialsBottomSheetActivityController
+  SessionContext session = 5;  // estimated name (high): augs.b(MetricsContext)
+  repeated DetectedField fields = 6;  // estimated name (high): awgq.a(): distinct aute fields of the FillContext datasets
+}
+
+message auqv {  // auqv
+}
+
+// Logged when the onFillRequest() callback is answered (AutofillChimeraService.a(auye));
+// field sources are auye's toString() labels.
+message FillRequestEvent {  // auqn
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext)
+  int32 flags = 2;  // estimated name (high): auye.flags = fillRequest.getFlags(); FillRequest.getFlags()
+  int64 latency_ms = 3;  // estimated name (high): stopwatch hoyz.d().toMillis() (auye label stopwatch); time to answer the request
+  bool is_successful = 4;  // estimated name (high): auye label isSuccessful
+  bool has_save_info = 5;  // estimated name (medium): a response was made and it has a SaveInfo
+  UserOptInStatus user_opt_in_status = 6;  // estimated name (high): auye label userOptInStatus (auql)
+  bool is_app_excluded = 7;  // estimated name (high): auye label isAppExcluded; set for apps on awok's exclusion list
+  bool save_delayed = 8;  // estimated name (low): auvs.f of the response's save config; true for SaveInfo FLAG_DELAY_SAVE (auvz); when false auua disables the Smart Lock save dialog for the domain
+  bool save_blocked_for_domain = 9;  // estimated name (low): auvs.g, true only from auvs.b() (no SaveInfo), returned when the form's domain matches an asgk entry (auua)
+  bool has_inline_suggestions_request = 10;  // estimated name (medium): awqq.e(fillRequest, componentName) or InlineSuggestionsRequest present; the request carries an InlineSuggestionsRequest (keyboard suggestions)
+  string inline_suggestions_host_package = 11;  // estimated name (high): InlineSuggestionsRequest.getHostPackageName(); InlineSuggestionsRequest.getHostPackageName(): the keyboard app
+  RequestFailureReason request_failure_reason = 12;  // estimated name (high): auye label requestFailureReason (auqm)
+  FillCallbackException callback_exception = 13;  // estimated name (high): 1/2/3 set for TransactionTooLarge / DeadObjectException / other in the catch
+  int32 transaction_size = 14;  // estimated name (high): h(): integer parsed from the TransactionTooLarge message; the size parsed from a TransactionTooLarge exception message
+}
+
+message FillDatasetsEvent {  // auqc
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) (avdx.java:1028)
+  DetectedForm detected_form = 2;  // estimated name (high): auth DetectedForm of the fill request (avdx.java:1021)
+  repeated Dataset dataset = 3;  // estimated name (high): w5.cP(h2): list of autc built per returned dataset (avdx.java:1015)
+  repeated FillPlugin fill_plugin = 4;  // estimated name (high): w5.cO(list of avfn.b), avfn.b is autg fill plugin that added a dataset (avdx.java:1016, avfn.java)
+}
+
+// FillEventHistory TYPE_DATASET_SELECTED (avco.e()).
+message DatasetSelectedEvent {  // auqd
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext)
+  DetectedForm detected_form = 2;  // estimated name (high): fillContext.c() (auth)
+  repeated Dataset dataset = 3;  // estimated name (medium): c(fillContext.a(), uiType): the datasets of the fill context
+  Dataset selected_dataset = 4;  // estimated name (high): the autc whose id equals event.getDatasetId(), with ui_type set
+  int32 selected_dataset_rank = 5;  // estimated name (medium): 1-based position of the selected dataset among the context's datasets sharing a field with it, 0 if absent (avco.java:224-249)
+  FillEventType fill_event_type = 6;  // wire type int32; estimated name (high): FillEventHistory.Event.getType() (0 DATASET_SELECTED, 1 DATASET_AUTHENTICATION_SELECTED, ...); int32
+}
+
+message FilledFieldsChangedEvent {  // auqb
+  SessionContext session = 1;  // estimated name (medium): named after its type (SessionContext)
+  DetectedForm detected_form = 2;  // estimated name (medium): named after its type (DetectedForm)
+  Dataset dataset = 3;  // estimated name (medium): named after its type (Dataset)
+  repeated DetectedField field = 4;  // estimated name (medium): named after its type (DetectedField)
+}
+
+message auqg {  // auqg
+}
+
+message aurz {  // aurz
+}
+
+message aurm {  // aurm
+}
+
+message SetupAccountSelectedEvent {  // ausq
+  int32 session_id = 1;  // estimated name (high): awfq.q(): MetricsContext.e() session id or augs.a() (same scheme as SessionContext.session_id)
+  int32 selected_account_index = 2;  // estimated name (high): onItemSelected position i
+  int32 account_count = 3;  // estimated name (high): accountArr.length
+}
+
+// onDisconnected(): a fill or save request still pending is dropped (AutofillChimeraService.g()).
+message PendingRequestDroppedEvent {  // ausk
+  int32 session_id = 1;  // estimated name (medium): the Integer ids in AutofillChimeraService's pending sets (MetricsContext.e()); the MetricsContext session id (auox.session_id)
+  PendingRequestType request_type = 2;  // estimated name (high): g(c, id, 3) for the fill set, g(c, id, 4) for the save set; stored i2 - 2
+}
+
+message AutofillEnabledChangedEvent {  // aupb
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext)
+  bool autofill_enabled = 2;  // estimated name (high): avlv.B() = pref autofill_enabled (avmm.java:67) at settings close
+  SettingsSource settings_source = 3;  // estimated name (high): extra SETTINGS_SOURCE via aupa.b (awne.java:119, awfh.java:51)
+}
+
+message PaymentFixFlowEvent {  // aurt
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) (awbq.java:354)
+  repeated CardAttribute card_attribute_to_fix = 2;  // estimated name (high): cU(aurr.CARD_HOLDER_NAME/EXPIRATION_DATE/CVN) from extra FIX_FLOW_COMPONENT (awbq.java:359-375)
+  PaymentFixFlowAction user_action = 3;  // estimated name (high): 1 on save button; b(z): z?4:5 minus 2 from negative button / cancel listener (awbq.java:280,606-611)
+  bool cardholder_name_prefilled = 4;  // estimated name (medium): true when fetched name is set into the name field (awbl.java:25)
+  bool cardholder_name_edited = 5;  // estimated name (medium): true on name text change, reset false after prefill (awbq.java:193, awbl.java:28)
+  ExpirationDateStatus expiration_date_status = 6;  // estimated name (medium): awqk.l(now, card expiry) - 2; 2 when expiry missing (awbq.java:367-371, awqk.java:301)
+  PaymentFixFlowResult result = 7;  // estimated name (medium): aurs.a(i): 3 saved, 4 save failed, 6 no saver, 7-11 bad intent extras, 12/13 declined/dismissed (awbn.java, awbq.java:90-128,616)
+}
+
+// Migration of the Autofill settings data stores (avmc, SettingsMigrationHelperImpl), run
+// from onFillRequest().
+message SettingsMigrationEvent {  // auso
+  bool success = 1;  // estimated name (high): z && z2: both migrations finished
+  bool fill_request_cancelled = 2;  // estimated name (high): set true when the fill request's CancellationSignal fired during migration
+  uint32 blocked_fill_request_count = 3;  // estimated name (high): AtomicInteger i, incremented per request answered BLOCKED_BY_SETTINGS_MIGRATION; fill requests blocked while the migration ran
+  repeated MigrationError error = 5;  // estimated name (high): w.cV(ausn.*_MIGRATION_ERROR) in the catch blocks
+  int64 local_settings_migration_ms = 6;  // estimated name (high): stopwatch around local settings migration ('Failed to migrate local settings data.')
+  int64 synced_settings_migration_ms = 7;  // estimated name (high): stopwatch around synced settings migration
+}
+
+message ImproveAutofillEvent {  // auqy
+  ImproveAutofillConsentResponse consent_response = 1;  // estimated name (medium): ImproveAutofillController capture prompt: 1 accepted, 2/3 two decline buttons (3 also e.ag(false)), 4 cancel (avyb.java:92-119)
+  bool screenshot_blank = 2;  // estimated name (high): Boolean from avym: all sampled screenshot pixels are black or transparent (avym.java:57-75, avyn.java:36)
+  ImproveAutofillFeedbackResponse feedback_dialog_response = 3;  // estimated name (high): send button 1, negative button 2, cancel 3 (avyn.java:78,119,132)
+  bool screenshot_preview_opened = 4;  // estimated name (high): set when the screenshot ImageView is clicked (avyn.java:54)
+  ScreenCaptureError screen_capture_error = 5;  // estimated name (high): q(i): i-2 for empty capture/failure/too large/no MediaProjection; 5 when user refused capture permission (avyb.java:183,280, avya.java)
+  ScreenshotPreviewError screenshot_preview_error = 6;  // estimated name (medium): 1 no bitmap to show (avyp.a()), 2 bitmap >500000 bytes for preview (avyn.java:63)
+  SessionContext session = 7;  // estimated name (high): augs.b(MetricsContext) (avyp.java:64, avyb.java:299)
+}
+
+message PasswordGenerationEvent {  // aurq
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) (awax.java:76)
+  bool username_prefilled = 2;  // estimated name (medium): set when a username Optional is present or a username suggestion chip is tapped (awar.java:47, awaw.java:85)
+  bool username_edited = 3;  // estimated name (medium): set when username EditText text differs from its suggested tag on accept (awar.java:156)
+  bool dialog_shown = 4;  // estimated name (high): set in the generation dialog OnShowListener (awar.java:210)
+  bool credential_saved = 5;  // estimated name (high): true on save success, false on 'Saving generated credential failed' (awau.java:38,87)
+  PasswordGenerationAction user_action = 6;  // estimated name (high): 1 accept (use password), 2 second button, 3 dismissed with no action (awar.java:153,172,192)
+  bool manual_request = 7;  // estimated name (high): extra MANUAL_REQUEST (awax.java:81)
+  bool password_copied = 8;  // estimated name (high): set after setPrimaryClip of the generated password (awar.java:124)
+  bool overwrite_warning_shown = 9;  // estimated name (medium): set when the 'credential for this username exists' view is shown (awax.java:525, after anyMatch on Credential.a)
+}
+
+message AccountSetupEvent {  // aurl
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) (avxe.java:53, aweu.java:57, avvb.java:111)
+  SetupDialogSource setup_dialog_source = 2;  // estimated name (medium): aurk.a(i) from extra SETUP_DIALOG_SOURCE or the controller (avvb.java:75-103, avxe/awfq/aweu)
+  AccountSetupResult result = 3;  // estimated name (medium): 1 account set (avxe, awfq, aweo, avvb); 2 'Result of Account Picker Request unsuccessful' (aweu.java:165)
+  uint32 google_account_count = 4;  // estimated name (high): length of accounts from AccountManager (awoj.e) (avxe.java:44, avvb.java:103)
+  bool resolution_intent_started = 5;  // estimated name (medium): set when a PendingIntent resolution is started (api_resolution_started / passphrase_resolution_started) (awfl.java:33, awen.java:36, avvb.java:150)
+}
+
+message ausj {  // ausj
+}
+
+message PasswordLeakCheckEvent {  // auro
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) (avkq.java:751, avji.java:201, avzu.java:72)
+  bool check_on_save = 2;  // estimated name (medium): true in SaveHandlerImpl/CredentialSaveHandler, false in PasswordBreachDetectionActivityController (fill-time) (avkq.java:743, avzu.java:63)
+  LeakCheckResult result = 3;  // estimated name (medium): 1 done, 2 'Password breach check failed', 3 TimeoutException, else avzu.r(status code)-2 (avzs.java:66-125, avzu.java:100)
+  int64 latency_ms = 4;  // estimated name (high): hoyz stopwatch toMillis (avkq.java:741, avzu.java:188)
+  bool password_leaked = 5;  // estimated name (medium): breach-check Boolean; true leads to the leak alert intent (avzs.java:68, avkq.java:738)
+  bool breach_alert_muted = 6;  // estimated name (low): only false written, next to 'Breach alert muted' branch in a mis-decompiled method (avzs.java:70-80)
+  int32 chromesync_fetch_ms = 8;  // estimated name (medium): elapsed ms of the ChromeSync fetch whose timeout is logged nearby (avzu.java:167-176)
+}
+
+message LocalFixAddedEvent {  // auqz
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) (avck.java:33)
+  LocalFixState local_fix_state = 2;  // estimated name (medium): atqm.g(i): 3 for fixes promoted to the active map, 4 for new candidates, minus 2 (atqm.java:180, avco.java:1308,1600)
+  FingerprintMatch fingerprint_match = 3;  // estimated name (high): autj from atri.i(...) (atqm.java:177)
+}
+
+message LocalFixRemovedEvent {  // aurb
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) (avcn.java:33, avko.java:30)
+  LocalFixState local_fix_state = 2;  // estimated name (medium): 2 when the fix is in atov.c (candidate atrj), 1 when in atov.b (active atot) (atqm.java:39,50)
+  FingerprintMatch fingerprint_match = 3;  // estimated name (high): atri.b(atou) -> autj (atqm.java:59)
+  LocalFixRemovalCause removal_cause = 4;  // estimated name (high): aura enum UNKNOWN_REMOVAL_CAUSE/SELECTED/... (atqm.java:62)
+  uint32 candidate_hit_count = 5;  // estimated name (medium): atrj.d, incremented each time seen and compared to promotion threshold (atqm.java:42, avco.java atps, atri.k)
+}
+
+message WebDomainIconFetchEvent {  // auqf
+  string icon_domain = 1;  // estimated name (high): normalized domain asgz.b(asim.b) sent as favicon domain_url (atkr.java:71,262)
+  IconFetchResult fetch_result = 2;  // estimated name (high): 1 icon, 2 none, 3 fetch failed, 4 empty domain, 5 all-transparent icon (atkr.java:49-62,121,163, atko, atkn)
+  IconSource icon_source = 3;  // estimated name (medium): 3 (cache hit) / 4 or 2 (network favicon fetch), minus 2 when literal (atkr.java:73,264)
+  uint64 latency_ms = 4;  // estimated name (high): hoyz stopwatch ms (atkr.java:160,235, atkn.java:28)
+  uint64 icon_size_bytes = 5;  // estimated name (high): atjy.d (icon ByteString).d() size (atkr.java:56)
+  IconRequestType request_type = 6;  // estimated name (medium): 1 blocking b(), 2 async c(), 3 stale-entry refresh in a() (atkr.java:192,215,244)
+  string web_domain = 7;  // estimated name (high): asgw.b of the requested web domain (atkr.java:220,249)
+}
+
+message SettingsSyncEvent {  // ausp
+  uint64 latency_ms = 1;  // estimated name (high): hoyz ms (avrk.java:30, avqv.java:62)
+  SettingsSyncTrigger sync_trigger = 2;  // estimated name (low): v(avrq,i)/u(i) caller code i-2: 3 account switch, 4 sync, 5 per-account restore read, 6/8 restore (avro.java:341,412, avou.java)
+  bool has_profile_changed_operation = 3;  // estimated name (low): avro.d isPresent: Optional avle that starts ProfileChangedOperation (avro.java:343,414, avle.java)
+  bool success = 4;  // estimated name (high): true on future success, false on failure (avrk.java:25,39, avqv.java:57)
+  bool synced_account_found = 5;  // estimated name (medium): true when an account with a synced settings timestamp is picked for restore (avqv.java:141,147)
+}
+
+message BreachCheckSkipEvent {  // ausc
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) (awpa.java:39)
+  BreachCheckSkipReason skip_reason = 2;  // estimated name (medium): 1 when avql.c(): a valid 'skip intent pass for breach check' exists for the credential (awpa.java:33, avql.java:89)
+  BreachCheckSkipOutcome skip_outcome = 3;  // estimated name (low): 1 breach-check intent skipped (returns false); 3 flag-on path that keeps the intent (awpa.java:45,57)
+}
+
+// FillEventHistory TYPE_CONTEXT_COMMITTED with its getNoSaveUiReason() (avco).
+message NoSaveUiEvent {  // auri
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext)
+  NoSaveUiReason no_save_ui_reason = 2;  // estimated name (high): getNoSaveUiReason() mapped then - 2
+}
+
+// A file staged for upload by ScottyFileUploader (atlh): a screenshot or AssistStructure
+// (view hierarchy) written to the cache folder autofill_upload_cache/ for upload.
+message UploadFileStagedEvent {  // auqi
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext)
+  UploaderType uploader = 2;  // estimated name (high): atlh.e() - 2
+  StageResult result = 3;  // estimated name (high): 1 written, 2 cache folder missing, 3 size >= limit, 4 create/write failed
+  uint64 file_size = 4;  // estimated name (high): ivif.d() of the staged bytes, compared with the size limit; bytes
+  repeated StagingReason staging_reason = 5;  // estimated name (high): auqh reasons RANDOMLY_STAGED, HAS_UNCERTAIN_ML_PREDICTION
+}
+
+// ScottyFileUploader (atlh) uploading the staged files in its cache folder (atlh.g(), k()).
+message UploadCacheFlushEvent {  // auqj
+  UploaderType uploader = 1;  // estimated name (high): atlh.e() - 2
+  uint32 success_count = 2;  // estimated name (high): count of atln.SUCCESS (ordinal 0); staged files uploaded
+  uint32 failed_count = 3;  // estimated name (high): count of FAILED or not done; staged files whose upload failed or did not finish
+  uint32 rejected_count = 4;  // estimated name (high): count of atln.REJECTED
+  uint32 expired_count = 5;  // estimated name (high): not SUCCESS and lastModified() over 2 days ago; files deleted unsent, older than 2 days
+}
+
+message SnackbarShownEvent {  // aust
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) awce.java:479
+  SnackbarUseCase use_case = 2;  // estimated name (high): ausu.a(snackbar.d()); Snackbar.toString labels d 'useCaseForMetrics' (C$AutoValue_Snackbar)
+}
+
+message SnackbarActionClickedEvent {  // auss
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) awce.java:449
+  SnackbarUseCase use_case = 2;  // estimated name (high): ausu.a(snackbar.d()) = useCaseForMetrics, awce.java:453
+}
+
+message CardFieldCopiedEvent {  // ausw
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) awoi.java:131
+  FieldType field_type = 2;  // wire type int32; estimated name (high): atip.a() of the copied chip (PAYMENT_CARD_NUMBER, _CVN, _HOLDER_NAME, _EXPIRATION_MONTH/_YEAR); int32 carrying FieldType (atip) numbers awoi.java:135
+  PaymentCardType card_type = 3;  // estimated name (high): augs.i(ashj card type) - 2, augs.java:292; awoi.java:138
+}
+
+message PasswordBreachDialogEvent {  // aurn
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) avyy.java:21
+  BreachDialogAction user_action = 2;  // estimated name (medium): 1 on close/secondary button (avyx), 2 on button opening the change-password URL or account password settings (avzb.java:123,174)
+  bool mute_breach_alert = 3;  // estimated name (high): avzb.g = mute checkbox state; when true aspe.g(credential,..,true) mutes the breach alert avyx.java:28-36
+  BreachDialogVariant dialog_variant = 4;  // estimated name (medium): 2 in the branch with a change-password URL (opens it with chromium password_change.username extra), 1 otherwise avzb.java:127,178
+}
+
+message PasswordTimestampMigrationEvent {  // aurp
+  uint32 credentials_to_migrate = 1;  // estimated name (medium): size of list of update futures, one per credential whose timestamp is a valid Unix-epoch value asqc.java:66
+  uint32 credentials_migrated = 2;  // estimated name (medium): count of non-null results of successfulAsList (updates that succeeded) asqc.java:68
+}
+
+message FillEventHistoryEvent {  // ausl
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) avco.java:469
+  repeated DetectedForm detected_form = 2;  // estimated name (high): DetectedForm (auth) from each MetricsContext.FillContext avco.java:475
+  repeated FillEventType event_types = 3;  // wire type uint32; estimated name (high): FillEventHistory.Event.getType() of each event (TYPE_* constants: 0 DATASET_SELECTED .. 3 SAVE_SHOWN, 4 CONTEXT_COMMITTED) avco.java:482
+}
+
+message DatasetsShownEvent {  // auqe
+  SessionContext session = 1;  // estimated name (medium): named after its type (SessionContext)
+  DetectedForm detected_form = 2;  // estimated name (medium): named after its type (DetectedForm)
+  repeated Dataset dataset = 3;  // estimated name (medium): named after its type (Dataset)
+}
+
+message PaymentsFollowUpIntentEvent {  // auru
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) awqk.java:276
+  PaymentsFollowUpType follow_up_type = 2;  // estimated name (low): constant 1 when the ivyl item type is 2 and a wallet intent is built awqk.java:270
+  bool f3 = 3;
+}
+
+message ManuallyFilledFieldsEvent {  // auqa
+  SessionContext session = 1;  // estimated name (medium): named after its type (SessionContext)
+  DetectedForm detected_form = 2;  // estimated name (medium): named after its type (DetectedForm)
+  Dataset dataset = 3;  // estimated name (medium): named after its type (Dataset)
+  repeated DetectedField field = 4;  // estimated name (medium): named after its type (DetectedField)
+}
+
+message FixAutofillLabelingEvent {  // auqr
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) awix.java:117
+  string domain = 2;  // estimated name (high): aunb.b = form domain (asgw.b or 'android://'+package) awiy.java:123-132
+  LabeledForm labeled_form = 3;  // estimated name (medium): the first labeled form (auoo) of the domain predictions written to autofill_domain_predictions awix.java:109
+}
+
+message FormDataTypesEvent {  // aupv
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) awpw.java:325
+  repeated FormDataType data_type = 2;  // estimated name (medium): one per data type (autb) that the form's data sources (asis.c(form)) offer, awpw.java:296-310
+  DetectedForm detected_form = 3;  // estimated name (high): augs.h()/augs.f() DetectedForm awpw.java:333,340
+}
+
+message PaymentCardSaveDialogEvent {  // aurw
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) awco.java:143
+  int64 duration_ms = 2;  // estimated name (high): ticker now - STATE_PAYMENT_SAVE_CARD_START_TIME, nanos / 1000000 awco.java:130
+  bool card_saved = 3;  // estimated name (high): q(z): z true when the save-card future succeeded (awcn.b -> b(true)) awco.java:132
+  bool relaunched_for_result = 4;  // estimated name (medium): initial STATE_INITIAL_DIALOG_STATE was 2/3, i.e. activity relaunched by b() to show the result awco.java:122-134
+  bool result_shown = 5;  // estimated name (medium): true when the result dialog is shown (q), false in setup-error path r() awco.java:136,161
+}
+
+message ChromesyncMarkStaleEvent {  // aurv
+  MarkStaleDataType sync_data_type = 1;  // estimated name (medium): 1 from astw (asng over biwq AUTOFILL_WALLET), 2 from astz (AUTOFILL_WALLET_USAGE); atup.java:29, atuq.java:29
+  SyncDataOperation operation = 2;  // estimated name (low): constant 1 in both tasks, which then call asng.d() = markStale astw.java:28
+}
+
+message CardArtDownloadEvent {  // aupf
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) avtk.java:161
+  bool success = 2;  // estimated name (high): true from avtj.b (success), false from avtj.jb (failure) avtk.java:147
+  string url = 3;  // estimated name (high): card art image URL with '=w<w>-h<h>' size suffix avtk.java:152
+  int64 latency_ms = 4;  // estimated name (high): Stopwatch elapsed TimeUnit.MILLISECONDS avtj.java
+}
+
+message CardArtFetchEvent {  // aupe
+  CardArtFetchResult result = 1;  // estimated name (high): i - 2 with 3 on success (avti.b), 4 on failure (avti.jb) avtk.java:175
+  SessionContext session = 2;  // estimated name (high): augs.b(MetricsContext) avtk.java:189
+  string url = 3;  // estimated name (high): card art URL with size suffix avtk.java:180
+  uint64 latency_ms = 4;  // estimated name (high): Stopwatch elapsed ms avti.java
+}
+
+message PaymentCardSaveInfoSkippedEvent {  // aurx
+  PaymentCardSaveInfoSkipReason skip_reason = 1;  // estimated name (high): code - 2 passed to auvp.k() from each early return of SaveInfo creation auvp.java:204,376-1343
+  SessionContext session = 2;  // estimated name (high): augs.b(MetricsContext) auvp.java:210
+}
+
+message SavePasswordUsernameDialogEvent {  // ausf
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) awem.java:57
+  bool dialog_shown = 2;  // estimated name (high): set true in the dialog's OnShowListener awem.java:179
+  bool credential_saved = 3;  // estimated name (high): true on aspe.b() save success, false with 'Saving credential failed' awej.java:30,41
+  UsernameDialogAction user_action = 4;  // estimated name (high): 1 save button, 2 cancel button, 3 set on dismiss if still 0 awem.java:122-165
+  int32 username_suggestions_shown = 5;  // estimated name (high): min(common usernames, flag max chips) = chips shown awel.java:67
+  int32 username_suggestions_available = 6;  // estimated name (high): number of common usernames returned (augi.c) awel.java:64
+  UsernameInputMethod username_input = 7;  // estimated name (medium): 0 text cleared, 1 typed, 2 chip clicked, 3 typed after a chip (ause maps 2/3) awei.java:41-53, awel.java:52
+}
+
+// onFillRequest()'s FillCallback threw (AutofillChimeraService.a()).
+message FillCallbackFailureEvent {  // auqo
+  FillCallbackFailure exception = 1;  // estimated name (high): 3 TransactionTooLarge, 2 DeadObjectException, else 1
+  uint32 transaction_size = 2;  // estimated name (high): h(message) for TransactionTooLarge
+  SessionContext session = 3;  // estimated name (high): augs.b(MetricsContext)
+}
+
+message ausr {  // ausr
+}
+
+message FillPluginSkippedEvent {  // auqk
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) avis.java:60
+  FillPlugin fill_plugin = 2;  // estimated name (high): autg.SMS_OTP.a() avis.java:64
+  FillPluginSkipReason skip_reason = 3;  // estimated name (high): i - 2 from avis.c(avfo, i) at each decline point avis.java:189-213
+}
+
+message AuthAndFillResultEvent {  // aupz
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) avvo.java:99
+  AuthAndFillResult result = 2;  // estimated name (high): aupw (AuthAndFillResult).a() avwt.java:101
+  bool showed_biometric_prompt = 3;  // estimated name (high): intent extra SHOWED_BIOMETRIC_PROMPT awce.java:267,273
+  bool auth_before_fill_enabled = 4;  // estimated name (medium): BiometricsRequiredResult.a = avlv.C(), the AuthenticateBeforeAutofilling setting (awkb.java:67,80) avvi.java:21
+  bool biometric_available = 5;  // estimated name (low): BiometricsRequiredResult.b() = flag&&demm.k || awot.a(dety.a(ctx)) != 2 (biometric status not 'unavailable') avvi.java:24
+  bool item_requires_auth = 6;  // estimated name (low): BiometricsRequiredResult.c, true for payment cards, Credential.e for passwords; a() = (a||b())&&c avvi.java:27
+  Dataset dataset = 7;  // estimated name (high): Dataset (autc) built for the filled item awce.java:229
+  RealPanCallbackInfo real_pan_callback = 8;  // estimated name (medium): aupx from GetRealPanCallbackClientData (EXTRA_INTEGRATOR_CALLBACK_DATA_TOKEN) awce.java:118-151
+  ValuableAuthInfo valuable_auth = 9;  // estimated name (medium): aupy set by ValuablesAuthActivityController (awgp) awgp.java:206
+}
+
+message AccountMetadataUpdateEvent {  // auoq
+  bool is_successful = 1;  // estimated name (medium): avku (AccountMetadataUpdateTask): false on every failure log, true on update/no-account
+  AccountMetadataUpdateResult result = 2;  // estimated name (high): avku sets 1..5 beside distinct log messages (see AccountMetadataUpdateResult)
+  bool account_id_was_missing = 3;  // estimated name (medium): avku:84 = stored account identifier x.c() was empty, so it was looked up
+  bool email_changed = 4;  // estimated name (high): avku:118 = !oldAccountName.equalsIgnoreCase(newEmail)
+}
+
+message ImeSuggestionEvent {  // auoz
+  SessionContext session = 1;  // estimated name (high): auyr/auyg set auox session
+  ImeSuggestionAction action = 2;  // estimated name (high): auoy action (USER_ENTER, SELECT, EXIT, ...) from AutofillInputMethodServiceProxy.j()
+  ImeFieldMatch field_match = 3;  // estimated name (high): autl built in auyr.h() matching the IME's EditorInfo field to a detected field
+  int32 ime_session_id = 4;  // estimated name (high): AutofillInputMethodServiceProxy.n = ms since UTC midnight, sent as STATE_IME_SESSION_ID extra
+  ImeAuthInfo auth_info = 5;  // estimated name (high): auyr.f() parses bytes into autk, log "Failed to parse ImeAuthInfo from byte array"
+}
+
+message HatsSurveyEvent {  // auqx
+  string survey_session_id = 1;  // estimated name (medium): SurveyMetadata.c; HaTS SurveyMetadata(triggerId, surveyId, sessionId)
+  string survey_id = 2;  // estimated name (medium): SurveyMetadata.b, logged as "Survey displayed for survey: %s" (avxi)
+  string trigger_id = 3;  // estimated name (high): avxk.e = HATS_SURVEY_TRIGGER_ID extra
+  HatsSurveyType survey_type = 4;  // estimated name (high): auqw.a(avxk.h), from HATS_SURVEY_TYPE extra
+  SessionContext session = 5;  // estimated name (high): augs.b(METRICS_CONTEXT)
+  string presentation_error = 6;  // estimated name (high): avxi.c(): gxyn.name() on "Failed to present survey"; null on close
+}
+
+message SettingsSwitchToggleEvent {  // ausm
+  SettingsSwitch settings_switch = 1;  // estimated name (high): awmr 1 payment_info_switch, 2 credentials_switch, 3 cvc_switch, 4 inline_suggestion_switch, 5 sync_settings_switch
+  bool enabled = 2;  // estimated name (high): new switch value (booleanValue); sync enable true / disable false (awmm/awmp)
+}
+
+message StoredCvcDeletionEvent {  // aupj
+  bool is_successful = 1;  // estimated name (high): awmj.b() true on success, jb() false with "Unable to delete stored wallet credentials"
+}
+
+message SaveInfoCreationEvent {  // ausd
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext)
+  DataType data_type = 2;  // estimated name (high): autb CREDENTIAL / PAYMENT_CARD / valuable type per factory
+  bool is_save_info_created = 3;  // estimated name (high): true only where result=1 and a SaveInfo is returned (auul, auvp, auwj)
+  SaveInfoCreationResult result = 4;  // estimated name (high): auul/auvp result codes (auvp stores i-2) with log context; value names medium/low (4, 6, 40, 41 guessed)
+  int64 latency_ms = 5;  // estimated name (high): stopwatch hoyz.d().toMillis() since factory start
+  ExistingCardsFetchStatus existing_cards_fetch_status = 6;  // estimated name (low): auvp sets 3 on "Failed to fetch existing payment cards", else 2/0 remapped
+  int32 existing_card_count = 7;  // estimated name (medium): auvp:663 size of fetched existing payment cards (ashk list)
+  CvcSaveStatus cvc_save_status = 8;  // estimated name (low): auvp.j(): CVC-storage flag (jhkv.c), setting avlv.I(), CVC strike DB; j2-2
+  int64 billing_customer_number_latency_ms = 9;  // estimated name (high): auvp:430 time to get billing customer number from asct.b()
+  bool billing_customer_number_was_cached = 10;  // estimated name (high): ascs.b = BCN came from cache (asdf.b())
+}
+
+message StringRebuildEvent {  // aurj
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext)
+  int32 rebuilt_node_count = 2;  // estimated name (low): count of view nodes (athu) seen by StringRebuildLogger; counting lambda decompiled empty
+}
+
+message SettingsBackupEvent {  // auow
+  bool is_backup = 1;  // estimated name (high): auzo backup path a(true,...), restore path a(false,...)
+  int32 attempted_steps_mask = 2;  // estimated name (high): bitmask 1<<auou (BACKUP_*) or 1<<auov (RESTORE_*) steps tried
+  int32 failed_steps_mask = 3;  // estimated name (high): backup clears bit on success; restore sets bit on IOException
+  int32 duration_ms = 4;  // estimated name (high): elapsedRealtime() - start
+}
+
+message CentralizedFillEvent {  // auph
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) (atnl:103)
+  DetectedForm detected_form = 2;  // estimated name (high): augs.g(IFillForm) -> auth DetectedForm
+  uint64 latency_ms = 3;  // estimated name (high): atnl:865 stopwatch c.a(MILLISECONDS)
+  repeated FilteredDataset filtered_dataset = 4;  // estimated name (high): w.cM(aupg) for each dataset dropped by the centralized filler
+}
+
+message ReauthSettingEvent {  // ausa
+  ReauthSettingFetchResult fetch_result = 1;  // estimated name (high): avls.b(i) i-2 at each fetch path with log messages; see ReauthSettingFetchResult
+  SessionContext session = 2;  // estimated name (high): auox via avlg
+}
+
+message CardOcrEvent {  // ausi
+  SessionContext session = 1;  // estimated name (high): augs.b(METRICS_CONTEXT)
+  CardOcrResult result = 2;  // estimated name (high): awew.a(i): 3 when OCR card filled, 5 when no OCR result / no fill
+}
+
+message PersonalContextSpiiFillEvent {  // aury
+  PcSpiiAuthResult auth_result = 1;  // estimated name (high): awdw.d(): n (no screen lock) / m (biometric ok) / auth result code
+  int64 auth_latency_ms = 2;  // estimated name (high): s = elapsedRealtime - q (auth activity start)
+  int64 fetch_latency_ms = 3;  // estimated name (high): t = PersonalContextDataSource fetch time (awds)
+  repeated DataType requested_data_type = 4;  // estimated name (high): v = requested autb data types from state bundle
+  repeated Dataset shown_dataset = 5;  // estimated name (medium): w = datasets listed in the SPII fill dialog (awdv:64)
+  Dataset selected_dataset = 6;  // estimated name (medium): x = autc of picked entry (awdh) or PERSONAL_CONTEXT data intent result
+  bool more_options_clicked = 7;  // estimated name (low): z set true by a secondary list action (awdi) in the dialog
+  PcSpiiOutcome outcome = 8;  // estimated name (medium): A (default 3) set 4..7 on cancels/dismissals; i4-2
+}
+
+message BillingCustomerNumberCacheLookupEvent {  // aupc
+  BcnCacheLookupResult result = 1;  // estimated name (high): asdf.a()/b(): 3 when avow.w() != 0 else 4, minus 2
+  int64 latency_ms = 2;  // estimated name (medium): stopwatch millis for the cache read
+  int64 elapsed_realtime_ms = 3;  // estimated name (high): SystemClock.elapsedRealtime()
+  int64 process_uptime_ms = 4;  // estimated name (high): bmzm.a() = elapsedRealtime - Process.getStartElapsedRealtime()
+}
+
+message StrikeDatabaseUpdateEvent {  // ausv
+  StrikeDatabaseType strike_database = 1;  // estimated name (medium): avsp.j()-2: avsq returns 3, avst 4
+  StrikeUpdateAction action = 2;  // estimated name (high): avsp.g() 1 (add strike), d() 2 (clear), e() 3 (decay after b() ms)
+  int64 previous_strike_count = 3;  // estimated name (high): avmn.c strike count before the update
+  int64 new_strike_count = 4;  // estimated name (high): count after: c+1 / 0 / decayed max
+  Duration time_since_last_strike = 5;  // estimated name (high): Duration between avmn.d (last strike time) and now
+}
+
+message MoreInfoEvent {  // aurh
+  SessionContext session = 1;  // estimated name (high): augs.b(MetricsContext) (awla:1366)
+  DetectedForm detected_form = 2;  // estimated name (high): augs.g(IFillForm)
+  repeated MoreInfoShownItem shown_item = 3;  // estimated name (high): list w of aurf items shown in the More info list
+  int32 selected_item_index = 4;  // estimated name (high): e = list position of the clicked item (awky/awkw), -1 default
+  MoreInfoOutcome outcome = 5;  // estimated name (high): s (default 2) set 3..9 per outcome; s-2
+  repeated MoreInfoDroppedItem dropped_item = 6;  // estimated name (high): list x of aure items not shown
+}
+
+message BillingCustomerNumberFetchEvent {  // aupd
+  BcnFetchResult result = 1;  // estimated name (high): asdf.g(i) i-2: 3 found, 4 none, 5 WalletApi failure, 6 non-numeric
+  bool had_cached_value = 2;  // estimated name (medium): h(z): true when a cached BCN already existed (refresh), false otherwise
+  int64 elapsed_realtime_ms = 3;  // estimated name (high): SystemClock.elapsedRealtime()
+  int64 process_uptime_ms = 4;  // estimated name (high): bmzm.a() process uptime
+  int64 latency_ms = 5;  // estimated name (high): stopwatch millis for the fetch
+}
+
+// A detected form (aszy, DetectedForm[metricsId, domain, fields, ...]; augs.f()).
+message DetectedForm {  // auth
+  repeated DetectedField field = 1;  // estimated name (high): one aute per DetectedForm field (aszy.b)
+  string domain = 4;  // estimated name (high): aszy.a.b; toString label domain; the form's domain (the app or web domain)
+  int32 metrics_id = 5;  // estimated name (high): aszy.g; toString label metricsId
+  fixed64 fingerprint_hash = 6;  // estimated name (high): ataj.a.c(); ataj.toString Fingerprint{hashCode; the form's window fingerprint (Fingerprint.hashCode)
+  fixed64 fingerprint_version = 7;  // estimated name (high): ataj.b; toString version
+}
+
+// Built by augs.b() from the MetricsContext that GMS keeps in the autofill ClientState for
+// the activity (AutofillChimeraService.onFillRequest() makes a new one when the activity changes).
+message SessionContext {  // auox
+  int32 session_id = 1;  // estimated name (high): augs.a() = Duration from LocalTime.MIDNIGHT (UTC) in ms; MetricsContextImpl's id; augs.a(): milliseconds since midnight UTC when the MetricsContext was made
+  AppInfo app = 2;  // estimated name (high): MetricsContext.f(), built from the activity's package (AutofillChimeraService.onFillRequest)
+  ActivityInfo activity = 3;  // estimated name (high): autp built from getActivityComponent().getClassName(); the activity's class name (AssistStructure.getActivityComponent())
+  int32 fill_request_id = 4;  // estimated name (medium): a5.k(fillRequest.getId()) behind flag jhjz.t(); FillRequest.getId() of the latest request, behind a flag
+}
+
+message PredictionProcessorTrace {  // auqt
+  PredictionProcessorMethod detection_method = 1;  // estimated name (high): aukp.c(atgw.a) - 2
+  bool had_node_fingerprint_data = 2;  // estimated name (high): atgw.b; toString 'had data for node fingerprint'
+  bool had_app_data = 3;  // estimated name (high): atgw.c; toString 'had data for application but did not have this window'
+  bool had_window_fingerprint_data = 4;  // estimated name (high): atgw.d; toString 'had data for window fingerprint but did not match the nodes'
+}
+
+// A field matched through a window fingerprint (aukp; ataj is Fingerprint{hashCode, version}).
+message FingerprintMatch {  // autj
+  fixed32 field_fingerprint_hash = 1;  // estimated name (high): atajVar3.a.a(): the field's fingerprint hash
+  fixed64 window_fingerprint_hash = 2;  // estimated name (high): atajVar2.a.c(): the window fingerprint hash
+  int32 fingerprint_version = 3;  // estimated name (high): fingerprint version, compared with the window's (log: 'fingerprint version (%d) does not match')
+  repeated FieldType field_type = 4;  // wire type int32; estimated name (high): aszu.b types (atip)
+  FilterMethod filter_method = 5;  // estimated name (high): auti filter method from the atbx traces
+  DetectionMethod detection_method = 6;  // estimated name (high): aszu.d detection method
+  repeated DetectorResult detector_result = 7;  // estimated name (high): aszu.g detector results
+}
+
+message ChromeProcessorTrace {  // auqs
+  int32 chrome_detected_field_count = 1;  // estimated name (high): ChromeProcessorTrace{NumberOfChromeDetectedFields=
+  bool has_preset_html_info = 2;  // estimated name (high): ChromeProcessorTrace hasPresetHtmlInfo
+  bool has_webview_ibinder = 3;  // estimated name (high): ChromeProcessorTrace hasWebviewIbinder
+  bool webview_ibinder_fetch_exception = 4;  // estimated name (high): ChromeProcessorTrace webviewIbinderFetchException
+  uint64 webview_ibinder_fetch_duration_ms = 5;  // estimated name (high): ChromeProcessorTrace webviewIbinderFetchDurationMs
+}
+
+message PaymentCardSaveResult {  // aupn
+  repeated int32 saved_field_types = 1;  // estimated name (high): atip FieldType numbers saved (PAN, expiry, holder, address, CVN) (astc.java:2058-2093); int32 not enum in schema
+  bool card_number_saved = 2;  // estimated name (high): h.contains(PAYMENT_CARD_NUMBER) (astc.java:2097)
+  bool cvc_saved = 3;  // estimated name (high): contains PAYMENT_CARD_CVN (astc.java:2100); true in the CVN-update path
+  bool new_entry_created = 4;  // estimated name (low): true on full card save; on CVN update = no stored CVC matched the card id (noneMatch, astc.java:1808)
+  PaymentCardValidation card_validation = 5;  // estimated name (high): autm per-field validation of the PaymentCard (astc.k)
+  PaymentCardSaveOperation save_operation = 6;  // estimated name (medium): astc.j/l first arg: 3->1 full new-card save, 4->2 CVN update of existing card; l() sets 2
+  CvcSaveResult cvc_save = 7;  // estimated name (high): aupl written around CVC save g(...) success 2 / failure 3 (astc.java:1943-1963)
+  CardSaveResult card_save = 8;  // estimated name (high): aupm 2 after SaveInstrumentRequest response, 3 on exception (astc.java:1924-2002)
+  PaymentCardSaveFailure failure_reason = 9;  // estimated name (high): third arg of astc.j/m with error strings: No session data, Invalid PAN, CVN disabled/empty/already saved, multiple wallets
+}
+
+message FilteredEntry {  // aupk
+  DataType data_type = 1;  // estimated name (high): DataType of the dropped valuable/entity (awvm.c, augs.d)
+  ValuableMatchingMethod valuable_matching_method = 2;  // estimated name (high): awvl.g, toString label valuableMatchingMethod
+  DataMatchMethod data_match_method = 3;  // estimated name (high): awvl.h, toString label dataMatchMethod
+  EntryFilterReason filter_reason = 4;  // estimated name (high): which filter dropped it; wire 2/3/4/5 match the 'after domainFilter/statusFilter/suggestionTextAssigner/formFieldFilter' logs (asxl.java:124-418)
+}
+
+message PersonalContextResult {  // aupq
+  int64 aratea_sian_api_latency_ms = 1;  // estimated name (high): asmi.c, toString arateaSianApiLatencyMs
+  repeated DataTypeFetchError per_data_type_fetch_errors = 2;  // estimated name (high): asmi.b perDataTypeFetchErrors map, one aupp per entry (auka.java:217)
+  FeatureState sian_failure_reason = 3;  // estimated name (high): asmi.d sianFailureReason mapped to aupo, default ENABLED (auka.java:200-216)
+  repeated DataType availability_check_only_data_types = 4;  // estimated name (high): asmf PersonalContextRequest{availabilityCheckOnlyDataTypes} (auka.java:262)
+  repeated DataType available_data_types = 5;  // estimated name (high): asmi.a availableDataTypes (auka.java:192)
+  int32 data_entry_count = 6;  // estimated name (high): asmi.e dataEntryCount
+}
+
+message ValuableSaveResult {  // aupr
+  WalletPassesRpcResult rpc = 1;  // estimated name (high): the Wallet1PPassesService RPC result (auot) of a valuable save (asqr/asqs)
+}
+
+message WalletValuableResult {  // aups
+  int64 chromesync_valuable_api_latency_ms = 1;  // estimated name (high): asmk toString WalletValuableResult{chromesyncValuableApiLatencyMs=}
+}
+
+// A detected input field (aszu, DetectedField{viewNode, types, detectionMethod, metricsId, ...}).
+message DetectedField {  // aute
+  AutofillType autofill_type = 1;  // estimated name (high): augs.j(athu.f) maps 1..4 (View.AUTOFILL_TYPE_TEXT..DATE)
+  repeated FieldType field_type = 2;  // wire type int32; estimated name (high): aszu.b (DetectedField types), atip values; the detected types (atip)
+  fixed32 fingerprint_hash = 3;  // estimated name (high): fingerprint ataj.a.a() (Fingerprint.hashCode as int); the field's fingerprint (Fingerprint.hashCode, as int)
+  int32 fingerprint_version = 4;  // estimated name (high): ataj.b, Fingerprint version
+  int32 metrics_id = 5;  // estimated name (high): aszu.e, DetectedField metricsId (MetricsContext.c(AutofillId))
+  DetectionMethod detection_method = 6;  // estimated name (high): aszu.d, DetectedField detectionMethod (autd)
+  uint32 autofill_options_count = 7;  // estimated name (high): athu.g (CharSequence[] autofill options).length; length of the view's autofill options
+  bool important_for_autofill = 9;  // estimated name (medium): athu.B, set in athp from ViewNode.getImportantForAutofill() (jadx garbled)
+  repeated DetectorResult detector_result = 10;  // estimated name (high): aszu.g, DetectedField fieldDetectionResultStats (autf list)
+}
+
+message Dataset {  // autc
+  int32 dataset_id = 1;  // estimated name (high): compared with Integer.parseInt(event.getDatasetId())
+  DataType data_type = 2;  // estimated name (medium): autb data type of the dataset
+  repeated DetectedField field = 3;  // estimated name (medium): aute fields of the dataset
+  string credential_domain = 4;  // estimated name (high): Credential.c.b, asgw toString Domain[authenticationDomain=%s] (avdx.java:850, avev.java:444)
+  PaymentCardDatasetInfo payment_card = 5;  // estimated name (high): auto built from PaymentCard ashk/PaymentCard (avdx.java:910, awce.java:662)
+  bool has_fill_dialog_presentation = 6;  // estimated name (medium): awpw.h(asep): any field's aseo.e (setDialogPresentation) present (avdx.java:927, aseh.java:76)
+  CredentialDatasetInfo credential = 7;  // estimated name (high): ausy built for Credential datasets (avdx.java:869)
+  DatasetUiType ui_type = 8;  // estimated name (high): avco.f(FillEventHistory.Event.getUiType()) - 2 (avco.java:167,276); see DatasetUiType
+  bool reauth_required = 10;  // estimated name (medium): asep.e = aseh.d = atnn.i, atnn toString isReauthRequired (atnx.java:73, atnn.java:101)
+  ValuableDatasetInfo valuable = 11;  // estimated name (high): autr built for Valuable datasets (avdx.java:922)
+  DataSource data_source = 12;  // estimated name (medium): auta data source
+}
+
+message LabeledForm {  // auqq
+  fixed64 form_signature = 1;  // estimated name (medium): auoo.b fixed64, form signature computed by hnbk (Chromium-style 64-bit form signature) awix.java:50
+  repeated LabeledField field = 2;  // estimated name (medium): one entry per labeled field (aune) awix.java:102
+}
+
+message FormDataType {  // aupu
+  DataType data_type = 1;  // estimated name (high): autb.a() awpw.java:296
+  bool is_save_data_type = 2;  // estimated name (medium): data type equals the SaveInfo's data type (auvs.c) awpw.java:300
+}
+
+message RealPanCallbackInfo {  // aupx
+  string auth_type = 1;  // estimated name (medium): ivyh.c string, compared with 'RISK_BASED' awce.java:211; set awce.java:144
+}
+
+message ValuableAuthInfo {  // aupy
+  WalletPassesRpcResult valuable = 1;  // estimated name (low): auot built from the valuable being authenticated (STATE_VALUABLE_ID etc.) awgp.java:168-197
+}
+
+message ImeFieldMatch {  // autl
+  fixed64 form_fingerprint_hash = 1;  // estimated name (high): auyr:391 = form ataj fingerprint hashCode.asLong (aszy.f)
+  fixed32 field_fingerprint_hash = 2;  // estimated name (high): oneof case 2 = matched field's ataj fingerprint hashCode.asInt (auyr:384)
+  fixed32 editor_field_id = 3;  // estimated name (high): oneof case 3 = EditorInfo.fieldId (auyr:245)
+  FieldType field_type = 4;  // wire type int32; estimated name (high): asdu.h(atip.a(),...) from AutofillInputMethodServiceProxy:107; avab passes PAYMENT_CARD_NUMBER/CVN etc.
+  ImeFieldMatchFailure match_failure = 5;  // estimated name (high): auyr.n(i) i-2 and direct 5/6 on each match failure; left 0 on success
+}
+
+message ImeAuthInfo {  // autk
+  ImeAuthDataKind data_kind = 1;  // estimated name (medium): 1 from CredentialImeCacheEntry / credential biometric intent, 2 from PaymentImeCacheEntry / payment chip (avab:107)
+  ImeAuthResult auth_result = 2;  // estimated name (medium): AutofillInputMethodServiceProxy:602-659: 1 when cache entry .a (auth ok, shows PASSWORDS/PAYMENT_METHODS), 2 otherwise
+}
+
+message FilteredDataset {  // aupg
+  DatasetFilterReason filter_reason = 1;  // estimated name (high): atnl/atos codes 1..4 where datasets are dropped; see DatasetFilterReason
+  Dataset dataset = 2;  // estimated name (high): atos.e(asgu, entries) -> autc
+}
+
+message MoreInfoShownItem {  // aurf
+  MoreInfoDatasetItem dataset_item = 1;  // estimated name (high): oneof case 1 = aurd
+  DataTypeItem data_type_item = 2;  // estimated name (high): oneof case 2 = aurg (SPII prompt row for a data type)
+  bool has_icon = 3;  // estimated name (high): y() != null (row icon)
+}
+
+message MoreInfoDroppedItem {  // aure
+  MoreInfoDatasetItem dataset_item = 1;  // estimated name (high): oneof case 1 = aurd (dataset from personal data / valuable)
+  DataTypeItem data_type_item = 2;  // estimated name (high): oneof case 2 = aurg (data type only)
+  MoreInfoDropReason drop_reason = 3;  // estimated name (high): awla 1..4 at each skip; see MoreInfoDropReason
+}
+
+message AppInfo {  // auop
+  string package_name = 1;  // estimated name (high): activityComponent.getPackageName(); the foreground app's package name
+  int32 version_code = 2;  // estimated name (high): packageInfo.versionCode; PackageInfo.versionCode
+  fixed32 signature_hash = 3;  // estimated name (high): ByteBuffer.wrap(awoq.a(signatures[0])).getInt(); awoq = SHA-512; first 4 bytes (big-endian) of SHA-512 of the app's first signing certificate (awoq)
+}
+
+message ActivityInfo {  // autp
+  string class_name = 1;  // estimated name (high): activityComponent.getClassName()
+}
+
+// One detector's result for a field (e.g. detector PQRNN_ML; atgv, atgb).
+message DetectorResult {  // autf
+  string detector = 1;  // estimated name (high): autd.name() or a processor name, e.g. HintProcessorWalletValuablesV<n> (atgb); the detector's autd constant name, e.g. PQRNN_ML
+  repeated FieldType predicted_type = 2;  // wire type int32; estimated name (medium): atip types a detector predicted (atgv PQRNN_ML, atgb); which of 2/3 each adder fills is not settled
+  repeated FieldType predicted_type_2 = 3;  // wire type int32; estimated name (low)
+  int64 latency_ms = 4;  // estimated name (high): hoyz stopwatch toMillis() around the interpreter run
+}
+
+message PaymentCardValidation {  // autm
+  CardNumberValidity card_number_validity = 1;  // estimated name (high): PAN null/empty/non-numeric/Luhn (astd.b) checks (astc.java:154)
+  CardExpirationValidity expiration_validity = 2;  // estimated name (high): YearMonth null/before now/after now+N years (astc.java:162-171)
+  CvcValidity cvc_validity = 3;  // estimated name (high): CVC null/empty/non-numeric/<3/>4 (astc.java:158)
+  CardholderNameValidity cardholder_name_validity = 4;  // estimated name (high): holder name null/empty/contains digit (awqg.c \d) (astc.java:173-178)
+}
+
+message CvcSaveResult {  // aupl
+  SaveStatus status = 1;  // estimated name (high): 1 not attempted, 2 CVC save success, 3 'Save CVN failed.' (astc.java:1763-1771, 1943, 1963)
+  CvcSaveType cvc_save_type = 2;  // estimated name (medium): astc.l first arg 3 (no stored CVC) ->1, 4 (stored CVC differs) ->2
+}
+
+message CardSaveResult {  // aupm
+  SaveStatus status = 1;  // estimated name (high): 1 not attempted, 2 SaveInstrument success, 3 exception (astc.java:1927, 2002)
+}
+
+message DataTypeFetchError {  // aupp
+  DataType data_type = 1;  // estimated name (high): map key autb
+  int32 status_code = 2;  // estimated name (medium): ixka.b of the map value (a status proto; .b looks like the code)
+}
+
+message WalletPassesRpcResult {  // auot
+  WalletPassesRpc rpc_method = 1;  // estimated name (high): 1 GetPrivatePasses (awgp), 2 UpsertPrivatePass, 3 UpsertPass (asrj i=4/5 minus 2)
+  repeated DataType data_types = 2;  // estimated name (high): cL(Valuable.c()) / awgp.f, autb DataType
+  int64 latency_ms = 3;  // estimated name (high): SystemClock.elapsedRealtime() - start around the RPC (asqs, asqr, awgo)
+  int32 status_code = 4;  // estimated name (high): ApiException/gRPC status code of the failure, 13 if none, 0 on success (asqs, asqr, awgo)
+  string exception_class = 5;  // estimated name (high): cause.getClass().getSimpleName() (asqs.java:41)
+}
+
+message PaymentCardDatasetInfo {  // auto
+  bool has_nickname = 1;  // estimated name (high): ashk.e nickname present and non-empty (avdx.java:875; ashk toString)
+  bool has_offer = 2;  // estimated name (medium): ashk.f offerTitle isPresent() evaluated, but false is always written (avdx.java:883)
+  PaymentCardType card_type = 3;  // estimated name (high): augs.i(cardType ashj) - 2 (avdx.java:881, awce.java:645)
+  bool has_product_description = 4;  // estimated name (high): ashk.i productDescription isPresent() (avdx.java:889)
+  bool card_art_icon = 5;  // estimated name (medium): dataset icon type == ashe.CARD_ART (avdx.java:900)
+  string card_issuer = 6;  // estimated name (low): avdx.java:897 writes ashk.k issuerId; awce.java:653 writes CardNetwork name (e.g. MasterCard)
+  CvcDataSource cvc_data_source = 7;  // estimated name (medium): autn.a(PaymentCard.h); asgf 'Missing required properties: cvcDataSource' (awce.java:642, asgf.java:46)
+}
+
+message CredentialDatasetInfo {  // ausy
+  CredentialDomainMatchType domain_match_type = 1;  // estimated name (medium): form domain equals credential domain ? 5 : credential.g ? 4 : 3, minus 2 (avdx.java:854)
+  CredentialRankingStrategy ranking_strategy = 2;  // estimated name (medium): Credential.j = sort mode from flag jhml (created/last used/times used/frecency comparator in asny.java:41-75), mapped avdx.java:859
+  bool suppress_fill_dialog_for_credman = 3;  // estimated name (high): asep.f = aseh.e = atnn.k, toString shouldSuppressFillDialogForCredman (atnx.java:171, atnn.java:101)
+}
+
+message ValuableDatasetInfo {  // autr
+  ValuableMatchingMethod matching_method = 1;  // estimated name (medium): autq.a(Valuable.g), Valuable.g read from extra STATE_VALUABLE_MATCHING_METHOD; ValuableWrapper valuableMatchingMethod (awgp.java:63, awvl.java:90)
+}
+
+message LabeledField {  // auqp
+  fixed32 field_signature = 1;  // estimated name (medium): aune.c fixed32, Chromium-style 32-bit field signature awix.java:64
+  repeated FieldType field_types = 2;  // wire type int32; estimated name (high): atip.a() of each user-assigned type; repeated int32 carrying FieldType (atip) numbers awix.java:85
+}
+
+message MoreInfoDatasetItem {  // aurd
+  Dataset dataset = 1;  // estimated name (high): autc from z(asgj) / A(Valuable)
+  int32 detail_line_count = 2;  // estimated name (medium): size of the detail-line list (awnm) added to the row
+}
+
+message DataTypeItem {  // aurg
+  DataType data_type = 1;  // estimated name (medium): named after its type (autb)
+}
+
+message Duration {  // ivit: google.protobuf.Duration (ivod.a() builds it from a java.time.Duration)
+  int64 seconds = 1;
+  int32 nanos = 2;
+}
+
+enum DataSourceOperation {  // literal c=1 in auke.a / avev (fetch), c=2 in auke.b (save)
+  DataSourceOperation_UNKNOWN_OPERATION = 0;
+  FETCH = 1;
+  DataSourceOperation_SAVE = 2;
+}
+
+enum DataType {  // Java enum autb (names kept)
+  DataType_UNKNOWN_DATA_TYPE = 0;
+  PROMO = 1;
+  DataType_CREDENTIAL = 101;
+  DataType_PAYMENT_CARD = 102;
+  DataType_PERSON_NAME = 103;
+  DataType_POSTAL_ADDRESS = 104;
+  DataType_PHONE_NUMBER = 105;
+  DataType_EMAIL_ADDRESS = 106;
+  DataType_GENDER = 107;
+  BIRTHDATE = 108;
+  DataType_AGE = 109;
+  OTP = 110;
+  WALLET_VALUABLE = 111;
+  LOYALTY_CARD = 112;
+  FLIGHT_RESERVATION = 113;
+  EVENT_INFO = 114;
+  DataType_PROMOTIONAL_CODE = 115;
+  TRANSIT_TICKET = 116;
+  GIFT_CARD = 117;
+  VEHICLE_REGISTRATION = 118;
+  PASSPORT = 119;
+  DRIVER_LICENSE = 120;
+  RESERVATION = 121;
+}
+
+enum DataSource {  // Java enum auta (names kept)
+  UNKNOWN_DATA_SOURCE = 0;
+  DATA_API = 1;
+  ANDROID_ACCOUNT = 2;
+  ANDROID_TELEPHONY = 3;
+  CHROMESYNC_PASSWORD = 4;
+  CHROMESYNC_PAYMENT = 5;
+  PEOPLE_ME = 6;
+  PLACES_ALIASED = 7;
+  CHROMESYNC_PROFILE = 8;
+  CHROMESYNC_SHIELDEDID = 10;
+  CHROMESYNC_VALUABLE = 11;
+  PERSONAL_CONTEXT = 12;
+}
+
+enum SaveUiAction {  // ausg.i: avkq literal 1 / h(...,3); auur.b literal 2 for the negative-action intent; h(...,5) on action_continue
+  SaveUiAction_UNKNOWN_ACTION = 0;
+  SaveUiAction_SAVE = 1;
+  REJECT = 2;
+  CONTINUE = 3;
+}
+
+enum SaveRequestFailure {  // avkq.n(..., i) i-2 at each early return in SaveHandlerImpl
+  SaveRequestFailure_NO_FAILURE = 0;
+  NO_ASSIST_STRUCTURE = 1;
+  NO_PACKAGE_NAME = 2;
+  DOMAIN_LOOKUP_FAILED = 3;
+  NO_FILL_CONTEXT = 4;
+  NO_FILL_FORM = 5;
+  SaveRequestFailure_SAVE_FAILED = 6;
+  NO_FILL_FIELDS = 7;
+}
+
+enum ActivityType {  // augq.a(i): names of the R8-unboxed activity-type enum; wire value i - 2
+  ActivityType_UNKNOWN = 0;
+  NO_REFERRER = 1;
+  FILL_PASSWORD = 2;
+  FILL_PASSWORD_MANUAL = 3;
+  FILL_PASSWORD_WARNING = 4;
+  FILL_PAYMENT_CARD = 5;
+  AUTH_AND_FILL = 6;
+  KEYBOARD_PAYMENT_CARD_FILL = 7;
+  KEYBOARD_CREDENTIAL_FILL = 8;
+  ActivityType_SETUP = 10;
+  SETUP_AND_FILL = 11;
+  SETUP_AND_SAVE = 12;
+  SETUP_AND_FILL_REVISED = 13;
+  SETUP_AND_SAVE_REVISED = 14;
+  ACCOUNT_SETUP = 15;
+  KEYBOARD_VALUABLE_FILL = 16;
+  FILL_PRIVATE_PASS = 17;
+  SCAN_PAYMENT_CARD = 20;
+  FIX_PAYMENT_CARD = 21;
+  ActivityType_SMS_OTP = 30;
+  SETTINGS = 100;
+  SETTINGS_PASSWORD = 101;
+  SETTINGS_POSTAL_ADDRESS = 102;
+  SETTINGS_BIOMETRICS = 103;
+  SETTINGS_DISABLE_PREFERENCE_SYNC = 104;
+  SETTINGS_DELETE_SAVED_CVCS = 105;
+  ActivityType_MORE_INFO = 106;
+  DEBUG_SETTINGS = 200;
+  ActivityType_DEBUG_INFO = 201;
+  DEBUG_INSTRUMENTATION_FILE_LIST = 202;
+  DEBUG_PHENOTYPE_FLAG_MANAGER = 203;
+  ActivityType_IMPROVE_AUTOFILL = 300;
+  IMPROVE_AUTOFILL_SUBMIT = 301;
+  IMPROVE_AUTOFILL_VIEW_IMAGE = 302;
+  ActivityType_FIX_AUTOFILL = 400;
+  FIX_AUTOFILL_LABELER = 401;
+  ALERT_DIALOG_DISPLAY = 501;
+  UPDATE_CREDENTIAL = 1001;
+  INLINE_SUGGESTION_ATTRIBUTION = 1500;
+  ActivityType_GENERATE_PASSWORD = 1800;
+  UPDATE_PENDING_USERNAME_STORE = 1801;
+  PASSWORD_BREACH_CHECK = 1900;
+  PASSWORD_BREACH_ALERT = 1901;
+  ActivityType_MANAGE_PASSWORDS = 2000;
+  MODERN_SETTINGS = 2100;
+  MODERN_PREFERENCES = 2101;
+  PAYMENTS_WALLET_SHIM = 2200;
+  PAYMENTS_SAVE_CARD_STATUS = 2300;
+  PAYMENTS_UPDATE_CARD = 2301;
+  SAVE_PASSWORD = 2400;
+  ActivityType_SHIELDED_ID = 2500;
+  PAYMENTS_VERIFIED_DIALOG = 2600;
+  IME_FILL_PAYMENT_CARD = 2700;
+  IME_AUTH_CREDENTIAL = 2701;
+  HATS = 2800;
+  ActivityType_PERSONAL_CONTEXT_SPII = 2900;
+  NOOP = 10000;
+}
+
+enum CredentialWarningAction {  // aupi.e: avwq.s() 1 on positive button (-1), 2 otherwise; 1 for auto-approved
+  CredentialWarningAction_UNKNOWN_ACTION = 0;
+  PROCEED = 1;
+  CANCEL = 2;
+}
+
+enum CredentialPickerSource {  // aurc.e literal per controller
+  CredentialPickerSource_UNKNOWN_SOURCE = 0;
+  DATA_INTENT_ACTIVITY = 1;
+  CREDENTIALS_BOTTOM_SHEET = 2;
+}
+
+enum UserOptInStatus {  // Java enum auql (names kept)
+  UserOptInStatus_UNKNOWN_STATUS = 0;
+  OPTED_IN = 1;
+  NO_RESPONSE = 2;
+  NO_ACCOUNTS = 3;
+}
+
+enum RequestFailureReason {  // Java enum auqm (names kept)
+  UNKNOWN_FAILURE_REASON = 0;
+  DISABLED_BY_AUTOFILL_FEATURE_FLAG = 1;
+  DISABLED_BY_USER = 2;
+  BLOCKED_BY_SETTINGS_MIGRATION = 3;
+  DROPPED_FOR_SETTINGS_MIGRATION = 4;
+  MISSING_FILL_CONTEXT = 5;
+  RESPONSE_CREATION_FAILURE = 6;
+  RESPONSE_CREATION_UNSUCCESSFUL = 7;
+  TRANSACTION_FAILURE = 8;
+  REQUEST_CANCELLED = 9;
+}
+
+enum FillCallbackException {  // AutofillChimeraService.a(): the exception FillCallback.onSuccess() threw
+  NO_EXCEPTION = 0;
+  TRANSACTION_TOO_LARGE = 1;
+  DEAD_OBJECT = 2;
+  OTHER_EXCEPTION = 3;
+}
+
+enum FillPlugin {  // Java enum autg (names kept)
+  UNKNOWN_FILL_PLUGIN = 0;
+  FEEDBACK = 1;
+  MANUAL_PASSWORD_PICKER = 2;
+  SCAN_CARD = 3;
+  FillPlugin_MANAGE_PASSWORDS = 4;
+  FillPlugin_DEBUG_INFO = 5;
+  FillPlugin_SMS_OTP = 6;
+  AUTOFILL_SETTINGS = 7;
+  KEYBOARD_PAYMENT_CARD_PICKER = 8;
+  KEYBOARD_CREDENTIAL_PICKER = 9;
+  FillPlugin_IMPROVE_AUTOFILL = 10;
+  FillPlugin_GENERATE_PASSWORD = 11;
+  UNLOCK_PASSWORDS = 12;
+  FillPlugin_FIX_AUTOFILL = 13;
+  FillPlugin_SHIELDED_ID = 14;
+  MANAGE_VALUABLES = 15;
+  KEYBOARD_VALUABLE_PICKER = 16;
+  FillPlugin_MORE_INFO = 17;
+  FillPlugin_PERSONAL_CONTEXT_SPII = 18;
+  DEBUG_DETECTION = 50;
+}
+
+enum FillEventType {  // FillEventHistory.Event.getType() (FillEventHistory.Event.TYPE_*)
+  FillEventType_DATASET_SELECTED = 0;
+  DATASET_AUTHENTICATION_SELECTED = 1;
+  AUTHENTICATION_SELECTED = 2;
+  SAVE_SHOWN = 3;
+  CONTEXT_COMMITTED = 4;
+  DATASETS_SHOWN = 5;
+  VIEW_REQUESTED_AUTOFILL = 6;
+}
+
+enum PendingRequestType {  // AutofillChimeraService.onDisconnected()
+  UNKNOWN_REQUEST = 0;
+  FILL_REQUEST = 1;
+  SAVE_REQUEST = 2;
+}
+
+enum SettingsSource {  // aupa.a(i) = i-2 of avtc.P/Q(i) callers: 3 setup (avut, avxe), 4 AutofillSettingsFillPlugin, 5 AttributionActivityController, 6 Settings contextual cards (avpe), 7 AutofillBaseSettingsChimeraActivity; 2 default
+  DEFAULT = 0;
+  SettingsSource_SETUP = 1;
+  AUTOFILL_SUGGESTION_SETTINGS_ITEM = 2;
+  SUGGESTION_ATTRIBUTION = 3;
+  SETTINGS_CONTEXTUAL_CARD = 4;
+  LEGACY_SETTINGS_ACTIVITY = 5;
+}
+
+enum CardAttribute {  // Java enum aurr (names kept)
+  UNKNOWN_CARD_ATTRIBUTE = 0;
+  CARD_HOLDER_NAME = 1;
+  CardAttribute_EXPIRATION_DATE = 2;
+  CVN = 3;
+}
+
+enum PaymentFixFlowAction {  // awbq.java: 1 on save button; b(true) (negative button) 4-2=2; b(false) (cancel listener) 5-2=3
+  PaymentFixFlowAction_UNKNOWN_ACTION = 0;
+  PaymentFixFlowAction_ACCEPTED = 1;
+  PaymentFixFlowAction_DECLINED = 2;
+  PaymentFixFlowAction_DISMISSED = 3;
+}
+
+enum ExpirationDateStatus {  // awqk.m()-2 (missing expiry written as 2 -> 0): 3 valid, 5 expired, 6 >20 years ahead, 7 month out of range; 2 never seen
+  EXPIRATION_DATE_MISSING = 0;
+  ExpirationDateStatus_VALID = 1;
+  ExpirationDateStatus_EXPIRED = 3;
+  ExpirationDateStatus_TOO_FAR_IN_FUTURE = 4;
+  INVALID_MONTH = 5;
+}
+
+enum PaymentFixFlowResult {  // aurs.a(i)=i-2: awbn 3 success/4 failure; awbq 6 no saver (atyu.h() empty), u(7..11) intent-extra checks, b(): 12 declined, 13 dismissed
+  PaymentFixFlowResult_UNKNOWN_RESULT = 0;
+  SAVE_SUCCEEDED = 1;
+  PaymentFixFlowResult_SAVE_FAILED = 2;
+  NO_PAYMENT_CARD_SAVER = 4;
+  FIX_COMPONENTS_NULL = 5;
+  FIX_COMPONENTS_EMPTY_AFTER_PARSE = 6;
+  PAYMENT_CARD_MISSING = 7;
+  CLIENT_STATE_MISSING = 8;
+  FIX_COMPONENTS_EMPTY = 9;
+  USER_DECLINED = 10;
+  USER_DISMISSED = 11;
+}
+
+enum MigrationError {  // Java enum ausn (names kept)
+  UNKNOWN_MIGRATION_ERROR = 0;
+  LOCAL_SETTINGS_MIGRATION_ERROR = 1;
+  SYNCED_SETTINGS_MIGRATION_ERROR = 2;
+}
+
+enum ImproveAutofillConsentResponse {  // avyb.java capture-prompt dialog: 1 capture proceeded (also set by avyp/avyn after capture), 2 and 3 the two non-positive buttons (3 also calls settings ag(false)), 4 cancel
+  ImproveAutofillConsentResponse_UNKNOWN_RESPONSE = 0;
+  ImproveAutofillConsentResponse_ACCEPTED = 1;
+  ImproveAutofillConsentResponse_DECLINED = 2;
+  DECLINED_AND_DISABLED = 3;
+  ImproveAutofillConsentResponse_DISMISSED = 4;
+}
+
+enum ImproveAutofillFeedbackResponse {  // avyn.java feedback dialog: 1 send (uploads screenshot+AssistStructure), 2 negative button, 3 cancel
+  ImproveAutofillFeedbackResponse_UNKNOWN_RESPONSE = 0;
+  SENT = 1;
+  ImproveAutofillFeedbackResponse_CANCELLED = 2;
+  ImproveAutofillFeedbackResponse_DISMISSED = 3;
+}
+
+enum ScreenCaptureError {  // avyb.q(i)=i-2: avya 3 empty bytes, 4 capture future failed, 5 >500000 bytes; 6 no MediaProjectionManager/projection; literal 5 when user denied capture permission
+  ScreenCaptureError_NO_ERROR = 0;
+  EMPTY_SCREENSHOT = 1;
+  CAPTURE_FAILED = 2;
+  ScreenCaptureError_SCREENSHOT_TOO_LARGE = 3;
+  MEDIA_PROJECTION_UNAVAILABLE = 4;
+  CAPTURE_PERMISSION_DENIED = 5;
+}
+
+enum ScreenshotPreviewError {  // avyp.a() 1 (no screenshot bitmap), avyn 2 (bitmap too large to open preview)
+  ScreenshotPreviewError_NO_ERROR = 0;
+  SCREENSHOT_UNAVAILABLE = 1;
+  ScreenshotPreviewError_SCREENSHOT_TOO_LARGE = 2;
+}
+
+enum PasswordGenerationAction {  // awar.java: 1 accept button, 2 second button, dismiss listener sets 3 when still 0
+  PasswordGenerationAction_NO_ACTION = 0;
+  PasswordGenerationAction_ACCEPTED = 1;
+  PasswordGenerationAction_DECLINED = 2;
+  PasswordGenerationAction_DISMISSED = 3;
+}
+
+enum SetupDialogSource {  // aurk.a(i)=i-2; extra SETUP_DIALOG_SOURCE 1..3 -> 3..5; awfq (SetupActivityController) 3, avxe (OPT_IN_ACCOUNT extra) 4, aweu (SaveSetupActivityController) 5
+  UNKNOWN_SETUP_SOURCE = 0;
+  SetupDialogSource_SETUP = 1;
+  OPT_IN_ACCOUNT = 2;
+  SAVE_SETUP = 3;
+}
+
+enum AccountSetupResult {  // 1 account set (avxe, awfq, aweo, avvb), 2 account picker result unsuccessful (aweu.java:158-165)
+  AccountSetupResult_UNKNOWN_RESULT = 0;
+  ACCOUNT_SET = 1;
+  ACCOUNT_PICKER_FAILED = 2;
+}
+
+enum LeakCheckResult {  // literal 1 success, 2 other error, 3 timeout; avzu.r(jsqs status)-2 assuming gRPC code ordinals: OK 1, DEADLINE_EXCEEDED 3, PERMISSION_DENIED/UNAUTHENTICATED 4, RESOURCE_EXHAUSTED 5, CANCELLED/ABORTED 6, NOT_FOUND/UNIMPLEMENTED/UNAVAILABLE 7
+  LeakCheckResult_UNKNOWN_RESULT = 0;
+  LeakCheckResult_SUCCESS = 1;
+  ERROR = 2;
+  TIMEOUT = 3;
+  AUTH_ERROR = 4;
+  QUOTA_EXCEEDED = 5;
+  LeakCheckResult_CANCELLED = 6;
+  SERVICE_UNAVAILABLE = 7;
+}
+
+enum LocalFixState {  // per-app local-fix store atov (avow.g(package)): map c holds candidates atrj with hit count, promoted to map b (atot) at threshold jhmv.b(); aurb.2 1=b,2=c; auqz.2 g(3)=promoted, g(4)=new candidate
+  UNKNOWN_LOCAL_FIX_STATE = 0;
+  ACTIVE = 1;
+  CANDIDATE = 2;
+}
+
+enum LocalFixRemovalCause {  // Java enum aura (names kept)
+  UNKNOWN_REMOVAL_CAUSE = 0;
+  SELECTED = 1;
+  SELECTED_AFTER_LONG_PRESS = 2;
+  FIELD_TYPE_CHANGED = 3;
+  SAME_TYPE_AS_FIELD_SELECTED_AFTER_LONG_PRESS = 4;
+  SAME_FORM_AS_NEWLY_SAVED_FIELD = 5;
+  SAME_FORM_AS_ALLOWED_FIELDS = 6;
+}
+
+enum IconFetchResult {  // atkr.f()/i()/atko/atkn
+  IconFetchResult_UNKNOWN_RESULT = 0;
+  ICON_FOUND = 1;
+  NO_ICON = 2;
+  IconFetchResult_FETCH_FAILED = 3;
+  EMPTY_DOMAIN = 4;
+  BLANK_ICON = 5;
+}
+
+enum IconSource {  // atkr.g(.., i, ..) i-2: 3 cache hit, 4 network; literal 2 in d() for the network fetch
+  IconSource_UNKNOWN_SOURCE = 0;
+  CACHE = 1;
+  NETWORK = 2;
+}
+
+enum IconRequestType {  // atkr: b() blocking get with timeout 1, c() async 2, a() refresh of stale cached icons 3
+  UNKNOWN_REQUEST_TYPE = 0;
+  BLOCKING = 1;
+  ASYNC = 2;
+  STALE_REFRESH = 3;
+}
+
+enum SettingsSyncTrigger {  // avro.v(avrq,i)/u(i), stored i-2: h() account switch 3, avou.t()/avrd 4, avrh per-account read during restore 5, avou.av() 6, avou.s() 8
+  UNKNOWN_TRIGGER = 0;
+  ACCOUNT_SWITCH = 1;
+  SYNC_REQUEST = 2;
+  RESTORE_ACCOUNT_READ = 3;
+  RESTORE_ON_SETTINGS_READ = 4;
+  RESTORE_REQUEST = 6;
+}
+
+enum BreachCheckSkipReason {  // awpa.a(): 1 when avql.c() finds a valid skip pass (recent breach check stored per credential)
+  BreachCheckSkipReason_UNKNOWN_SKIP_REASON = 0;
+  VALID_SKIP_PASS = 1;
+}
+
+enum BreachCheckSkipOutcome {  // awpa.a(): flag jhok b() off -> 1 and intent skipped; on -> 3 and intent kept; 2 never seen
+  BreachCheckSkipOutcome_UNKNOWN_OUTCOME = 0;
+  SKIPPED = 1;
+  NOT_SKIPPED = 3;
+}
+
+enum NoSaveUiReason {  // avco: FillEventHistory.Event.getNoSaveUiReason() (NO_SAVE_UI_REASON_*) mapped
+  OTHER_REASON = 0;
+  NO_VALUE_CHANGED = 1;
+  FIELD_VALIDATION_FAILED = 2;
+  HAS_EMPTY_REQUIRED = 3;
+  DATASET_MATCH = 4;
+  WITH_DELAY_SAVE_FLAG = 5;
+  NO_SAVE_UI_REASON_NONE = 6;
+  NO_SAVE_INFO = 7;
+}
+
+enum UploaderType {  // atku.e() - 2: auwu (e() 3) uses cache folder SCREENSHOTS_UPLOADER, asfj (e() 4) ASSIST_STRUCTURES_UPLOADER
+  UNKNOWN_UPLOADER = 0;
+  SCREENSHOTS = 1;
+  ASSIST_STRUCTURES = 2;
+}
+
+enum StageResult {  // atlh.f()
+  UNKNOWN_STAGE_RESULT = 0;
+  STAGED = 1;
+  CACHE_FOLDER_MISSING = 2;
+  FILE_TOO_LARGE = 3;
+  WRITE_FAILED = 4;
+}
+
+enum StagingReason {  // Java enum auqh (names kept)
+  UNSPECIFIED_REASON = 0;
+  RANDOMLY_STAGED = 1;
+  HAS_UNCERTAIN_ML_PREDICTION = 2;
+}
+
+enum SnackbarUseCase {  // ausu.a(Snackbar.d()) = useCaseForMetrics - 2; only code 2 is ever set (astt.java:213, virtual card from chromesync_wallet)
+  VIRTUAL_CARD_FILLED = 0;
+}
+
+enum FieldType {  // Java enum atip (names kept)
+  FieldType_UNKNOWN_DATA_TYPE = 0;
+  NOT_APPLICABLE = 1;
+  USERNAME = 2;
+  PASSWORD = 3;
+  USERNAME_OR_EMAIL = 4;
+  FieldType_EMAIL_ADDRESS = 5;
+  FieldType_PHONE_NUMBER = 6;
+  PHONE_COUNTRY_CODE = 7;
+  PHONE_NATIONAL = 8;
+  NEW_USERNAME = 9;
+  NEW_PASSWORD = 10;
+  FieldType_PERSON_NAME = 100;
+  PERSON_NAME_GIVEN = 101;
+  PERSON_NAME_FAMILY = 102;
+  PERSON_NAME_MIDDLE = 103;
+  PERSON_NAME_MIDDLE_INITAL = 104;
+  PERSON_NAME_PREFIX = 105;
+  PERSON_NAME_SUFFIX = 106;
+  FieldType_POSTAL_ADDRESS = 200;
+  POSTAL_ADDRESS_COUNTRY = 201;
+  POSTAL_ADDRESS_POSTAL_CODE = 202;
+  POSTAL_ADDRESS_REGION = 203;
+  POSTAL_ADDRESS_LOCALITY = 204;
+  POSTAL_ADDRESS_STREET_ADDRESS = 205;
+  POSTAL_ADDRESS_EXTENDED_ADDRESS = 206;
+  POSTAL_ADDRESS_EXTENDED_POSTAL_CODE = 207;
+  POSTAL_ADDRESS_DEPENDENT_STREET = 208;
+  POSTAL_ADDRESS_UNIT_NUMBER = 209;
+  POSTAL_ADDRESS_FLOOR_NUMBER = 210;
+  POSTAL_ADDRESS_LINE3 = 211;
+  PAYMENT_CARD_NUMBER = 300;
+  PAYMENT_CARD_HOLDER_NAME = 301;
+  PAYMENT_CARD_CVN = 302;
+  PAYMENT_CARD_EXPIRATION_MONTH = 303;
+  PAYMENT_CARD_EXPIRATION_YEAR = 304;
+  PAYMENT_CARD_EXPIRATION_DATE = 305;
+  PAYMENT_CARD_HOLDER_NAME_GIVEN = 306;
+  PAYMENT_CARD_HOLDER_NAME_MIDDLE = 307;
+  PAYMENT_CARD_HOLDER_NAME_FAMILY = 308;
+  PAYMENT_CARD_ADDRESS = 309;
+  PAYMENT_CARD_ADDRESS_COUNTRY = 310;
+  PAYMENT_CARD_ADDRESS_POSTAL_CODE = 311;
+  PAYMENT_CARD_ADDRESS_REGION = 312;
+  PAYMENT_CARD_ADDRESS_LOCALITY = 313;
+  PAYMENT_CARD_ADDRESS_STREET_ADDRESS = 314;
+  PAYMENT_CARD_ADDRESS_EXTENDED_ADDRESS = 315;
+  PAYMENT_CARD_ADDRESS_EXTENDED_POSTAL_CODE = 316;
+  PAYMENT_CARD_ADDRESS_DEPENDENT_STREET = 317;
+  PAYMENT_CARD_ADDRESS_UNIT_NUMBER = 318;
+  PAYMENT_CARD_ADDRESS_FLOOR_NUMBER = 319;
+  UPI_ID = 320;
+  PAYMENT_CARD_ADDRESS_LINE3 = 321;
+  OTP_FULL = 400;
+  OTP_1 = 401;
+  OTP_2 = 402;
+  OTP_3 = 403;
+  OTP_4 = 404;
+  OTP_5 = 405;
+  OTP_6 = 406;
+  OTP_7 = 407;
+  OTP_8 = 408;
+  OTP_EMAIL = 500;
+  OTP_2FA_APP = 501;
+  FieldType_GENDER = 1000;
+  BIRTHDATE_FULL = 1001;
+  BIRTHDATE_DAY = 1002;
+  BIRTHDATE_MONTH = 1003;
+  BIRTHDATE_YEAR = 1004;
+  FieldType_AGE = 1005;
+  NATIONALITY = 1006;
+  NATIONAL_IDENTIFICATION_NUMBER = 1007;
+  PASSPORT_NUMBER = 1008;
+  PASSPORT_COUNTRY = 1009;
+  PASSPORT_NATIONALITY = 1010;
+  PASSPORT_ISSUE_DATE = 1011;
+  PASSPORT_EXPIRATION_DATE = 1012;
+  PASSPORT_ISSUE_DATE_YEAR = 1013;
+  PASSPORT_ISSUE_DATE_MONTH = 1014;
+  PASSPORT_ISSUE_DATE_DAY = 1015;
+  PASSPORT_EXPIRATION_DATE_YEAR = 1016;
+  PASSPORT_EXPIRATION_DATE_MONTH = 1017;
+  PASSPORT_EXPIRATION_DATE_DAY = 1018;
+  PASSPORT_PERSON_NAME = 1019;
+  PASSPORT_PERSON_NAME_GIVEN = 1020;
+  PASSPORT_PERSON_NAME_MIDDLE = 1021;
+  PASSPORT_PERSON_NAME_FAMILY = 1022;
+  NATIONAL_IDENTIFICATION_ISSUING_COUNTRY = 1100;
+  NATIONAL_IDENTIFICATION_ISSUE_DATE = 1101;
+  NATIONAL_IDENTIFICATION_ISSUE_DATE_YEAR = 1102;
+  NATIONAL_IDENTIFICATION_ISSUE_DATE_MONTH = 1103;
+  NATIONAL_IDENTIFICATION_ISSUE_DATE_DAY = 1104;
+  NATIONAL_IDENTIFICATION_EXPIRATION_DATE = 1105;
+  NATIONAL_IDENTIFICATION_EXPIRATION_DATE_YEAR = 1106;
+  NATIONAL_IDENTIFICATION_EXPIRATION_DATE_MONTH = 1107;
+  NATIONAL_IDENTIFICATION_EXPIRATION_DATE_DAY = 1108;
+  NATIONAL_IDENTIFICATION_PERSON_NAME = 1109;
+  NATIONAL_IDENTIFICATION_PERSON_NAME_GIVEN = 1110;
+  NATIONAL_IDENTIFICATION_PERSON_NAME_MIDDLE = 1111;
+  NATIONAL_IDENTIFICATION_PERSON_NAME_FAMILY = 1112;
+  SUBMIT = 2000;
+  LOYALTY_ACCOUNT_NUMBER = 3000;
+  FieldType_PROMOTIONAL_CODE = 3001;
+  TRANSIT_CODE = 3002;
+  GIFT_CARD_CODE = 3003;
+  FLIGHT_CONFIRMATION_CODE = 3004;
+  FLIGHT_NUMBER = 3005;
+  EVENT_TICKET_NUMBER = 3006;
+  GIFT_CARD_PIN = 3007;
+  RESERVATION_CODE = 3008;
+  TRANSPORTATION_CONFIRMATION_CODE = 3009;
+  RENTAL_CONFIRMATION_CODE = 3010;
+  HOTEL_CONFIRMATION_CODE = 3011;
+  RESERVATION_PERSON_NAME = 3012;
+  RESERVATION_PERSON_NAME_GIVEN = 3013;
+  RESERVATION_PERSON_NAME_MIDDLE = 3014;
+  RESERVATION_PERSON_NAME_FAMILY = 3015;
+  ISSUE_DATE = 4000;
+  FieldType_EXPIRATION_DATE = 4001;
+  REGION = 4002;
+  COUNTRY = 4003;
+  YEAR = 4004;
+  MONTH = 4005;
+  DAY = 4006;
+  ISSUE_DATE_YEAR = 4007;
+  ISSUE_DATE_MONTH = 4008;
+  ISSUE_DATE_DAY = 4009;
+  EXPIRATION_DATE_YEAR = 4010;
+  EXPIRATION_DATE_MONTH = 4011;
+  EXPIRATION_DATE_DAY = 4012;
+  TICKET_NUMBER = 4013;
+  ADDRESS = 4014;
+  PROBABLY_NEW_PASSWORD = 6000;
+  WIFI_PASSWORD = 6001;
+  CONTACT_PHONE_NATIONAL = 7000;
+  CONTACT_PHONE_NUMBER = 7001;
+  CONTACT_PHONE_COUNTRY_CODE = 7002;
+  CONTACT_PERSON_NAME = 7003;
+  CONTACT_PERSON_NAME_GIVEN = 7004;
+  CONTACT_PERSON_NAME_MIDDLE = 7005;
+  CONTACT_PERSON_NAME_FAMILY = 7006;
+  CONTACT_EMAIL_ADDRESS = 7007;
+  LOYALTY_CARD_MERCHANT_NAME = 8000;
+  LOYALTY_CARD_PROGRAM_NAME = 8001;
+  FLIGHT_LOYALTY_ACCOUNT_NUMBER = 8002;
+  LOYALTY_CARD_HOLDER_PERSON_NAME = 8003;
+  LOYALTY_CARD_HOLDER_PERSON_NAME_GIVEN = 8004;
+  LOYALTY_CARD_HOLDER_PERSON_NAME_MIDDLE = 8005;
+  LOYALTY_CARD_HOLDER_PERSON_NAME_FAMILY = 8006;
+  FLIGHT_CARRIER_CODE = 9000;
+  FLIGHT_AIRLINE_NAME = 9001;
+  FLIGHT_ORIGIN_AIRPORT_CODE = 9002;
+  FLIGHT_DESTINATION_AIRPORT_CODE = 9003;
+  FLIGHT_TICKET_NUMBER = 9004;
+  FLIGHT_TRAVELER_PERSON_NAME = 9005;
+  FLIGHT_TRAVELER_PERSON_NAME_GIVEN = 9006;
+  FLIGHT_TRAVELER_PERSON_NAME_MIDDLE = 9007;
+  FLIGHT_TRAVELER_PERSON_NAME_FAMILY = 9008;
+  FLIGHT_NUMBER_WITHOUT_CARRIER_CODE = 9009;
+  VEHICLE_REGISTRATION_ISSUER_NAME = 10000;
+  VEHICLE_IDENTIFICATION_NUMBER = 10001;
+  VEHICLE_LICENSE_PLATE = 10002;
+  VEHICLE_REGISTRATION_ISSUE_TIME = 10003;
+  VEHICLE_REGISTRATION_EXPIRY_TIME = 10004;
+  VEHICLE_MAKE = 10005;
+  VEHICLE_MODEL = 10006;
+  VEHICLE_YEAR = 10007;
+  VEHICLE_PLATE_REGION = 10008;
+  VEHICLE_PLATE_COUNTRY = 10009;
+  VEHICLE_REGISTRATION_ISSUE_TIME_YEAR = 10010;
+  VEHICLE_REGISTRATION_ISSUE_TIME_MONTH = 10011;
+  VEHICLE_REGISTRATION_ISSUE_TIME_DAY = 10012;
+  VEHICLE_REGISTRATION_EXPIRY_TIME_YEAR = 10013;
+  VEHICLE_REGISTRATION_EXPIRY_TIME_MONTH = 10014;
+  VEHICLE_REGISTRATION_EXPIRY_TIME_DAY = 10015;
+  VEHICLE_HOLDER_PERSON_NAME = 10016;
+  VEHICLE_HOLDER_PERSON_NAME_GIVEN = 10017;
+  VEHICLE_HOLDER_PERSON_NAME_MIDDLE = 10018;
+  VEHICLE_HOLDER_PERSON_NAME_FAMILY = 10019;
+  VEHICLE_HOLDER_ADDRESS = 10020;
+  VEHICLE_HOLDER_ADDRESS_COUNTRY = 10021;
+  VEHICLE_HOLDER_ADDRESS_POSTAL_CODE = 10022;
+  VEHICLE_HOLDER_ADDRESS_REGION = 10023;
+  VEHICLE_HOLDER_ADDRESS_LOCALITY = 10024;
+  VEHICLE_HOLDER_ADDRESS_STREET_ADDRESS = 10025;
+  VEHICLE_HOLDER_ADDRESS_EXTENDED_ADDRESS = 10026;
+  VEHICLE_HOLDER_ADDRESS_EXTENDED_POSTAL_CODE = 10027;
+  VEHICLE_HOLDER_ADDRESS_DEPENDENT_STREET = 10028;
+  VEHICLE_HOLDER_ADDRESS_UNIT_NUMBER = 10029;
+  VEHICLE_HOLDER_ADDRESS_FLOOR_NUMBER = 10030;
+  VEHICLE_HOLDER_ADDRESS_LINE3 = 10031;
+  DRIVER_LICENSE_ID = 11000;
+  DRIVER_LICENSE_ISSUE_DATE = 11001;
+  DRIVER_LICENSE_EXPIRATION_DATE = 11002;
+  DRIVER_LICENSE_REGION_NAME = 11003;
+  DRIVER_LICENSE_ISSUE_DATE_YEAR = 11004;
+  DRIVER_LICENSE_ISSUE_DATE_MONTH = 11005;
+  DRIVER_LICENSE_ISSUE_DATE_DAY = 11006;
+  DRIVER_LICENSE_EXPIRATION_DATE_YEAR = 11007;
+  DRIVER_LICENSE_EXPIRATION_DATE_MONTH = 11008;
+  DRIVER_LICENSE_EXPIRATION_DATE_DAY = 11009;
+  DRIVER_LICENSE_PERSON_NAME = 11010;
+  DRIVER_LICENSE_PERSON_NAME_GIVEN = 11011;
+  DRIVER_LICENSE_PERSON_NAME_MIDDLE = 11012;
+  DRIVER_LICENSE_PERSON_NAME_FAMILY = 11013;
+  DRIVER_LICENSE_COUNTRY = 11014;
+  TRANSIT_AGENCY_NAME = 12000;
+  TRANSIT_TRAVELER_PERSON_NAME = 12001;
+  TRANSIT_TRAVELER_PERSON_NAME_GIVEN = 12002;
+  TRANSIT_TRAVELER_PERSON_NAME_MIDDLE = 12003;
+  TRANSIT_TRAVELER_PERSON_NAME_FAMILY = 12004;
+  EVENT_NAME = 13000;
+  EVENT_VENUE_NAME = 13001;
+  EVENT_TICKET_HOLDER_PERSON_NAME = 13002;
+  EVENT_TICKET_HOLDER_PERSON_NAME_GIVEN = 13003;
+  EVENT_TICKET_HOLDER_PERSON_NAME_MIDDLE = 13004;
+  EVENT_TICKET_HOLDER_PERSON_NAME_FAMILY = 13005;
+  EVENT_TICKET_ADDRESS = 13006;
+  EVENT_TICKET_ADDRESS_COUNTRY = 13007;
+  EVENT_TICKET_ADDRESS_POSTAL_CODE = 13008;
+  EVENT_TICKET_ADDRESS_REGION = 13009;
+  EVENT_TICKET_ADDRESS_LOCALITY = 13010;
+  EVENT_TICKET_ADDRESS_STREET_ADDRESS = 13011;
+  EVENT_TICKET_ADDRESS_EXTENDED_ADDRESS = 13012;
+  EVENT_TICKET_ADDRESS_EXTENDED_POSTAL_CODE = 13013;
+  EVENT_TICKET_ADDRESS_DEPENDENT_STREET = 13014;
+  EVENT_TICKET_ADDRESS_UNIT_NUMBER = 13015;
+  EVENT_TICKET_ADDRESS_FLOOR_NUMBER = 13016;
+  EVENT_TICKET_ADDRESS_LINE3 = 13017;
+}
+
+enum PaymentCardType {  // augs.i(ashj) - 2 (augs.java:292); ashj constants
+  UNKNOWN_CARD_TYPE = 0;
+  MASKED_CARD = 1;
+  VIRTUAL_CARD = 2;
+  CARD_INFO_RETRIEVAL_ENROLLED = 3;
+}
+
+enum BreachDialogAction {  // literals in avzb/avyx/avzl button handlers
+  BreachDialogAction_UNKNOWN_ACTION = 0;
+  BreachDialogAction_DISMISSED = 1;
+  CHANGE_PASSWORD_OPENED = 2;
+}
+
+enum BreachDialogVariant {  // avzb: 2 in the branch with a change-password URL, 1 otherwise (avyx gets 3/4 - 2)
+  UNKNOWN_VARIANT = 0;
+  NO_CHANGE_PASSWORD_URL = 1;
+  WITH_CHANGE_PASSWORD_URL = 2;
+}
+
+enum PaymentsFollowUpType {  // awqk.k(): constant 1 when an ivyl item of type 2 yields a wallet intent
+  UNKNOWN_FOLLOW_UP = 0;
+  WALLET_INTENT = 1;
+}
+
+enum MarkStaleDataType {  // astw sets 1 (biwq AUTOFILL_WALLET), astz sets 2 (biwq AUTOFILL_WALLET_USAGE)
+  UNKNOWN_SYNC_DATA_TYPE = 0;
+  AUTOFILL_WALLET = 1;
+  AUTOFILL_WALLET_USAGE = 2;
+}
+
+enum SyncDataOperation {  // constant 1 in astw/astz before asng.d() (markStale)
+  SyncDataOperation_UNKNOWN_OPERATION = 0;
+  MARK_STALE = 1;
+}
+
+enum CardArtFetchResult {  // avti: c(.., 3) on success, c(.., 4) on failure; field = i - 2
+  UNKNOWN_FETCH_RESULT = 0;
+  FETCH_SUCCESS = 1;
+  FETCH_FAILURE = 2;
+}
+
+enum PaymentCardSaveInfoSkipReason {  // auvp.k(code): field = code - 2; codes from auvp.l() call sites (auvp.java:376-1343)
+  APP_BLOCKLISTED = 0;
+  SAVE_DETAILS_REQUEST_FAILED = 1;
+  EXISTING_CARDS_FETCH_FAILED = 2;
+  BILLING_CUSTOMER_NUMBER_FAILED = 3;
+  CHROME_WEBVIEW_FORM = 4;
+  DUPLICATE_CARD_FIELD_IDS = 5;
+  PaymentCardSaveInfoSkipReason_NO_CARD_NUMBER_FIELD = 6;
+  FEATURE_DISABLED = 8;
+  NO_PAYMENTS_CLIENT = 9;
+  CHROME_SYNC_STATE_4 = 10;
+  NOT_ELIGIBLE_FLAG_CHECK = 11;
+  NO_SUPPORTED_CARD_NETWORKS = 12;
+}
+
+enum UsernameDialogAction {  // awem: 1 save onClick, 2 cancel onClick, 3 on dismiss when still 0
+  UsernameDialogAction_NO_ACTION = 0;
+  SAVE_CLICKED = 1;
+  CANCEL_CLICKED = 2;
+  UsernameDialogAction_DISMISSED = 3;
+}
+
+enum UsernameInputMethod {  // awei.afterTextChanged / awel chip onClick (ause maps 0..3 to 2..5)
+  NO_USERNAME = 0;
+  TYPED = 1;
+  SUGGESTION_SELECTED = 2;
+  SUGGESTION_EDITED = 3;
+}
+
+enum FillCallbackFailure {  // AutofillChimeraService.a(), when the callback is not retried
+  UNKNOWN_FAILURE = 0;
+  OTHER_FAILURE = 1;
+  DEAD_OBJECT_FAILURE = 2;
+  TRANSACTION_TOO_LARGE_FAILURE = 3;
+}
+
+enum FillPluginSkipReason {  // avis.c(avfo, code), field = code - 2
+  FillPluginSkipReason_UNKNOWN_SKIP_REASON = 0;
+  NO_FULL_OTP_FIELD = 1;
+  OTP_FIELD_NOT_SERVER_PREDICTED = 2;
+  SMS_PERMISSION_DENIED = 3;
+  APP_HAS_ONGOING_SMS_REQUEST = 4;
+}
+
+enum AuthAndFillResult {  // Java enum aupw (names kept)
+  AuthAndFillResult_UNKNOWN = 0;
+  AuthAndFillResult_SUCCESS = 1;
+  FAILURE_NULL_DATA_INTENT_RESULT = 2;
+  FAILURE_FILL_DATASET_CREATION_FAILURE = 3;
+  FAILURE_MISSING_FILL_DATASET = 4;
+  FAILURE_AUTH_AND_FILL_CANCELED = 5;
+  FAILURE_NULL_STATE_RESULT_DATA = 6;
+  FAILURE_BIOMETRIC_PROMPT_CANCELED_BY_USER = 7;
+  FAILURE_BIOMETRIC_PROMPT_ERROR = 8;
+  FAILURE_MB_LOCKOUT_DIALOG_CANCELED_BY_USER = 9;
+  FAILURE_MB_LOCKOUT_DIALOG_SETTINGS_LAUNCHED = 10;
+  FAILURE_MB_LOCKOUT_DIALOG_SCREEN_LOCKED = 11;
+  FAILURE_MB_LOCKOUT_DIALOG_UNKNOWN_ERROR = 12;
+  FAILURE_MB_ERROR_DIALOG_CANCELED = 13;
+  FAILURE_MB_ERROR_DIALOG_SETTINGS_LAUNCHED = 14;
+  FAILURE_MB_ERROR_DIALOG_UNKNOWN_ACTION = 16;
+}
+
+enum AccountMetadataUpdateResult {  // avku.a() literals with log messages
+  AccountMetadataUpdateResult_UNKNOWN_RESULT = 0;
+  METADATA_UPDATED = 1;
+  NO_ACCOUNT_SET = 2;
+  NO_ACCOUNT_IDENTIFIER = 3;
+  NO_UPDATED_EMAIL = 4;
+  GET_GOOGLE_ACCOUNTS_FAILED = 5;
+}
+
+enum ImeSuggestionAction {  // Java enum auoy (names kept)
+  ImeSuggestionAction_UNKNOWN = 0;
+  USER_ENTER = 1;
+  BACK_AFTER_AUTH = 2;
+  SELECT = 3;
+  EXIT = 4;
+  EXIT_FOR_AUTH = 5;
+  AUTH_FINISH = 10;
+}
+
+enum HatsSurveyType {  // atrp.b(ctx, i) call sites, value = i-2 (avtc.M / auqw.a)
+  DEFAULT_SURVEY = 0;
+  AFTER_SAVE = 1;
+  SAVE_REJECTED = 2;
+  HatsSurveyType_DATASET_SELECTED = 3;
+  SUGGESTIONS_SHOWN_NOT_SELECTED = 4;
+  PASSWORD_GENERATION_ACCEPTED = 5;
+  PASSWORD_GENERATION_DECLINED = 6;
+}
+
+enum SettingsSwitch {  // awmr preference keys
+  UNKNOWN_SWITCH = 0;
+  PAYMENT_INFO = 1;
+  CREDENTIALS = 2;
+  CVC_STORAGE = 3;
+  INLINE_SUGGESTIONS = 4;
+  SETTINGS_SYNC = 5;
+}
+
+enum SaveInfoCreationResult {  // auul/auvp literals (auvp passes i, stores i-2); 8-30 not seen
+  SaveInfoCreationResult_UNKNOWN_RESULT = 0;
+  SAVE_INFO_CREATED = 1;
+  CREDENTIAL_FETCH_FAILED = 2;
+  CREDENTIAL_SAVING_DISABLED = 3;
+  DOMAIN_ALREADY_KNOWN = 4;
+  NO_USERNAME_OR_PASSWORD_FIELD = 5;
+  CREDENTIAL_SAVE_INFO_NOT_BUILT = 6;
+  SUPPRESSED_BY_HINT = 7;
+  PAYMENT_SAVE_FLAG_DISABLED = 31;
+  NO_WALLET_DATA_SOURCE = 32;
+  UNSUPPORTED_WEBVIEW_VERSION = 33;
+  BILLING_CUSTOMER_NUMBER_FETCH_FAILED = 34;
+  SAVE_INSTRUMENT_DETAILS_FAILED = 35;
+  SaveInfoCreationResult_NO_CARD_NUMBER_FIELD = 37;
+  CHROME_SYNC_STATE_BLOCKS = 38;
+  BLOCKED_BY_STRIKES = 39;
+  PAYMENT_SAVE_NOT_BUILT_A = 40;
+  PAYMENT_SAVE_NOT_BUILT_B = 41;
+  DOMAIN_BLOCKLISTED_BY_FLAG = 42;
+}
+
+enum ExistingCardsFetchStatus {  // auvp: 3 on "Failed to fetch existing payment cards"; 2 written by a remap
+  UNSPECIFIED = 0;
+  FETCHED = 2;
+  ExistingCardsFetchStatus_FETCH_FAILED = 3;
+}
+
+enum CvcSaveStatus {  // auvp.j() returns 2/3/6/7, then 8 or 3 after masked-card pattern; stored j2-2; l() writes 2
+  CVC_STORAGE_FEATURE_OFF = 0;
+  CVC_SAVE_OFFERED = 1;
+  SAVE_NOT_OFFERED = 2;
+  CVC_STORAGE_SETTING_OFF = 4;
+  CVC_SAVE_BLOCKED_BY_STRIKES = 5;
+  NO_MATCHING_MASKED_CARD = 6;
+}
+
+enum ReauthSettingFetchResult {  // avls.b(i) i-2 from avls/avlp/avlq
+  ReauthSettingFetchResult_UNKNOWN_RESULT = 0;
+  GPM_FETCHED = 1;
+  TIMEOUT_DISK_VALUE_MATCHED = 2;
+  TIMEOUT_DISK_VALUE_MISMATCHED = 3;
+  TIMEOUT_DEFAULT_MATCHED = 4;
+  TIMEOUT_DEFAULT_MISMATCHED = 5;
+  GPM_FETCH_FAILED = 6;
+  DISK_FETCH_FAILED = 7;
+  NO_PENDING_FETCH = 8;
+  FUTURE_FAILED = 9;
+  FUTURE_TIMED_OUT = 10;
+}
+
+enum CardOcrResult {  // awew.a(i) i-2; value 2 not seen
+  CardOcrResult_UNKNOWN_RESULT = 0;
+  CARD_FILLED = 1;
+  NO_CARD_RESULT = 3;
+}
+
+enum PcSpiiAuthResult {  // awdw.d(): n?6 : m?3 : resultCode==0?5 : 4, minus 2
+  PcSpiiAuthResult_UNKNOWN_AUTH_RESULT = 0;
+  PcSpiiAuthResult_AUTH_SUCCEEDED = 1;
+  PcSpiiAuthResult_AUTH_FAILED = 2;
+  AUTH_CANCELLED_OR_NOT_DONE = 3;
+  NO_SCREEN_LOCK = 4;
+}
+
+enum PcSpiiOutcome {  // awdw.A (default 3) set in awdw/awdv/awdh, stored A-2
+  PcSpiiOutcome_UNKNOWN_OUTCOME = 0;
+  DATASET_FILLED = 1;
+  AUTH_CANCELLED = 2;
+  LOADING_DIALOG_DISMISSED = 3;
+  FILL_DIALOG_DISMISSED = 4;
+  DATA_INTENT_CANCELLED = 5;
+}
+
+enum BcnCacheLookupResult {  // asdf.a()/b(): 3 if cached else 4, minus 2
+  BcnCacheLookupResult_UNKNOWN_RESULT = 0;
+  CACHE_HIT = 1;
+  CACHE_MISS = 2;
+}
+
+enum StrikeDatabaseType {  // avsp.j()-2: avsq (avmo.c, injected as auvp's save-blocking StrikeDb) = 1, avst (avmo.d, atrv.l(), used by awgj/awce CVC prompts) = 2
+  UNKNOWN_STRIKE_DB = 0;
+  CARD_SAVE_STRIKES = 1;
+  CVC_SAVE_STRIKES = 2;
+}
+
+enum StrikeUpdateAction {  // avsp g()/d()/e() literals
+  StrikeUpdateAction_UNKNOWN_ACTION = 0;
+  ADD_STRIKE = 1;
+  CLEAR_STRIKES = 2;
+  DECAY_STRIKES = 3;
+}
+
+enum MoreInfoOutcome {  // awla.s (default 2) assignments, stored s-2
+  MoreInfoOutcome_NO_ACTION = 0;
+  NO_ITEMS_TO_SHOW = 1;
+  MoreInfoOutcome_CANCELLED = 2;
+  FILLED = 3;
+  FILLED_WITH_INTENTS = 4;
+  FILL_FAILED = 5;
+  SPII_PROMPT_LAUNCHED = 6;
+  NO_SPII_PENDING_INTENT = 7;
+}
+
+enum BcnFetchResult {  // asdf.g(i) i-2 from asdf.h()
+  BcnFetchResult_UNKNOWN_RESULT = 0;
+  FOUND = 1;
+  NOT_FOUND = 2;
+  BcnFetchResult_FETCH_FAILED = 3;
+  BcnFetchResult_NOT_NUMERIC = 4;
+}
+
+enum PredictionProcessorMethod {  // aukp.c(): the processor's autd detection method
+  OTHER_DETECTION_METHOD = 0;
+  PROCESSOR_SERVER_TRUTH_DATA = 1;
+  PROCESSOR_SERVER_CROWDSOURCING = 2;
+}
+
+enum FilterMethod {  // Java enum auti (names kept)
+  UNKNOWN_FILTER_METHOD = 0;
+  COMPLETE_FORM = 1;
+  OTP_CODE = 2;
+  UNKNOWN_FIELD_TYPE = 3;
+  LOCAL_FILL_EXCLUSION = 4;
+}
+
+enum DetectionMethod {  // Java enum autd (names kept)
+  UNKNOWN_DETECTION_METHOD = 0;
+  CLIENT_HEURISTICS = 1;
+  AUTOFILL_HINTS = 2;
+  WEBVIEW_HINTS = 3;
+  SERVER_TRUTH_DATA = 4;
+  SERVER_CROWDSOURCING = 5;
+  EXTENDED_AUTOFILL_HINTS = 7;
+  CLIENT_ML = 8;
+  ML_LITE = 9;
+  SERVER_ML = 10;
+  WEBVIEW_CROWDSOURCING = 11;
+  LOCAL_FIX = 12;
+  INPUT_TYPE_HEURISTIC = 13;
+  PCC_REQUEST = 14;
+  VIEW_HINT = 15;
+  PQRNN_ML = 16;
+}
+
+enum PaymentCardSaveOperation {  // astc.j first arg minus 2 / astc.l literal 2
+  PaymentCardSaveOperation_UNKNOWN_OPERATION = 0;
+  SAVE_NEW_CARD = 1;
+  UPDATE_CVC = 2;
+}
+
+enum PaymentCardSaveFailure {  // astc.j/m third arg minus 2, with the error strings at each call (astc.java:1672-1916), literal 2 at astc.java:2155
+  PaymentCardSaveFailure_NO_FAILURE = 0;
+  NO_SESSION_DATA = 1;
+  INVALID_DATA_TYPE = 2;
+  INVALID_CARD_NUMBER = 3;
+  CVC_SAVING_DISABLED = 4;
+  CVC_EMPTY = 5;
+  CVC_ALREADY_SAVED = 6;
+  MULTIPLE_MATCHING_CARDS = 7;
+}
+
+enum ValuableMatchingMethod {  // autq.a(awvl.g) = g - 2; g from the awvl.a(..., g, ...) call sites in asqu, awvm, asre; value 1 not seen
+  ValuableMatchingMethod_NOT_EVALUATED = 0;
+  ValuableMatchingMethod_DATA_TYPE_NOT_DOMAIN_FILTERED = 2;
+  NO_DOMAIN_MATCH = 3;
+  DOMAIN_OR_MERCHANT_MATCH = 4;
+}
+
+enum DataMatchMethod {  // ausz.a(awvl.h) = h-2; h=3 type not in filter list, 5 eTLD+1 / domain-list match (awpc.b), 6 name substring match (awpc.a), 8 no match
+  DataMatchMethod_NOT_EVALUATED = 0;
+  DataMatchMethod_DATA_TYPE_NOT_DOMAIN_FILTERED = 1;
+  DOMAIN_LIST_MATCH = 3;
+  NAME_MATCH = 4;
+  NO_MATCH = 6;
+}
+
+enum EntryFilterReason {  // aupk.e: literal 2/3 in asqu, i-2 in awtf.r and asxu.b; matched to the asxl filter-stage log lines
+  EntryFilterReason_UNKNOWN_REASON = 0;
+  DOMAIN_MISMATCH = 2;
+  EntryFilterReason_EXPIRED = 3;
+  DUPLICATE = 4;
+  NO_VALUE_FOR_FORM_FIELDS = 5;
+}
+
+enum FeatureState {  // Java enum aupo (names kept)
+  FeatureState_UNKNOWN = 0;
+  INELIGIBLE = 1;
+  ELIGIBLE_BUT_DISABLED = 2;
+  ENABLED = 3;
+}
+
+enum AutofillType {  // augs.j(): ViewNode.getAutofillType() (View.AUTOFILL_TYPE_*)
+  AUTOFILL_TYPE_NONE = 0;
+  AUTOFILL_TYPE_TEXT = 1;
+  AUTOFILL_TYPE_TOGGLE = 2;
+  AUTOFILL_TYPE_LIST = 3;
+  AUTOFILL_TYPE_DATE = 4;
+}
+
+enum DatasetUiType {  // avco.f(FillEventHistory.Event.getUiType()) - 2: UI_TYPE_MENU(1)->1, UI_TYPE_INLINE(2)->2, UI_TYPE_DIALOG(3)->3, anything else (incl. 0, CREDMAN_BOTTOM_SHEET 4, or no shown event)->0
+  UI_TYPE_UNKNOWN = 0;
+  UI_TYPE_MENU = 1;
+  UI_TYPE_INLINE = 2;
+  UI_TYPE_DIALOG = 3;
+}
+
+enum ImeFieldMatchFailure {  // auyr.h()/n(i): i-2 and direct 5/6; success leaves 0
+  ImeFieldMatchFailure_NO_FAILURE = 0;
+  NO_CACHED_DETECTION_FOR_PACKAGE = 1;
+  INVALID_EDITOR_FIELD_ID = 2;
+  NO_FIELD_ID_MATCH = 3;
+  MULTIPLE_FIELD_ID_MATCHES = 4;
+  NO_FORM_FINGERPRINT = 5;
+  NO_FIELD_FINGERPRINT = 6;
+  NO_AUTOFILL_ID_MATCH = 7;
+  MULTIPLE_AUTOFILL_ID_MATCHES = 8;
+}
+
+enum ImeAuthDataKind {  // AutofillInputMethodServiceProxy/avab literals: credential vs payment cache entries
+  UNKNOWN_DATA_KIND = 0;
+  ImeAuthDataKind_CREDENTIAL = 1;
+  ImeAuthDataKind_PAYMENT_CARD = 2;
+}
+
+enum ImeAuthResult {  // AutofillInputMethodServiceProxy.onStartInputView(): cache entry .a
+  ImeAuthResult_UNKNOWN_AUTH_RESULT = 0;
+  ImeAuthResult_AUTH_SUCCEEDED = 1;
+  ImeAuthResult_AUTH_FAILED = 2;
+}
+
+enum DatasetFilterReason {  // atnl/atos literals
+  DatasetFilterReason_UNKNOWN_REASON = 0;
+  SOME_FIELDS_REMOVED = 1;
+  DUPLICATE_DATASET = 2;
+  OVER_MAX_DATASETS = 3;
+  NO_FILLABLE_FIELDS = 4;
+}
+
+enum MoreInfoDropReason {  // awla literals where an item is skipped
+  MoreInfoDropReason_UNKNOWN_REASON = 0;
+  NO_FILL_ENTRIES = 1;
+  UNSUPPORTED_VALUABLE_TYPE = 2;
+  NO_TITLE = 3;
+  UNSUPPORTED_DATA_TYPE = 4;
+}
+
+enum CardNumberValidity {  // astc.k i3-2
+  CardNumberValidity_UNKNOWN_VALIDITY = 0;
+  CardNumberValidity_VALID = 1;
+  CardNumberValidity_MISSING = 2;
+  CardNumberValidity_EMPTY = 3;
+  CardNumberValidity_NOT_NUMERIC = 4;
+  LUHN_CHECK_FAILED = 5;
+}
+
+enum CardExpirationValidity {  // astc.k i2-2
+  CardExpirationValidity_UNKNOWN_VALIDITY = 0;
+  CardExpirationValidity_VALID = 1;
+  CardExpirationValidity_MISSING = 2;
+  CardExpirationValidity_EXPIRED = 4;
+  CardExpirationValidity_TOO_FAR_IN_FUTURE = 5;
+}
+
+enum CvcValidity {  // astc.k i4-2
+  CvcValidity_UNKNOWN_VALIDITY = 0;
+  CvcValidity_VALID = 1;
+  CvcValidity_MISSING = 2;
+  CvcValidity_EMPTY = 4;
+  CvcValidity_NOT_NUMERIC = 5;
+  TOO_SHORT = 6;
+  TOO_LONG = 7;
+}
+
+enum CardholderNameValidity {  // astc.k i-2
+  CardholderNameValidity_UNKNOWN_VALIDITY = 0;
+  CardholderNameValidity_VALID = 1;
+  CardholderNameValidity_MISSING = 2;
+  CardholderNameValidity_EMPTY = 3;
+  CONTAINS_DIGIT = 4;
+}
+
+enum SaveStatus {  // aupl.b / aupm.b literals in astc: 1 before any save, 2 after success, 3 in exception handlers
+  SaveStatus_UNKNOWN_STATUS = 0;
+  NOT_ATTEMPTED = 1;
+  SaveStatus_SUCCESS = 2;
+  FAILURE = 3;
+}
+
+enum CvcSaveType {  // astc.l first arg minus 2: 3 no stored CVC for the card, 4 a different CVC stored; full save sets 1
+  UNKNOWN_TYPE = 0;
+  NEW_CVC = 1;
+  REPLACE_CVC = 2;
+}
+
+enum WalletPassesRpc {  // awgp literal 1 (GetPrivatePasses); asrj i=4 (private pass, UpsertPrivatePass) / 5 (UpsertPass) minus 2
+  UNKNOWN_RPC = 0;
+  GET_PRIVATE_PASSES = 1;
+  UPSERT_PRIVATE_PASS = 2;
+  UPSERT_PASS = 3;
+}
+
+enum CvcDataSource {  // autn.a(PaymentCard.h); PaymentCard.b() default h=2 -> 0; parcel values 1-3 exist (ashp.java:30) but no code names them
+  CVC_DATA_SOURCE_DEFAULT = 0;
+}
+
+enum CredentialDomainMatchType {  // avdx.java:854: form domain == credential domain -> 3; Credential.g (credentials added by asoa without an affiliation group) -> 2; else (matched via the credential's domain set) -> 1
+  UNKNOWN_DOMAIN_MATCH = 0;
+  AFFILIATED_DOMAIN_MATCH = 1;
+  UNGROUPED_CREDENTIAL = 2;
+  EXACT_DOMAIN_MATCH = 3;
+}
+
+enum CredentialRankingStrategy {  // Credential.j (asny.java, flag jhml): 1 sort by iuie.r (last used, micros), 2 by iuie.n (times used), 3 log10(times used+1)*exp(-days since last use), 0 by iuie.k (created); avdx maps 1,2,3 -> 1,2,3, other -> 4
+  UNKNOWN_RANKING = 0;
+  LAST_USED = 1;
+  TIMES_USED = 2;
+  FRECENCY = 3;
+  DATE_CREATED = 4;
+}
+
+// GMS LogEvent sub-messages, as in icing_named.proto.
+
+// The experiment IDs in force for the event (twn.b(), tzb.a()). Field names as in the open-source
+// Firebase Clearcut transport's ExperimentIds (clearBlob, encryptedBlob).
+message ExperimentIds {  // cfke
+  ExperimentIdList clear_blob = 1;  // wire type bytes: the IDs from the app's ExperimentTokens plus the event's own
+  repeated bytes encrypted_blob = 2;  // the ExperimentTokens' opaque experiment tokens
+  bool has_experiment_tokens = 3;  // set whenever ExperimentTokens were supplied; estimated name (medium)
+}
+
+message ExperimentIdList {  // cfka
+  repeated int32 experiment_id = 3 [features.repeated_field_encoding = EXPANDED];
+}
+
+// The active network when the event was uploaded (twf: ConnectivityManager.getActiveNetworkInfo()).
+message NetworkConnectionInfo {  // crav
+  ActiveNetworkType network_type = 1;  // NetworkInfo.getType()
+  MobileSubtype mobile_subtype = 2;  // NetworkInfo.getSubtype(): TelephonyManager.NETWORK_TYPE_*
+}
+
+enum ActiveNetworkType {  // R8-unboxed enum crau; values are ConnectivityManager.TYPE_*
+  MOBILE = 0;
+  TYPE_NONE = -1;
+  WIFI = 1;
+  MOBILE_MMS = 2;
+  MOBILE_SUPL = 3;
+  MOBILE_DUN = 4;
+  MOBILE_HIPRI = 5;
+  WIMAX = 6;
+  BLUETOOTH = 7;
+  DUMMY = 8;
+  ETHERNET = 9;
+  MOBILE_FOTA = 10;
+  MOBILE_IMS = 11;
+  MOBILE_CBS = 12;
+  WIFI_P2P = 13;
+  MOBILE_IA = 14;
+  MOBILE_EMERGENCY = 15;
+  PROXY = 16;
+  VPN = 17;
+}
+
+enum MobileSubtype {  // R8-unboxed enum cras; values are TelephonyManager.NETWORK_TYPE_*
+  UNKNOWN_MOBILE_SUBTYPE = 0;
+  GPRS = 1;
+  EDGE = 2;
+  UMTS = 3;
+  CDMA = 4;
+  EVDO_0 = 5;
+  EVDO_A = 6;
+  RTT = 7;
+  HSDPA = 8;
+  HSUPA = 9;
+  HSPA = 10;
+  IDEN = 11;
+  EVDO_B = 12;
+  LTE = 13;
+  EHRPD = 14;
+  HSPAP = 15;
+  GSM = 16;
+  TD_SCDMA = 17;
+  IWLAN = 18;
+  LTE_CA = 19;
+  NR = 20;
+  COMBINED = 100;  // getSubtype() returned -1
+}
+
+enum crah_a {  // R8-unboxed enum crah.a() (values only)
+  CRAH_A_0 = 0;
+  CRAH_A_1 = 1;
+  CRAH_A_2 = 2;
+}
+
+message craj {
+  string f1 = 1;
+  string f2 = 2;
+}
+
+// Fields left f<number>: nothing in the code points to a meaning.
+//   AutofillEvent.f10 (ausx.10): empty message (no fields) and no builder in dex 1 or 5 of this build: a retired event
+//   AutofillEvent.f15 (ausx.15): empty message (no fields) and no builder in dex 1 or 5 of this build: a retired event
+//   AutofillEvent.f16 (ausx.16): empty message (no fields) and no builder in dex 1 or 5 of this build: a retired event
+//   AutofillEvent.f17 (ausx.17): empty message (no fields) and no builder in dex 1 or 5 of this build: a retired event
+//   AutofillEvent.f27 (ausx.27): empty message (no fields) and no builder in dex 1 or 5 of this build: a retired event
+//   AutofillEvent.f55 (ausx.55): empty message (no fields) and no builder in dex 1 or 5 of this build: a retired event
+//   SaveShownEvent.f6 (aush.6): FillContext e() returns the 4th SafeFillContext/FillContextImpl constructor arg, which every caller passes as literal false (avdd.java:48, avev.java:190/484, avdx.java:992); only parcel round-trips copy it, so nothing shows its meaning
+//   PaymentsFollowUpIntentEvent.f3 (auru.3): only ever written as false (awqk.java:281); no other write or label found
