@@ -1,4 +1,3 @@
-import tron_pb2
 #import android_dialer_pb2
 import subprocess
 import textwrap
@@ -10,6 +9,7 @@ import warnings
 mypath = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(mypath)
 from decoding_helpers import decode_pb, try_decode_pb_array, protoUnknownFieldsToString, protoToString, fieldIsSet
+from decode_named import message_class  # its own descriptor pool: tron.proto's names clash with other modules' _pb2
 
 
 # the meaning of fields changes depending on the event, sigh
@@ -225,7 +225,7 @@ eventToTagMapping = {
 
 def decode_tron_pb(data, verbose=True, debug=False):  
     try:
-        tron = tron_pb2.TronRequest()
+        tron = message_class("TronRequest", "tron.proto")()
         # ParseFromString fails with a warning rather than an exception, so we convert warning to an exception
         with warnings.catch_warnings():
             warnings.simplefilter("error")
@@ -344,9 +344,9 @@ def decode_tron_pb(data, verbose=True, debug=False):
                     pass
             res=res+str(eventStr)+"\n"
             res=res+"}\n"
-        res=res+protoToString("experimentTokens", tron.experimentTokens)+"\n"
+        res=res+protoToString("experiment_ids", tron.experiment_ids)+"\n"
         res=res+"bootCount: "+str(tron.bootCount)+"\n"
-        res=res+protoToString("connectionDetails", tron.connectionDetails)+"\n"
+        res=res+protoToString("network_connection_info", tron.network_connection_info)+"\n"
         # print out any other fields we might have missed
         unknown = protoUnknownFieldsToString(tron)
         if len(unknown) > 0:

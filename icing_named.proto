@@ -15,15 +15,15 @@ message Icing_LogEntry {  // crai
   int32 eventId = 11;
   int64 eventFlowId = 12;
   sint64 timeZoneOffset = 15;
-  cfke f16 = 16;
+  ExperimentIds experiment_ids = 16;
   int64 elapsedRealtime = 17;
   bytes veProducerByteString = 18;
   crah_a f19 = 19;
   repeated int32 f20 = 20 [features.repeated_field_encoding = EXPANDED];
   int64 bootCount = 22;
-  crav f23 = 23;
+  NetworkConnectionInfo network_connection_info = 23;
   bool notDirectBootMode = 25;
-  double f30 = 30;
+  double applied_sampling_rate = 30;
 }
 
 message IcingLogEvent {  // cecy
@@ -77,15 +77,19 @@ message craj {
   string f2 = 2;
 }
 
-message cfke {
-  bytes f1 = 1;
-  repeated bytes f2 = 2;
-  bool f3 = 3;
+message ExperimentIds {  // cfke
+  ExperimentIdList clear_blob = 1;  // wire type bytes
+  repeated bytes encrypted_blob = 2;
+  bool has_experiment_tokens = 3;  // estimated name (medium)
 }
 
-message crav {
-  crau_a f1 = 1;
-  cras_a f2 = 2;
+message ExperimentIdList {  // cfka
+  repeated int32 experiment_id = 3 [features.repeated_field_encoding = EXPANDED];
+}
+
+message NetworkConnectionInfo {  // crav
+  ActiveNetworkType network_type = 1;
+  MobileSubtype mobile_subtype = 2;
 }
 
 message ErrorEvent {  // cecz
@@ -1167,49 +1171,49 @@ enum crah_a {  // R8-unboxed enum crah.a() (values only)
   CRAH_A_2 = 2;
 }
 
-enum cras_a {  // R8-unboxed enum cras.a() (values only)
-  CRAS_A_0 = 0;
-  CRAS_A_1 = 1;
-  CRAS_A_2 = 2;
-  CRAS_A_3 = 3;
-  CRAS_A_4 = 4;
-  CRAS_A_5 = 5;
-  CRAS_A_6 = 6;
-  CRAS_A_7 = 7;
-  CRAS_A_8 = 8;
-  CRAS_A_9 = 9;
-  CRAS_A_10 = 10;
-  CRAS_A_11 = 11;
-  CRAS_A_12 = 12;
-  CRAS_A_13 = 13;
-  CRAS_A_14 = 14;
-  CRAS_A_15 = 15;
-  CRAS_A_16 = 16;
-  CRAS_A_17 = 17;
-  CRAS_A_18 = 18;
-  CRAS_A_19 = 19;
-  CRAS_A_20 = 20;
-  CRAS_A_100 = 100;
+enum MobileSubtype {  // cras_a; R8-unboxed enum cras.a(): TelephonyManager.NETWORK_TYPE_* (COMBINED: getSubtype() returned -1)
+  UNKNOWN_MOBILE_SUBTYPE = 0;
+  GPRS = 1;
+  EDGE = 2;
+  UMTS = 3;
+  CDMA = 4;
+  EVDO_0 = 5;
+  EVDO_A = 6;
+  RTT = 7;
+  HSDPA = 8;
+  HSUPA = 9;
+  HSPA = 10;
+  IDEN = 11;
+  EVDO_B = 12;
+  LTE = 13;
+  EHRPD = 14;
+  HSPAP = 15;
+  GSM = 16;
+  TD_SCDMA = 17;
+  IWLAN = 18;
+  LTE_CA = 19;
+  NR = 20;
+  COMBINED = 100;
 }
 
-enum crau_a {  // R8-unboxed enum crau.a() (values only)
-  CRAU_A_0 = 0;
-  CRAU_A_M1 = -1;
-  CRAU_A_1 = 1;
-  CRAU_A_2 = 2;
-  CRAU_A_3 = 3;
-  CRAU_A_4 = 4;
-  CRAU_A_5 = 5;
-  CRAU_A_6 = 6;
-  CRAU_A_7 = 7;
-  CRAU_A_8 = 8;
-  CRAU_A_9 = 9;
-  CRAU_A_10 = 10;
-  CRAU_A_11 = 11;
-  CRAU_A_12 = 12;
-  CRAU_A_13 = 13;
-  CRAU_A_14 = 14;
-  CRAU_A_15 = 15;
-  CRAU_A_16 = 16;
-  CRAU_A_17 = 17;
+enum ActiveNetworkType {  // crau_a; R8-unboxed enum crau.a(): ConnectivityManager.TYPE_*
+  MOBILE = 0;
+  TYPE_NONE = -1;
+  WIFI = 1;
+  MOBILE_MMS = 2;
+  MOBILE_SUPL = 3;
+  MOBILE_DUN = 4;
+  MOBILE_HIPRI = 5;
+  WIMAX = 6;
+  BLUETOOTH = 7;
+  DUMMY = 8;
+  ETHERNET = 9;
+  MOBILE_FOTA = 10;
+  MOBILE_IMS = 11;
+  MOBILE_CBS = 12;
+  WIFI_P2P = 13;
+  MOBILE_IA = 14;
+  MOBILE_EMERGENCY = 15;
+  PROXY = 16;
+  VPN = 17;
 }

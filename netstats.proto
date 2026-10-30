@@ -48,74 +48,79 @@ message NetstatsReport{ // crfj
   optional NetStatsWrapper netStatsWrapper=25;  
 }
 
-message Tokens { //bfyb
-  //repeated int32 b=1;
-  //repeated int32 c=2;
-  repeated int32 token=3; // only this is ever set.  
-  //repeated int32 d=4;
-}
 
-message ExperimentTokens { //bnar
-  optional Tokens tokens=1;
-  repeated bytes tokenBytes=2; 
-  optional bool hasContent=3; // true when content is set
-}
 
-enum ActiveNetworkType {
-    MOBILE=0;
-    NONE=-1;
-    WIFI=1;
-    MOBILE_MMS=2;
-    MOBILE_SUPL=3;
-    MOBILE_DUN=4;
-    MOBILE_HIPRI=5;
-    WIMAX=6;
-    BLUETOOTH=7;
-    DUMMY=8;
-    ETHERNET=9;
-    MOBILE_FOTA=10;
-    MOBILE_IMS=11;
-    MOBILE_CBS=12;
-    WIFI_P2P=13;
-    MOBILE_IA=14;
-    MOBILE_EMERGENCY=15;
-    PROXY=16;
-    VPN=17;
-}
 
-enum MobileSubtype{
-    UNKNOWN_MOBILE_SUBTYPE=0;
-    GPRS=1;
-    EDGE=2;
-    UMTS=3;
-    CDMA=4;
-    EVDO_0=5;
-    EVDO_A=6;
-    RTT=7;
-    HSDPA=8;
-    HSUPA=9;
-    HSPA=10;
-    IDEN=11;
-    EVDO_B=12;
-    LTE=13;
-    EHRPD=14;
-    HSPAP=15;
-    GSM=16;
-    TD_SCDMA=17;
-    IWLAN=18;
-    LTE_CA=19;
-    COMBINED=100;
-}
 
-message ConnectionDetails {//bmyx
-  optional ActiveNetworkType activeNetworkType=1;
-  optional MobileSubtype mobileSubtype=2;
-}
 
 message NetstatsRequest { 
   optional int64 currentTimeMillis=1;
   repeated NetstatsReport  netstatsReport=6;
-  optional ExperimentTokens experimentTokens=16; 
+  optional ExperimentIds experiment_ids = 16;
   optional int32 bootCount=22;
-  optional ConnectionDetails connectionDetails=23;  
+  optional NetworkConnectionInfo network_connection_info = 23;
+  optional double applied_sampling_rate = 30;
+}
+
+// GMS LogEvent fields 16, 23 and 30, as in client_logging_named.proto (from GMS 21.48.15's uploader twn.b()).
+message ExperimentIds {  // cfke: the experiment IDs in force for the event (tzb.a())
+  optional ExperimentIdList clear_blob = 1;  // wire type bytes
+  repeated bytes encrypted_blob = 2;  // opaque experiment tokens
+  optional bool has_experiment_tokens = 3;  // set whenever ExperimentTokens were supplied; estimated name (medium)
+}
+
+message ExperimentIdList {  // cfka
+  repeated int32 experiment_id = 3;
+}
+
+message NetworkConnectionInfo {  // crav: the active network (ConnectivityManager.getActiveNetworkInfo())
+  optional ActiveNetworkType network_type = 1;
+  optional MobileSubtype mobile_subtype = 2;
+}
+
+enum ActiveNetworkType {  // ConnectivityManager.TYPE_*
+  MOBILE = 0;
+  TYPE_NONE = -1;
+  WIFI = 1;
+  MOBILE_MMS = 2;
+  MOBILE_SUPL = 3;
+  MOBILE_DUN = 4;
+  MOBILE_HIPRI = 5;
+  WIMAX = 6;
+  BLUETOOTH = 7;
+  DUMMY = 8;
+  ETHERNET = 9;
+  MOBILE_FOTA = 10;
+  MOBILE_IMS = 11;
+  MOBILE_CBS = 12;
+  WIFI_P2P = 13;
+  MOBILE_IA = 14;
+  MOBILE_EMERGENCY = 15;
+  PROXY = 16;
+  VPN = 17;
+}
+
+enum MobileSubtype {  // TelephonyManager.NETWORK_TYPE_*; COMBINED: getSubtype() returned -1
+  UNKNOWN_MOBILE_SUBTYPE = 0;
+  GPRS = 1;
+  EDGE = 2;
+  UMTS = 3;
+  CDMA = 4;
+  EVDO_0 = 5;
+  EVDO_A = 6;
+  RTT = 7;
+  HSDPA = 8;
+  HSUPA = 9;
+  HSPA = 10;
+  IDEN = 11;
+  EVDO_B = 12;
+  LTE = 13;
+  EHRPD = 14;
+  HSPAP = 15;
+  GSM = 16;
+  TD_SCDMA = 17;
+  IWLAN = 18;
+  LTE_CA = 19;
+  NR = 20;
+  COMBINED = 100;
 }

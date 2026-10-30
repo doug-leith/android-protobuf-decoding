@@ -1,6 +1,6 @@
 
-Ã˛
-icing_named.proto"—
+áÅ
+icing_named.proto"»
 Icing_LogEntry,
 currentTimeMillis (RcurrentTimeMillis 
 packageName (	RpackageName1
@@ -8,16 +8,16 @@
 icing_log_event (2.IcingLogEventRicingLogEvent
 eventId (ReventId 
 eventFlowId (ReventFlowId&
-timeZoneOffset (RtimeZoneOffset
-f16 (2.cfkeRf16(
+timeZoneOffset (RtimeZoneOffset5
+experiment_ids (2.ExperimentIdsRexperimentIds(
 elapsedRealtime (RelapsedRealtime2
 veProducerByteString (RveProducerByteString
 f19 (2.crah_aRf19
 f20 (B™Rf20
-	bootCount (R	bootCount
-f23 (2.cravRf23,
-notDirectBootMode (RnotDirectBootMode
-f30 (Rf30"˘
+	bootCount (R	bootCountN
+network_connection_info (2.NetworkConnectionInfoRnetworkConnectionInfo,
+notDirectBootMode (RnotDirectBootMode2
+applied_sampling_rate (RappliedSamplingRate"˘
 IcingLogEvent,
 error_event (2.ErrorEventR
 errorEventB
@@ -72,14 +72,17 @@ $package_name_and_icing_version_proto3 (2 .PackageNameAndIcingVersionProtoRp
 kv_prefs_migration_diagnosticD (2.KvPrefsMigrationDiagnosticRkvPrefsMigrationDiagnostic"&
 craj
 f1 (	Rf1
-f2 (	Rf2"6
-cfke
-f1 (Rf1
-f2 (Rf2
-f3 (Rf3"8
-crav
-f1 (2.crau_aRf1
-f2 (2.cras_aRf2"+
+f2 (	Rf2"ú
+ExperimentIds0
+
+clear_blob (2.ExperimentIdListR	clearBlob%
+encrypted_blob (RencryptedBlob2
+has_experiment_tokens (RhasExperimentTokens">
+ExperimentIdList*
+experiment_id (B™RexperimentId"Ö
+NetworkConnectionInfo5
+network_type (2.ActiveNetworkTypeRnetworkType5
+mobile_subtype (2.MobileSubtypeRmobileSubtype"+
 
 ErrorEvent
 
@@ -1031,50 +1034,58 @@ GPAY_MONEY6*’
 crah_a
 CRAH_A_0 
 CRAH_A_1
-CRAH_A_2*…
-cras_a
-CRAS_A_0 
-CRAS_A_1
-CRAS_A_2
-CRAS_A_3
-CRAS_A_4
-CRAS_A_5
-CRAS_A_6
-CRAS_A_7
-CRAS_A_8
-CRAS_A_9	
-	CRAS_A_10
-
-	CRAS_A_11
-	CRAS_A_12
-	CRAS_A_13
-	CRAS_A_14
-	CRAS_A_15
-	CRAS_A_16
-	CRAS_A_17
-	CRAS_A_18
-	CRAS_A_19
-	CRAS_A_20
+CRAH_A_2*ç
+MobileSubtype
+UNKNOWN_MOBILE_SUBTYPE 
+GPRS
+EDGE
+UMTS
+CDMA
 
-CRAS_A_100d*§
-crau_a
-CRAU_A_0 
-	CRAU_A_M1ˇˇˇˇˇˇˇˇˇ
-CRAU_A_1
-CRAU_A_2
-CRAU_A_3
-CRAU_A_4
-CRAU_A_5
-CRAU_A_6
-CRAU_A_7
-CRAU_A_8
-CRAU_A_9	
-	CRAU_A_10
-
-	CRAU_A_11
-	CRAU_A_12
-	CRAU_A_13
-	CRAU_A_14
-	CRAU_A_15
-	CRAU_A_16
-	CRAU_A_17Bí beditionspË
+EVDO_0
+
+EVDO_A
+RTT	
+HSDPA	
+HSUPA	
+HSPA
+
+IDEN
+
+EVDO_B
+LTE	
+EHRPD	
+HSPAP
+GSM
+TD_SCDMA	
+IWLAN
+
+LTE_CA
+NR
+COMBINEDd*Ø
+ActiveNetworkType
+
+MOBILE 
+	TYPE_NONEˇˇˇˇˇˇˇˇˇ
+WIFI
+
+MOBILE_MMS
+MOBILE_SUPL
+
+MOBILE_DUN
+MOBILE_HIPRI	
+WIMAX
+	BLUETOOTH	
+DUMMY
+ETHERNET	
+MOBILE_FOTA
+
+
+MOBILE_IMS
+
+MOBILE_CBS
+WIFI_P2P
+	MOBILE_IA
+MOBILE_EMERGENCY	
+PROXY
+VPNBí beditionspË

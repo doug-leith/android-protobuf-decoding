@@ -132,13 +132,13 @@ message ExperimentIdList {  // cfka
 
 // The active network when the event was uploaded (twf: ConnectivityManager.getActiveNetworkInfo()).
 message NetworkConnectionInfo {  // crav
-  NetworkType network_type = 1;  // NetworkInfo.getType()
+  ActiveNetworkType network_type = 1;  // NetworkInfo.getType()
   MobileSubtype mobile_subtype = 2;  // NetworkInfo.getSubtype(): TelephonyManager.NETWORK_TYPE_*
 }
 
-enum NetworkType {  // R8-unboxed enum crau; values are ConnectivityManager.TYPE_*
+enum ActiveNetworkType {  // R8-unboxed enum crau; values are ConnectivityManager.TYPE_*
   MOBILE = 0;
-  NONE = -1;
+  TYPE_NONE = -1;
   WIFI = 1;
   MOBILE_MMS = 2;
   MOBILE_SUPL = 3;
