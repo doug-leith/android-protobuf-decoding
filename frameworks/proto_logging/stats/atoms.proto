@@ -737,7 +737,149 @@ message Atom {
     // Field numbers 100,000 - 199,999 are reserved for non-AOSP (e.g. OEMs) to use.
     // Field numbers 200,000 and above are reserved for future use; do not use them at all.
 
+    // Not AOSP: atoms written by Google Messages' on-device abuse library
+    // com.google.android.libraries.abuse.hades.moirai (WestworldTelemetryLogger, Messages
+    // 20240903), when flag spam_hades_enable_westworld_logging is on. The same reports go to
+    // the ON_DEVICE_ABUSE Clearcut log source (addon/on_device_abuse_named.proto).
+    optional MoiraiClassificationReported moirai_classification_reported = 211400;
+    optional MoiraiInitialized moirai_initialized = 211401;
+    optional MoiraiInitializationFailed moirai_initialization_failed = 211402;
+    optional MoiraiProtectionDownloaded moirai_protection_downloaded = 211403;
+    optional MoiraiProtectionDownloadFailed moirai_protection_download_failed = 211404;
+
     reserved 10008, 10036;
+}
+
+/*
+ * Google Messages on-device abuse (Moirai) atoms. Not AOSP: recovered from the logger's
+ * StatsEvent writes (statsd numbers atom fields in write order). Names from the code that
+ * fills each field; see "addon decoding/claude on_device_abuse/README.md".
+ * client_role is the Moirai ClientId's role string parsed as a number: 0 if empty, -1 if not
+ * a number.
+ */
+
+// One message classified on the device.
+message MoiraiClassificationReported {
+    optional string package_name = 1;
+    optional int64 client_role = 2;
+    optional bytes protection_token = 3;  // server-issued token of the rule/model package used
+    optional int64 classification_latency_ms = 4;
+    optional int64 rules_latency_ms = 5;  // of the first classifier result with rule output (the Tartarus rule engine); 0 if none
+    optional MoiraiAtomPolicyViolation policy_violation = 6;
+    optional MoiraiAtomAction action = 7;
+    optional string rules_output = 8;  // the rule script's "output/log" string; "" if none
+}
+
+// The logger maps the verdict to these values (not the Clearcut ones).
+enum MoiraiAtomPolicyViolation {
+    MOIRAI_POLICY_VIOLATION_UNSPECIFIED = 0;  // not written
+    MOIRAI_NO_POLICY_VIOLATION = 1;
+    MOIRAI_UNSUPPORTED_POLICY_VIOLATION = 2;
+    MOIRAI_NOT_AVAILABLE_POLICY_VIOLATION = 3;
+    MOIRAI_GIFT_CARD = 4;
+    MOIRAI_PHISHING = 5;
+    MOIRAI_SUSPICIOUS = 6;
+    MOIRAI_UNKNOWN_POLICY_VIOLATION = 7;
+}
+
+enum MoiraiAtomAction {
+    MOIRAI_ACTION_UNSPECIFIED = 0;  // not written
+    MOIRAI_ACTION_NOT_AVAILABLE = 1;
+    MOIRAI_ACTION_NONE = 2;
+    MOIRAI_ACTION_WARN = 3;
+    MOIRAI_ACTION_HIDE = 4;
+    MOIRAI_ACTION_DELETE = 5;
+    MOIRAI_ACTION_UNKNOWN = 6;
+}
+
+// Moirai initialized for a client ("Moirai API v %s Initialized for client %s").
+message MoiraiInitialized {
+    optional string package_name = 1;
+    optional int64 client_role = 2;
+    optional bytes protection_token = 3;  // of the package on disk
+    optional int64 initialization_latency_ms = 4;
+}
+
+message MoiraiInitializationFailed {
+    optional string package_name = 1;
+    optional int64 client_role = 2;
+    optional MoiraiAtomInitializationError error = 3;
+    optional int64 initialization_latency_ms = 4;
+}
+
+// From the Moirai status code of the exception.
+enum MoiraiAtomInitializationError {
+    MOIRAI_INITIALIZATION_ERROR_UNSPECIFIED = 0;  // not written
+    MOIRAI_INITIALIZATION_ERROR_OTHER = 1;
+    MOIRAI_PERSEPHONE_DOWNLOADS_NOT_ENABLED = 2;  // status 14: "Persephone downloads not enabled."
+    MOIRAI_NO_PROTECTIONS = 3;  // status 15-17; 15 is "no protections were found on disk for client role ..."; estimated name (medium)
+}
+
+// A package download stored on the phone (worker result 1 or 7).
+message MoiraiProtectionDownloaded {
+    optional string package_name = 1;
+    optional int64 client_role = 2;
+    optional bytes protection_token = 3;  // of the stored package
+    optional int64 duration_ms = 4;  // from the start of the download worker to the package being stored
+    optional MoiraiAtomDownloadType download_type = 5;
+    optional MoiraiAtomTransparencyCheck binary_transparency = 6;
+    optional MoiraiAtomTransparencyError binary_transparency_error = 7;
+    optional MoiraiAtomDownloadStored result = 8;
+}
+
+// A package download that was not stored (worker result 2 to 5).
+message MoiraiProtectionDownloadFailed {
+    optional string package_name = 1;
+    optional int64 client_role = 2;
+    optional int64 duration_ms = 3;
+    optional MoiraiAtomDownloadType download_type = 4;
+    optional MoiraiAtomDownloadFailure result = 5;
+    optional MoiraiAtomTransparencyError binary_transparency_error = 6;
+    optional MoiraiAtomTransparencyCheck binary_transparency = 7;
+}
+
+// The download worker's result (DownloadResult in on_device_abuse_named.proto) as the logger
+// maps it for 211403.
+enum MoiraiAtomDownloadStored {
+    MOIRAI_DOWNLOAD_STORED_UNSPECIFIED = 0;
+    MOIRAI_DOWNLOAD_STORED = 1;  // worker result 1
+    MOIRAI_DOWNLOAD_STORED_RESULT_6 = 2;  // worker result 6: not produced by the September build
+    MOIRAI_DOWNLOAD_STORED_RESULT_7 = 3;  // worker result 7: stored; chosen over 1 by a Moirai config switch
+}
+
+// The same for 211404.
+enum MoiraiAtomDownloadFailure {
+    MOIRAI_DOWNLOAD_FAILURE_UNSPECIFIED = 0;
+    MOIRAI_DOWNLOAD_REJECTED = 1;  // worker result 2: not stored (transparency check failed, or partial update with no stored package)
+    MOIRAI_DOWNLOAD_FAILED = 2;  // worker result 3: exception during download (retried)
+    MOIRAI_SECURE_SERVICE_UNAVAILABLE = 3;  // worker result 4: "Secure service is unavailable."
+    MOIRAI_DOWNLOAD_FAILURE_RESULT_5 = 4;  // worker result 5: not produced by the September build
+}
+
+enum MoiraiAtomDownloadType {
+    MOIRAI_STATUS_UNSPECIFIED = 0;
+    MOIRAI_FULL_PACKAGE_DOWNLOADED = 1;
+    MOIRAI_PARTIAL_PACKAGE_UPDATED = 2;
+    MOIRAI_PARTIAL_UPDATE_EMPTY = 3;
+}
+
+enum MoiraiAtomTransparencyCheck {
+    MOIRAI_TRANSPARENCY_NOT_CHECKED = 0;  // no check recorded
+    MOIRAI_TRANSPARENCY_VERIFIED = 1;
+    MOIRAI_TRANSPARENCY_FAILED = 2;
+}
+
+// BinaryTransparencyError in on_device_abuse_named.proto.
+enum MoiraiAtomTransparencyError {
+    MOIRAI_BT_ERROR_0 = 0;  // also written when there was no error
+    MOIRAI_BT_ERROR_1 = 1;
+    MOIRAI_LOG_ROOT_SIGNATURE_INVALID = 2;
+    MOIRAI_BT_ERROR_3 = 3;
+    MOIRAI_INCLUSION_PROOF_INCORRECT = 4;
+    MOIRAI_PROTECTION_HASH_EMPTY = 5;
+    MOIRAI_PROOF_MISSING = 6;
+    MOIRAI_INVALID_LOG_ROOT_ENVELOPE = 7;
+    MOIRAI_PRIVATE_HASH_SET_PROOF_FAILED = 8;
 }
 
 /**

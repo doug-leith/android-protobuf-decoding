@@ -158,6 +158,10 @@ enum DownloadResult {
   DOWNLOAD_SUCCEEDED = 1;  // package verified and stored
   DOWNLOAD_REJECTED = 2;  // ProtectionsPersistence.d() did not store the package: binary-transparency check failed, or a partial update with no stored package; estimated name (high)
   DOWNLOAD_FAILED = 3;  // "Persephone sync failed" (exception; retried)
+  DOWNLOAD_SECURE_SERVICE_UNAVAILABLE = 4;  // September build: "Secure service is unavailable."
+  DOWNLOAD_RESULT_5 = 5;  // in the September build's enum; not produced
+  DOWNLOAD_RESULT_6 = 6;  // in the September build's enum; not produced
+  DOWNLOAD_SUCCEEDED_7 = 7;  // September build: stored, chosen over 1 by a Moirai config switch
 }
 
 // The server's DownloadBlobResponse status (doic), as named in the worker's log
