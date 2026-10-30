@@ -571,6 +571,63 @@ def decode_primes_pb(bb, verbose=True, terse=False, Grep=True, debug=False, sour
         return "Failed"
 
 
+@functools.lru_cache(maxsize=None)
+def _westworld_counter_names():
+    # {hash: name} for the names in westworld_counters_names.txt; a Clearcut counter's name hash (tpj.a()) is the
+    # first 8 bytes of the name's MD5
+    names = {}
+    with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "westworld_counters_names.txt"), encoding="utf-8") as f:
+        for line in f:
+            name = line.rstrip("\n")
+            if name and not name.startswith("# "):
+                names[int.from_bytes(hashlib.md5(name.encode("utf-8")).digest()[:8], "big")] = name
+    return names
+
+def decode_westworld_counters_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
+    # WESTWORLD_COUNTERS log source: GMS's statsd uploader (Westworld) counting its own operations (alarms, fetches
+    # and uploads of statsd reports and metadata) with Clearcut's Counters, one snapshot per event
+    if debug:
+        fname='/tmp/westworld_counters_bytes'
+        f = open(fname, 'wb')
+        f.write(bb)
+        f.close()
+    try:
+        ev = message_class("WestworldCounters_LogEntry", "westworld_counters_named.proto")()
+        ev.MergeFromString(bb)
+    except Exception:
+        ev = None
+    if ev is None or not ev.HasField("currentTimeMillis"):
+        # not one LogEvent (e.g. try_decode_pb_array's first try with the whole length-delimited logEntry array)
+        if verbose:
+            print("***ERROR WESTWORLD_COUNTERS: not a LogEvent")
+        return "Failed"
+    try:
+        decoded = decode_named("WestworldCounters_LogEntry", "westworld_counters_named.proto", bb)
+        grep=""
+        if Grep:
+            try:
+                if ev.HasField("internal_log_event"):
+                    # the Clearcut log store's own boot / clock-change marker, with no counters
+                    info = "internal_log_event=%s"%ev.DESCRIPTOR.fields_by_name["internal_log_event"].enum_type.values_by_number[ev.internal_log_event].name
+                else:
+                    # name=count for a plain counter, name[bucket]=count for each bucket of a histogram; an unrecovered
+                    # name is shown as its hash
+                    counts = []
+                    for c in ev.counters.counter:
+                        name = _westworld_counter_names().get(c.name_hash, "%016x"%c.name_hash)
+                        for b in c.bucket:
+                            counts.append("%s%s=%d"%(name, "[%d]"%b.bucket if b.bucket else "", b.count))
+                    info = "start_elapsed_realtime_ms=%d %s"%(ev.counters.start_elapsed_realtime_ms, " ".join(counts) or "-")
+                grep="+++WESTWORLD_COUNTERS %s %s\n"%(ev.currentTimeMillis, info)
+            except Exception as e:
+                print("***ERROR WESTWORLD_COUNTERS grep: ",e)
+        return grep+decoded
+    except DecodeNamedError as e:
+        if verbose:
+            print("***ERROR WESTWORLD_COUNTERS: ",e)
+        return "Failed"
+
+
 # the Google app's (com.google.android.googlequicksearchbox) log sources, each with its <Source>_LogEntry in agsa_named.proto
 AGSA_SOURCES = ("AGSA_APA", "AGSA_PROACTIVE_ASSISTANT", "AGSA_ASSISTANT", "AGSA_GOOGLE_APP", "AGSA_ASSISTANT_INTERACTOR",
                 "AGSA_ASSISTANT_AUTO", "AGSA_INFRASTRUCTURE", "AGSA_OMNI", "AGSA_LEGACY", "AGSA_MDD_ANDROID")
@@ -1096,6 +1153,8 @@ def decode(data):
                 print(try_decode_pb_array("logEntry", inner.logEntry, functools.partial(decode_primes_pb, source=inner.logSourceName), verbose=True, debug=False))
             elif inner.logSourceName in AGSA_SOURCES:
                 print(try_decode_pb_array("logEntry", inner.logEntry, functools.partial(decode_agsa_pb, source=inner.logSourceName), verbose=True, debug=False))
+            elif inner.logSourceName == "WESTWORLD_COUNTERS":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_westworld_counters_pb, verbose=True, debug=False))
             elif inner.logSourceName == "WESTWORLD" or inner.logSourceName == "ANONYMOUS_WESTWORLD":
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_westworld, verbose=True, debug=False))
             elif inner.logSourceName == "LB_AS" or inner.logSourceName == "LB_CFG":

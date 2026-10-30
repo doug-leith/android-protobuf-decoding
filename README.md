@@ -80,6 +80,10 @@ Each message contains a sequence of log events, which may be from different log 
 
 - stats_log.proto is (partially) decoded protobuf definition.  hashes of strings are sent in log rather than text, plus a list of strings used.  SMHasher program calcs hash of a string and so can be used to construct a table mapping from the list of strings to hash values, see d ecode_westworld() in logbatch_decode.py
 
+### WESTWORLD_COUNTERS log source (Westworld's counts of its own alarms, statsd fetches and uploads)
+
+- westworld_counters_named.proto is decoded protobuf definition; westworld_counters_names.txt lists the counter names behind the MD5 hashes sent
+
 ### CONSENT_INFO (sent with WESTWORLD, LB_AS and other log sources' events)
 
 - consentinfo.proto is decoded protobuf definition of the consent settings Google Play Services checked before uploading the event

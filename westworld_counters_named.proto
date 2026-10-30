@@ -1,0 +1,133 @@
+edition = "2023";
+
+// The WESTWORLD_COUNTERS Clearcut log source: GMS's Westworld module (com.google.android.gms.westworld,
+// the uploader of Android statsd metrics reports to the WESTWORLD log source) counting its own operations
+// with Clearcut's Counters API. Each event is one Counters snapshot, logged when an operation finishes.
+// The counters schema is from GMS 21.48.15 (obfuscated class names in comments) and is unchanged in
+// GMS 26.31.31 (jchh, jchg, jchf); the outer LogEvent is as in client_logging_named.proto. Names are from
+// the code that sets each field; "estimated name" marks names that the code does not settle.
+
+option features.utf8_validation = NONE;
+
+message WestworldCounters_LogEntry {  // crai (GMS)
+  int64 currentTimeMillis = 1;
+  string packageName = 2;
+  repeated craj keyValuePairList = 3;
+  Counters counters = 6;  // wire type bytes
+  int32 eventId = 11;
+  int64 eventFlowId = 12;
+  sint64 timeZoneOffset = 15;
+  ExperimentIds experiment_ids = 16;
+  int64 elapsedRealtime = 17;
+  bytes veProducerByteString = 18;
+  InternalLogEvent internal_log_event = 19;  // only on the events with no counters; estimated name (high)
+  repeated int32 f20 = 20 [features.repeated_field_encoding = EXPANDED];
+  int64 bootCount = 22;
+  NetworkConnectionInfo network_connection_info = 23;
+  bool notDirectBootMode = 25;
+  double applied_sampling_rate = 30;  // only sent when flag ClearcutLogOperation__applied_sampling_rate is on; 1 = not sampled
+}
+
+// A marker event the Clearcut log store (txp, "CCTFlatFileLogStore") writes into every log source's
+// stream by itself, with only currentTimeMillis, elapsedRealtime and this field: txy.u(2) from
+// ClearcutBootCompleteIntentOperation and txy.u(1) from WallClockChangedIntentOperation ("Could not write
+// internal log event"), so elapsedRealtime can be lined up across reboots and clock changes.
+enum InternalLogEvent {  // R8-unboxed enum crah.a(); value names estimated (high, 0: low)
+  INTERNAL_LOG_EVENT_0 = 0;  // not written by any caller in GMS 21.48.15
+  WALL_CLOCK_CHANGED = 1;
+  BOOT_COMPLETED = 2;
+}
+
+// A snapshot of a Counters object (tpj, "Counters", the Clearcut Counters API) for one dimensions
+// instance, built by tpc.b() when the counters are logged (tpj.j()). Westworld logs its counters once at
+// the end of each operation, so a snapshot usually holds the counters of one run.
+message Counters {  // crbc
+  int64 start_elapsed_realtime_ms = 1;  // tpj.l: SystemClock.elapsedRealtime() when the Counters object was made or last logged, i.e. the start of the period counted; estimated name (high)
+  repeated Counter counter = 2;  // the counters with values in this period, in name order
+  bytes dimensions_instance = 3;  // tpj.q(byte[]): caller-supplied dimensions the counts are split by; not set by Westworld; estimated name (medium)
+}
+
+// One named counter or histogram.
+message Counter {  // crbb
+  oneof name {
+    fixed64 name_hash = 1;  // tpj.a(name): the first 8 bytes of MD5(UTF-8 name), read as a big-endian long; unsalted, so names are recovered by hashing candidate strings (westworld_counters_names.txt)
+    int64 f4 = 4;  // not set by GMS 21.48.15 or 26.31.31
+  }
+  repeated Bucket bucket = 3;  // sorted by bucket
+}
+
+// One histogram bucket: a plain counter (tpa, "AbstractCounter") has the single bucket 0, which
+// GMS 26.31.31 leaves out; a histogram (e.g. CompressedSizeHistogramKb) one bucket per value seen.
+message Bucket {  // crba
+  int64 bucket = 1;  // the value counted (0 for a plain counter); estimated name (high)
+  int64 count = 2;  // how many times it was counted (the sum of the increments); estimated name (high)
+}
+
+message ExperimentIds {  // cfke
+  ExperimentIdList clear_blob = 1;  // wire type bytes: the IDs from the app's ExperimentTokens plus the event's own
+  repeated bytes encrypted_blob = 2;  // the ExperimentTokens' opaque experiment tokens
+  bool has_experiment_tokens = 3;  // set whenever ExperimentTokens were supplied; estimated name (medium)
+}
+
+message ExperimentIdList {  // cfka
+  repeated int32 experiment_id = 3 [features.repeated_field_encoding = EXPANDED];
+}
+
+// The active network when the event was uploaded (twf: ConnectivityManager.getActiveNetworkInfo()).
+message NetworkConnectionInfo {  // crav
+  ActiveNetworkType network_type = 1;  // NetworkInfo.getType()
+  MobileSubtype mobile_subtype = 2;  // NetworkInfo.getSubtype(): TelephonyManager.NETWORK_TYPE_*
+}
+
+enum ActiveNetworkType {  // R8-unboxed enum crau; values are ConnectivityManager.TYPE_*
+  MOBILE = 0;
+  TYPE_NONE = -1;
+  WIFI = 1;
+  MOBILE_MMS = 2;
+  MOBILE_SUPL = 3;
+  MOBILE_DUN = 4;
+  MOBILE_HIPRI = 5;
+  WIMAX = 6;
+  BLUETOOTH = 7;
+  DUMMY = 8;
+  ETHERNET = 9;
+  MOBILE_FOTA = 10;
+  MOBILE_IMS = 11;
+  MOBILE_CBS = 12;
+  WIFI_P2P = 13;
+  MOBILE_IA = 14;
+  MOBILE_EMERGENCY = 15;
+  PROXY = 16;
+  VPN = 17;
+}
+
+enum MobileSubtype {  // R8-unboxed enum cras; values are TelephonyManager.NETWORK_TYPE_*
+  UNKNOWN_MOBILE_SUBTYPE = 0;
+  GPRS = 1;
+  EDGE = 2;
+  UMTS = 3;
+  CDMA = 4;
+  EVDO_0 = 5;
+  EVDO_A = 6;
+  RTT = 7;
+  HSDPA = 8;
+  HSUPA = 9;
+  HSPA = 10;
+  IDEN = 11;
+  EVDO_B = 12;
+  LTE = 13;
+  EHRPD = 14;
+  HSPAP = 15;
+  GSM = 16;
+  TD_SCDMA = 17;
+  IWLAN = 18;
+  LTE_CA = 19;
+  NR = 20;
+  COMBINED = 100;  // getSubtype() returned -1
+}
+
+
+message craj {
+  string f1 = 1;
+  string f2 = 2;
+}
