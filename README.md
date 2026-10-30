@@ -144,7 +144,7 @@ Each message contains a sequence of log events, which may be from different log 
 
 ## Google Play Services https://phonedeviceverification-pa.googleapis.com/google.internal.communications.phonedeviceverification.v1.PhoneDeviceVerification/ and .../PhoneNumber/GetVerifiedPhoneNumbers
 
-- phonedeviceverification_named.proto is decoded protobuf definition of Google Play Services' phone number verification (Constellation) requests and responses: GetConsent, SetConsent, Sync, Proceed and GetVerifiedPhoneNumbers. Sync and Proceed send each SIM's IMSI, ICCID, phone numbers, the IMEI, the hour of each recent SMS sent or received and service state events, with the Android id and Google account tokens; GetConsent and SetConsent carry the RCS and verification consent
+- phonedeviceverification_named.proto is decoded protobuf definition of Google Play Services' phone number verification (Constellation) requests and responses: GetConsent, SetConsent, Sync, Proceed and GetVerifiedPhoneNumbers. Sync and Proceed send each SIM's IMSI and ICCID, the IMEI and service state events (in June 2024 also the SIM's phone numbers and the hour of each recent SMS sent or received), with the Android id, Google account tokens and a DroidGuard result or token; GetConsent and SetConsent carry the RCS and verification consent
 
 ## Google Play Services https://android.googleapis.com/auth/devicekey
 
@@ -179,7 +179,7 @@ adparams_decode.py decodes these parameters in request urls and in location resp
 
 ## DroidGuard results
 
-Google apps send a DroidGuard result with many requests, e.g. checkin, auth/devicekey, adAttest, getAdEventToken, Play store fdfe/sync, federatedcompute and cryptauth SyncKeys. decoding_helpers.py finds them in any request body (protobuf, gRPC or form) and decodes them after the body.
+Google apps send a DroidGuard result with many requests, e.g. checkin, auth/devicekey, adAttest, getAdEventToken, Play store fdfe/sync, federatedcompute, phonedeviceverification and cryptauth SyncKeys. decoding_helpers.py finds them in any request body (protobuf, gRPC or form) and decodes them after the body.
 
 - droidguard.proto is the decoded protobuf definition. The main payload is encrypted, but the outer fields are not, among them a per-app client_uuid that stays the same until factory reset.
 
