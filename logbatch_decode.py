@@ -664,25 +664,21 @@ def decode_AR(bytes, verbose=True, terse=False, Grep=True, debug=False):
                 AR = activity_recognition_pb2.ActivityRecognitionRequest()
                 AR.ParseFromString(bytes)
                 # print interesting content in a way that's easy to grep out of log file
-                if fieldIsSet(AR.activityRecognitionEvent):
-                    for ar in makeIter(AR.activityRecognitionEvent):
-                        if fieldIsSet(ar.activityDetectedList):
-                            for a in makeIter(ar.activityDetectedList):
-                                if fieldIsSet(a.activityDetected):
-                                    for aa in makeIter(a.activityDetected):
-                                        for aaa in makeIter(aa.activity):
-                                            print("+++ACTIVITY_RECOGNITION", aa.timeMillis, aaa.activity, aaa.confidence)
-                        elif fieldIsSet(ar.activityDetectedCHREList):
-                            for a in makeIter(ar.activityDetectedCHREList):
-                                if fieldIsSet(a.activityDetected):
-                                    for aa in makeIter(a.activityDetected):
-                                        for aaa in makeIter(aa.activity):
-                                            if fieldIsSet(aaa.activity):
-                                                print("+++ACTIVITY_RECOGNITION_CHRE", aa.timeMillis, aaa.activity, aaa.confidence)
-                        elif fieldIsSet(ar.activityTransitionEvent):
-                            aa=ar.activityTransitionEvent
-                            aaa=ar.activityTransitionEvent.newActivity1
-                            print("+++ACTIVITY_RECOGNITION_TRANSITION", aa.timeMillis, aaa.activity, aaa.confidence)
+                # (the lists are repeated fields, so each is just looped over: fieldIsSet() of one is always
+                # true, which hid the CHRE and transition lists behind activityDetectedList)
+                for ar in AR.activityRecognitionEvent:
+                    for a in ar.activityDetectedList:
+                        for aa in a.activityDetected:
+                            for aaa in aa.activity:
+                                print("+++ACTIVITY_RECOGNITION", aa.timeMillis, aaa.activity, aaa.confidence)
+                    for a in ar.activityDetectedCHREList:
+                        for aa in a.activityDetected:
+                            for aaa in aa.activity:
+                                if aaa.HasField("activity"):
+                                    print("+++ACTIVITY_RECOGNITION_CHRE", aa.chreAbsoluteTimeInMillis, aaa.activity, aaa.confidence)
+                    for t in ar.activityTransitionEvent:
+                        # a transition carries no time of its own: the request's
+                        print("+++ACTIVITY_RECOGNITION_TRANSITION", AR.currentTimeMillis, t.newActivity1.activity, t.newActivity1.confidence)
             except Exception as e:
                 print("***ERROR AR grep: ",e)
         return(decoded)
