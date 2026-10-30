@@ -1,0 +1,652 @@
+edition = "2023";
+
+// The CHIME Clearcut log source: events from Google's notification library
+// (GnpSdk / Chime, com.google.android.libraries.notifications) built into
+// Google apps (Gmail, Photos, Maps, Calendar, Drive, Search, ...) and GMS.
+// Each event says what happened to a push notification (delivered, shown,
+// clicked, dismissed, removed), why one was dropped, or which system event
+// the library saw, together with the app's notification channels, device
+// details, the FCM registration token and the Android ID.
+//
+// The schema is the union of the protobuf-lite classes in four builds, since
+// R8 drops the fields an app never sets: Safety Hub and Maps from the Pixel 8
+// factory image AP2A.240905.003 (Safety Hub's ChimeLogEventImpl `iga` builds
+// the event), GMS from the same image, and the GMS taken from the Pixel 8
+// (Feb 2025 image). Obfuscated class names in comments: Safety Hub / Maps /
+// GMS 2024 / GMS device. The outer LogEvent is from GMS 21.48.15 (as in
+// client_logging_named.proto). Names are from the code that sets each field,
+// enum names from the Java enums R8 kept; "estimated name" marks names the
+// code does not settle.
+
+option features.utf8_validation = NONE;
+
+message Chime_LogEntry {  // crai (GMS)
+  int64 currentTimeMillis = 1;
+  string packageName = 2;
+  repeated craj keyValuePairList = 3;
+  ChimeFrontendLog chime_frontend_log = 6;  // wire type bytes
+  int32 eventId = 11;
+  int64 eventFlowId = 12;
+  sint64 timeZoneOffset = 15;
+  ExperimentIds experiment_ids = 16;
+  int64 elapsedRealtime = 17;
+  bytes veProducerByteString = 18;
+  crah_a f19 = 19;
+  repeated int32 f20 = 20 [features.repeated_field_encoding = EXPANDED];
+  int64 bootCount = 22;
+  NetworkConnectionInfo network_connection_info = 23;
+  bool notDirectBootMode = 25;
+  double applied_sampling_rate = 30;  // only sent when flag ClearcutLogOperation__applied_sampling_rate is on; 1 = not sampled
+}
+
+// Built by ChimeLogEventImpl.toChimeFrontendLog (Safety Hub iga).
+message ChimeFrontendLog {  // nwd / bszz / eyea / itta
+  FrontendEntry frontend_entry = 2;  // GMS getter getFrontendEntry()
+  Environment environment = 3;  // the Chime server environment the app talks to
+
+  // Safety Hub maps its client environment ioh (PRODUCTION, AUTOPUSH, ...) to these.
+  enum Environment {  // Java enum bszy (Maps)
+    UNKNOWN_ENVIRONMENT = 0;
+    DEV = 1;
+    AUTOPUSH = 2;
+    PRODUCTION = 3;
+    DAILY_0 = 4;
+    DAILY_1 = 5;
+    DAILY_2 = 6;
+    DAILY_3 = 7;
+    DAILY_4 = 8;
+    DAILY_5 = 9;
+    DAILY_6 = 10;
+    STAGING = 12;
+    AUTOPUSH_QUAL_PLAYGROUND = 13;
+    STAGING_QUAL_QA = 14;
+  }
+}
+
+// What happened: one of interaction, failure or system event, with the context.
+message FrontendEntry {  // nwc / bszx / eydy / itsw
+  Context context = 1;  // GMS getter getContext()
+  oneof entry {
+    Interaction interaction = 2;  // made by GnpSdk's logger factory ify.a(InteractionType)
+    Failure failure = 3;  // ify.b(failure type)
+    SystemEvent system_event = 4;  // ify.c(system event)
+    Entry6 f6 = 6;  // GMS device only; empty there
+  }
+}
+
+message Entry6 {  // itte (GMS device): no fields kept
+}
+
+message Context {  // nwb / bszw / eydx / itsr
+  repeated ThreadInfo thread = 1;  // the notification threads the event is about
+  string client_id = 2;  // GnpConfig.clientId: "gmm", "photos", "gmail_notifications", "pomeroy" (Safety Hub), ...
+  RenderContext render_context = 4;  // RenderContextHelperImpl.a()
+  Target target = 5;  // TargetCreatorHelperImpl.a()
+  string obfuscated_gaia_id = 6;  // of the account the notification is for (gnp_accounts.obfuscated_gaia_id), for a Gaia account
+  PushMessage push_message = 7;  // the FCM message that delivered the threads
+  int64 event_time_usec = 9;  // System.currentTimeMillis() in microseconds when the event was created
+  int64 threads_received_time_usec = 10;  // when the threads arrived (wall clock, microseconds); estimated name (high)
+  DeliveryLatency delivery_latency = 11;  // only for SHOWN, SHOWN_REPLACED, REMOVED and failure DROPPED_BY_CLIENT
+  string delegated_obfuscated_gaia_id = 12;  // the obfuscatedGaiaId of a DelegatedGaia account
+  EventMetric event_metric = 13;  // GMS only
+  string random_id = 17;  // GMS device only: String.valueOf(SecureRandom.nextInt(1000000000)), behind flag 45791623; estimated name (medium)
+}
+
+// One notification thread (a notification and its updates).
+message ThreadInfo {  // nwa / bszv / eydw / itsq; from a stored ChimeThread or a server FrontendNotificationThread
+  string thread_id = 1;
+  int64 last_updated_version = 2;  // microseconds
+  string group_id = 4;
+  string channel_id = 5;  // the Android notification channel of the thread's AndroidSdkMessage
+  int64 creation_id = 6;  // microseconds
+  bytes server_data = 9;  // GMS device only: opaque bytes (field 29) of the server's notification thread, copied unread; estimated name (low)
+}
+
+// RenderContext: the device and locale the notification is rendered for.
+message RenderContext {  // nwt / btaw / eyev / ituo
+  string language_code = 1;  // Locale.toLanguageTag() of the first configured locale
+  oneof time_zone_oneof {
+    int32 f2 = 2;  // not set by these builds
+    string time_zone = 4;  // TimeZone.getDefault().getID()
+  }
+  DeviceInfo device_info = 3;
+}
+
+message DeviceInfo {  // nws / btav / eyeu / itun
+  float device_density = 2;  // DisplayMetrics.density
+  SdkType sdk_type = 3;
+  string sdk_version = 4;  // GnpSdk library build number (Integer.toString(549558181) in Safety Hub); not set by GMS
+  string app_version = 5;  // PackageInfo.versionName
+  string os_version = 6;  // Build.VERSION.RELEASE
+  string os_build_id = 7;  // Build.ID
+  string device_model = 8;  // Build.MODEL
+  int32 sdk_int = 9;  // Build.VERSION.SDK_INT
+  string manufacturer = 10;  // Build.MANUFACTURER
+  string device_name = 11;  // GMS only; the RPC DeviceInfo's field 11 is GnpConfig.deviceName (MANUFACTURER + " " + MODEL in Maps); estimated name (medium)
+  repeated NotificationChannel notification_channel = 12;  // every channel the app has created
+  repeated NotificationChannelGroup notification_channel_group = 13;
+  AppBlockState app_block_state = 14;  // NotificationManagerCompat.areNotificationsEnabled()
+  string country_code = 15;  // Gservices "device_country"
+  DeviceState device_state = 16;
+  DarkMode dark_mode = 17;  // Configuration.uiMode & UI_MODE_NIGHT_MASK
+
+  enum SdkType {  // Java enum itsa (GMS device)
+    SDK_TYPE_UNSPECIFIED = 0;
+    CUSTOM = 1;
+    GUNS = 2;
+    CHIME = 3;  // the library in an app
+    GUNS_GMSCORE = 4;  // GMS's own notifications
+    RAW_FCM_GMSCORE = 5;
+  }
+
+  enum AppBlockState {  // Java enum btap (Maps)
+    APP_BLOCK_STATE_UNKNOWN = 0;
+    ALLOWED = 1;
+    BANNED = 2;
+  }
+
+  // Values from the code: night mode on -> 2, off -> 1.
+  enum DarkMode {
+    DARK_MODE_UNKNOWN = 0;  // estimated name (high)
+    DARK_MODE_OFF = 1;  // estimated name (high)
+    DARK_MODE_ON = 2;  // estimated name (high)
+  }
+}
+
+message NotificationChannel {  // nvy / bszt / eydr / itsm; from ChimeNotificationChannel{id, group, importance}
+  string channel_id = 1;
+  string group_id = 2;
+  Importance importance = 3;
+
+  enum Importance {  // Java enum bszs (Maps)
+    IMPORTANCE_UNSPECIFIED = 0;
+    IMPORTANCE_NONE = 1;
+    IMPORTANCE_DEFAULT = 2;
+    IMPORTANCE_HIGH = 3;
+    IMPORTANCE_LOW = 4;
+    IMPORTANCE_MAX = 5;
+    IMPORTANCE_MIN = 6;
+  }
+}
+
+message NotificationChannelGroup {  // nvx / bszq / eydp / itsh; from ChimeNotificationChannelGroup{id, blocked}
+  string group_id = 1;
+  ChannelGroupState state = 2;
+
+  enum ChannelGroupState {  // Java enum bszp (Maps)
+    CHANNEL_GROUP_STATE_UNKNOWN = 0;
+    ALLOWED = 1;
+    BANNED = 2;
+  }
+}
+
+// Each part is behind its own LoggingFeature__log_device_state_* flag (Maps bwfu).
+message DeviceState {  // nwr / btau / eyes / itui
+  BatteryState battery = 1;
+  NetworkState network = 2;
+  TrayState tray = 3;
+  InterruptionFilter interruption_filter = 4;  // only for SHOWN and SHOWN_FORCED
+
+  enum DeviceStateBool {  // Java enum btar (Maps)
+    DEVICE_STATE_UNKNOWN = 0;
+    TRUE = 1;
+    FALSE = 2;
+  }
+
+  // NotificationManager.getCurrentInterruptionFilter(), as Safety Hub's ihs.a() maps it.
+  enum InterruptionFilter {
+    INTERRUPTION_FILTER_UNKNOWN = 0;  // estimated name (high)
+    FILTER_ALL = 1;
+    FILTER_NONE = 2;
+    FILTER_PRIORITY = 3;
+    FILTER_ALARMS = 4;
+  }
+}
+
+message BatteryState {  // btaq (Maps)
+  DeviceState.DeviceStateBool charging = 1;  // flag log_device_state_battery_charging
+  DeviceState.DeviceStateBool power_saving = 2;  // log_device_state_power_saving
+  float battery_level = 3;  // log_device_state_battery_level, rounded down to battery_level_precision
+  float battery_level_precision = 4;  // log_device_state_battery_level_precision (default 0.1)
+}
+
+message NetworkState {  // btas (Maps)
+  NetworkTransport transport = 1;  // log_device_state_network_transport
+  DeviceState.DeviceStateBool metered = 2;  // log_device_state_network_metered
+  DeviceState.DeviceStateBool roaming = 3;  // log_device_state_network_roaming
+
+  enum NetworkTransport {  // from Java enum bein {CELLULAR, WIFI} (Maps)
+    NETWORK_TRANSPORT_UNKNOWN = 0;  // estimated name (high)
+    CELLULAR = 1;
+    WIFI = 2;
+  }
+}
+
+message TrayState {  // btat (Maps)
+  int32 notifications_in_tray = 1;  // log_device_state_notifications_in_tray
+}
+
+// Where the notifications are delivered: this app instance.
+message Target {  // nwx / btbc / eyez / itut
+  oneof target_oneof {
+    ChimeTarget chime_target = 1;
+    int32 f2 = 2;  // not set by these builds (an R8-unboxed enum, values 0-7)
+  }
+  repeated string selection_token = 3;  // GnpConfig.selectionTokens (Maps: its feature IDs and "GMM_ANDROID"; Photos: "v1", "v2")
+  string package_name = 4;
+}
+
+message ChimeTarget {  // nww / btbb / eyey / itur
+  int32 target_type = 1;  // always 3 (an R8-unboxed enum, values 0-12); estimated name (low)
+  DeliveryAddress delivery_address = 2;
+  RenderContext render_context = 4;  // GMS 2024 only
+  string representative_target_id = 5;  // gnp_accounts.representative_target_id
+}
+
+// estimated name (low)
+message DeliveryAddress {  // nwf / btab / eyec / ittf
+  oneof address {
+    Address1 f1 = 1;
+    AndroidTarget android_target = 2;  // the only one set
+    Address4 f4 = 4;
+    Address5 f5 = 5;
+    Address6 f6 = 6;
+    Address7 f7 = 7;
+    Address8 f8 = 8;
+    Address9 f9 = 9;
+    Address10 f10 = 10;
+  }
+}
+
+// Other kinds of address (iOS, web, ...); no fields kept in these builds.
+message Address1 {}
+message Address4 {}
+message Address5 {}
+message Address6 {}
+message Address7 {}
+message Address8 {}
+message Address9 {}
+message Address10 {}
+
+message AndroidTarget {  // nwj / btaf / eyef / ittj
+  string registration_id = 1;  // the FCM registration token (shared preference "reg_id")
+  string package_name = 2;
+  int64 android_id = 3;  // Gservices android_id
+  int64 user_serial_number = 4;  // UserManager.getSerialNumberForUser(Process.myUserHandle())
+}
+
+message PushMessage {  // nwg / btac
+  FcmMessage fcm_message = 1;
+}
+
+// From the FCM intent (FcmMessage{messageId, messageType, priorityOriginal, priorityDelivered, ...}).
+message FcmMessage {  // nwi / btae
+  string message_id = 1;  // "google.message_id"
+  MessageType message_type = 2;  // "message_type"
+  Priority original_priority = 3;  // "google.original_priority"
+  Priority delivered_priority = 4;  // "google.delivered_priority"
+
+  enum MessageType {  // FcmMessage's messageType, as imr.b() maps it
+    MESSAGE_TYPE_UNSPECIFIED = 0;
+    MESSAGE = 1;  // "gcm"
+    DELETED = 2;  // "deleted_messages"
+    SEND_EVENT = 3;
+    SEND_ERROR = 4;
+  }
+
+  // FcmMessage's priority names; jadx lost imr.f()'s switch, so the order is estimated (high).
+  enum Priority {
+    PRIORITY_UNKNOWN = 0;
+    PRIORITY_NORMAL = 1;
+    PRIORITY_HIGH = 2;
+  }
+}
+
+// Timings from the threads' arrival to this event.
+message DeliveryLatency {  // nwn / btaj
+  int64 since_received_ms = 1;  // elapsedRealtime() now minus at arrival; estimated name (high)
+  int64 credentials_check_ms = 2;  // time spent checking the account's credentials (BlockingNotificationReceiver); estimated name (high)
+  int64 f3 = 3;  // always 0 in these builds
+  int64 f4 = 4;  // always 0
+  int64 f5 = 5;  // always 0
+  int64 f6 = 6;  // always 0
+  DeliverySource source = 7;  // how the threads arrived
+
+  enum DeliverySource {  // Java enum btai (Maps), nwm (Safety Hub)
+    UNKNOWN = 0;
+    DELIVERED_FCM_PUSH = 1;
+    SCHEDULED_RECEIVER = 2;
+    FETCHED_LATEST_THREADS = 3;
+    FETCHED_UPDATED_THREADS = 4;
+    LOCAL_NOTIFICATION_CREATED = 5;
+    LOCAL_NOTIFICATION_UPDATED = 6;
+  }
+}
+
+message EventMetric {  // eydv (GMS 2024) / itsp
+  MetricId metric_id = 1;
+
+  enum MetricId {  // Java enum eydu (GMS 2024)
+    UNKNOWN_METRIC_ID = 0;
+    NOTIFICATIONS_GAIA_EVENT = 1;
+    NOTIFICATIONS_GAIA_EXEMPTED_EVENT = 2;
+    NOTIFICATIONS_PSEUDONYMOUS_EVENT = 3;
+    NOTIFICATIONS_PSEUDONYMOUS_EXEMPTED_EVENT = 4;
+  }
+}
+
+// Something happened to a notification.
+message Interaction {  // nxb / btbi / eyfb / ituw
+  InteractionType interaction_type = 1;
+  string action_id = 2;  // ACTION_CLICK: the action's id
+  NotificationChannel channel = 5;  // NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED
+  NotificationChannelGroup channel_group = 6;  // NOTIFICATION_CHANNEL_GROUP_BLOCK_STATE_CHANGED
+  BuiltInActionType built_in_action_type = 9;  // ACTION_CLICK
+  ExtensionView extension_view = 10;  // Maps: bundle extra "chime.extensionView"
+  repeated ShownAction shown_action = 12;  // SHOWN, SHOWN_REPLACED, SHOWN_FORCED: the notification's actions
+  RemoveReason remove_reason = 13;  // REMOVED
+  RichCollapsedView rich_collapsed_view = 14;
+  FetchReason fetch_reason = 15;  // FETCHED_LATEST_THREADS, FETCHED_UPDATED_THREADS
+  TrayLimitInfo tray_limit_info = 19;  // REMOVED with LIMIT_REACHED
+  int32 f34 = 34;  // 1 for every interaction logged from the system tray handlers; meaning not recovered (an R8-unboxed enum, values 0-4)
+
+  enum InteractionType {  // Java enum nwz (Safety Hub)
+    INTERACTION_TYPE_UNSPECIFIED = 0;
+    ACTION_CLICK = 1;
+    CLICKED = 2;
+    DISMISSED = 5;
+    DISMISS_ALL = 6;
+    SHOWN = 9;
+    SHOWN_WITHOUT_IMAGE = 10;
+    DELIVERED = 11;
+    DELIVERED_SYNC_INSTRUCTION = 12;
+    DELIVERED_FULL_SYNC_INSTRUCTION = 13;
+    SUCCEED_TO_UPDATE_THREAD_STATE = 15;
+    SHOW_SKIPPED_DUE_TO_COUNTERFACTUAL = 16;
+    LOCAL_NOTIFICATION_CREATED = 17;
+    EXPIRED = 18;
+    UNSHOWN = 19;
+    FETCHED_LATEST_THREADS = 20;
+    FETCHED_UPDATED_THREADS = 21;
+    LOCAL_NOTIFICATION_UPDATED = 22;
+    DELIVERED_UPDATE_THREAD_INSTRUCTION = 23;
+    APP_BLOCK_STATE_CHANGED = 24;
+    NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED = 25;
+    NOTIFICATION_CHANNEL_GROUP_BLOCK_STATE_CHANGED = 26;
+    PERIODIC_LOG = 27;
+    SHOWN_REPLACED = 28;
+    SHOWN_FORCED = 29;
+    DISMISSED_REMOTE = 30;
+    ACCOUNT_DATA_CLEANED = 31;
+    TARGET_REGISTERED = 32;
+    DELIVERED_FCM_PUSH = 33;
+    ADDED_TO_STORAGE = 34;
+    DISMISSED_BY_API = 35;
+    REPLACED_IN_STORAGE = 36;
+    REMOVED_FROM_STORAGE = 37;
+    FETCHED_MULTI_USER_BADGE_COUNT = 38;
+    CLICK_DURATION_CLICK_OPENED_APP = 39;
+    CLICK_DURATION_CLICK_WHILE_OPEN = 40;
+    REMOVED = 41;
+    FETCHED_THREADS_BY_ID = 42;
+    DELIVERED_REMOVE_STORAGE_INSTRUCTION = 43;
+    NOTIFICATION_DATA_CLEANED = 44;
+    DELIVERED_SILENT_NOTIFICATION = 45;
+    LOCATION_TARGET_REGISTERED = 46;
+    VOIP_TARGET_REGISTERED = 47;
+    DSC_POSTPONED = 48;
+    LIVE_ACTIVITY_TARGET_REGISTERED = 49;
+  }
+
+  enum ExtensionView {  // Java enum btbd (Maps)
+    EXTENSION_VIEW_UNSPECIFIED = 0;
+    IHNR = 1;
+    INSAT = 2;
+    TEMPORARY_MESSAGE = 3;
+  }
+
+  enum RemoveReason {  // Java enum btao (Maps)
+    REMOVE_REASON_UNKNOWN = 0;
+    CLICKED_IN_SYSTEM_TRAY = 1;
+    ACTION_CLICK_IN_SYSTEM_TRAY = 2;
+    DISMISSED_IN_SYSTEM_TRAY = 3;
+    CLICKED_IN_INBOX = 4;
+    ACTION_CLICK_IN_INBOX = 5;
+    DISMISSED_IN_INBOX = 6;
+    REMOVE_REASON_DISMISSED_REMOTE = 7;  // Java name DISMISSED_REMOTE
+    REMOVE_REASON_DISMISSED_BY_API = 8;  // Java name DISMISSED_BY_API
+    REMOVE_REASON_EXPIRED = 9;  // Java name EXPIRED
+    REMOVE_REASON_ACCOUNT_DATA_CLEANED = 10;  // Java name ACCOUNT_DATA_CLEANED
+    LIMIT_REACHED = 11;
+  }
+
+  // The server's FetchReason as Safety Hub's ika.d() maps it; GUNS_MIGRATION, DELAYED_IMPRESSION,
+  // REMOTE_DELETED_MESSAGES and GROWTHKIT_PERIODIC_FETCH map to 0.
+  enum FetchReason {
+    FETCH_REASON_UNSPECIFIED = 0;
+    SYNC_INSTRUCTION = 1;
+    FETCH_REASON_2 = 2;  // not produced by Safety Hub's mapping
+    COLLABORATOR_API_CALL = 3;
+    INBOX = 4;
+    LOCALE_CHANGED = 5;
+    FULL_SYNC_INSTRUCTION = 6;
+  }
+}
+
+// Shared by Interaction.built_in_action_type and ShownAction (R8-unboxed enum, values 0-4).
+enum BuiltInActionType {
+  BUILT_IN_ACTION_TYPE_UNSPECIFIED = 0;
+  REPLY = 1;  // set by ReplyActionEventHandler; estimated name (high)
+  BUILT_IN_ACTION_TYPE_2 = 2;
+  BUILT_IN_ACTION_TYPE_3 = 3;
+  BUILT_IN_ACTION_TYPE_4 = 4;
+}
+
+// One action of a shown notification (ChimeNotificationAction{actionId, builtInActionType, ...}).
+message ShownAction {  // nxa / btbh
+  oneof action {
+    string action_id = 1;
+    BuiltInActionType built_in_action_type = 2;  // for an action without an id
+  }
+}
+
+message RichCollapsedView {  // btax (Maps)
+  int32 type = 1;  // from bundle extra "chime.richCollapsedView" (0 or 2 -> 2, 1 -> 1); estimated name (low)
+}
+
+// TrayLimitInfo(limit) or a per-slot limit.
+message TrayLimitInfo {  // btbg (Maps)
+  oneof limit_oneof {
+    int32 limit = 1;
+    SlotLimit slot_limit = 2;
+  }
+}
+
+message SlotLimit {  // btbf (Maps)
+  string slot_key = 1;  // bundle extra "chime.slot_key"
+  int32 limit = 2;
+}
+
+// Something went wrong, or a notification was dropped.
+message Failure {  // nwq / btan / eyek / ittr
+  FailureType failure_type = 1;
+  DropReason drop_reason = 3;  // DROPPED_BY_CLIENT: why BlockingNotificationReceiver dropped it
+  RichCollapsedView rich_collapsed_view = 4;  // Maps only
+  string exception = 5;  // RPC failures: Throwable.getClass().getSimpleName()
+  RegistrationFailureReason registration_failure_reason = 8;  // GMS device only
+  int32 f37 = 37;  // as Interaction.f34
+
+  enum FailureType {  // Java enum btam (Maps)
+    NOTIFICATION_FAILURE_UNSPECIFIED = 0;
+    BAD_CHANNEL = 1;
+    BAD_PAYLOAD = 2;
+    DROPPED_BY_CLIENT = 3;
+    INVALID_USER = 4;
+    SDK_DOES_NOT_SUPPORT = 5;
+    USER_BLOCKED = 6;
+    INSUFFICIENT_DATA_NO_TITLE = 7;
+    INSUFFICIENT_DATA_NO_TEXT = 8;
+    RECIPIENT_NOT_FOUND = 9;
+    RECIPIENT_NOT_REGISTERED = 10;
+    FAILED_TO_DOWNLOAD_IMAGE = 11;
+    FAILED_TO_FETCH_LATEST_NOTIFICATIONS = 12;
+    FAILED_TO_FETCH_UPDATED_NOTIFICATIONS = 13;
+    FAILED_TO_REGISTER = 14;
+    FAILED_TO_UNREGISTER = 15;
+    FAILED_TO_UPDATE_THREAD_STATE = 16;
+    FAILED_TO_UPDATE_THREAD_STATE_BY_TOKEN = 17;
+    FAILED_TO_SUBSCRIBE_TO_TOPICS = 18;
+    FAILED_TO_UNSUBSCRIBE_FROM_TOPICS = 19;
+    FAILED_TO_FETCH_PREFS = 20;
+    FAILED_TO_UPDATE_PREFS = 21;
+    FAILED_TO_ACKNOWLEDGE = 22;
+    FAILED_TO_GET_IID = 23;
+    INCONSISTENT_COUNT = 24;
+    RECIPIENT_INVALID_CREDENTIALS = 25;
+    UPSTREAM_TASK_TOO_BIG = 26;
+    UPSTREAM_UPDATE_THREAD_STATE_TASK_PARSE_ERROR = 27;
+    UPSTREAM_UNKNOWN_SEND_ERROR = 28;
+    UPSTREAM_INVALID_PARAMETERS = 29;
+    UPSTREAM_TOO_BIG = 30;
+    UPSTREAM_SENT_BUT_NOT_IN_TASK_TABLE = 31;
+    UPSTREAM_ZOMBIE_FOUND = 32;
+    UPSTREAM_TOO_MANY_PENDING_MESSAGES = 33;
+    CHANNEL_NOT_FOUND = 34;
+    CHANNEL_BLOCKED = 35;
+    FAILED_ACCOUNT_DATA_CLEANUP = 36;
+    FAILED_TO_FETCH_NOTIFICATIONS_BY_ID = 37;
+    FAILED_TO_FETCH_SUBSCRIPTIONS = 38;
+    FAILED_TO_FETCH_MULTI_USER_BADGE_COUNT = 39;
+    DATABASE_ERROR = 40;
+    DROPPED_BY_VERSION = 41;
+    MAX_NOTIFICATION_COUNT_REACHED = 42;
+    DROPPED_OLDER_THAN_FIRST_REGISTRATION = 51;
+    FAILED_TO_APPLY_CUSTOMIZATION = 52;
+    THREAD_ALREADY_DISMISSED = 53;
+    FAILED_TO_REGISTER_LOCATION = 54;
+    FAILED_TO_REGISTER_PUSHKIT = 55;
+    FAILED_TO_COUNT_THREADS = 56;
+    FAILED_TO_DECRYPT_PAYLOAD_FALLBACK_TO_PLACEHOLDER = 57;
+    FAILED_TO_DECRYPT_PAYLOAD_NO_PLACEHOLDER = 58;
+    FAILED_TO_UPDATE_ALL_THREAD_STATES = 59;
+    FAILED_TO_DECOMPRESS_FALLBACK_TO_PLACEHOLDER = 60;
+    FAILED_TO_DECOMPRESS = 61;
+    FAILED_TO_REGISTER_LIVE_ACTIVITY = 62;
+    FAILED_TO_REGISTER_OTHER_ACCOUNT = 63;
+  }
+
+  // The client's drop reasons (Java enum itq in Safety Hub) as iga maps them.
+  enum DropReason {
+    DROP_REASON_UNKNOWN = 0;
+    INVALID_PAYLOAD = 1;
+    SILENT_NOTIFICATION = 2;
+    USER_SUPPRESSED = 3;
+    INVALID_TARGET_STATE = 4;
+    WORK_PROFILE = 5;
+    HANDLED_BY_APP = 6;
+  }
+
+  enum RegistrationFailureReason {  // Java enum ittq (GMS device)
+    REGISTRATION_FAILURE_REASON_UNKNOWN = 0;
+    AUTHENTICATION_FAILURE = 1;
+    REGISTRATION_TOKEN_FAILURE = 2;
+    RPC_FAILURE = 3;
+    AUTHENTICATION_FAILURE_REGISTRATION_REMOVED = 4;
+    AUTHENTICATION_FAILURE_REGISTRATION_KEPT = 5;
+    NO_USER_ID_FOUND = 6;
+  }
+}
+
+// A system broadcast or job the library handled.
+message SystemEvent {  // nwv / btba / eyex / ituq
+  SystemEventType system_event = 1;
+
+  enum SystemEventType {  // Java enum btaz (Maps)
+    SYSTEM_EVENT_UNSPECIFIED = 0;
+    LOGIN_ACCOUNTS_CHANGED = 1;  // AccountChangedIntentHandler
+    TIMEZONE_CHANGED = 2;
+    LOCALE_CHANGED = 3;
+    PHENOTYPE_CHANGED = 4;
+    BOOT_COMPLETED = 5;
+    APP_UPDATED = 6;
+    SCHEDULED_JOB = 7;  // ScheduledTaskServiceHandlerImpl.onStartJob
+  }
+}
+
+// GMS LogEvent sub-messages, as in client_logging_named.proto.
+
+// The experiment IDs in force for the event (twn.b(), tzb.a()). Field names as in the open-source
+// Firebase Clearcut transport's ExperimentIds (clearBlob, encryptedBlob).
+message ExperimentIds {  // cfke
+  ExperimentIdList clear_blob = 1;  // wire type bytes: the IDs from the app's ExperimentTokens plus the event's own
+  repeated bytes encrypted_blob = 2;  // the ExperimentTokens' opaque experiment tokens
+  bool has_experiment_tokens = 3;  // set whenever ExperimentTokens were supplied; estimated name (medium)
+}
+
+message ExperimentIdList {  // cfka
+  repeated int32 experiment_id = 3 [features.repeated_field_encoding = EXPANDED];
+}
+
+// The active network when the event was uploaded (twf: ConnectivityManager.getActiveNetworkInfo()).
+message NetworkConnectionInfo {  // crav
+  ActiveNetworkType network_type = 1;  // NetworkInfo.getType()
+  MobileSubtype mobile_subtype = 2;  // NetworkInfo.getSubtype(): TelephonyManager.NETWORK_TYPE_*
+}
+
+enum ActiveNetworkType {  // R8-unboxed enum crau; values are ConnectivityManager.TYPE_*
+  MOBILE = 0;
+  TYPE_NONE = -1;
+  WIFI = 1;
+  MOBILE_MMS = 2;
+  MOBILE_SUPL = 3;
+  MOBILE_DUN = 4;
+  MOBILE_HIPRI = 5;
+  WIMAX = 6;
+  BLUETOOTH = 7;
+  DUMMY = 8;
+  ETHERNET = 9;
+  MOBILE_FOTA = 10;
+  MOBILE_IMS = 11;
+  MOBILE_CBS = 12;
+  WIFI_P2P = 13;
+  MOBILE_IA = 14;
+  MOBILE_EMERGENCY = 15;
+  PROXY = 16;
+  VPN = 17;
+}
+
+enum MobileSubtype {  // R8-unboxed enum cras; values are TelephonyManager.NETWORK_TYPE_*
+  UNKNOWN_MOBILE_SUBTYPE = 0;
+  GPRS = 1;
+  EDGE = 2;
+  UMTS = 3;
+  CDMA = 4;
+  EVDO_0 = 5;
+  EVDO_A = 6;
+  RTT = 7;
+  HSDPA = 8;
+  HSUPA = 9;
+  HSPA = 10;
+  IDEN = 11;
+  EVDO_B = 12;
+  LTE = 13;
+  EHRPD = 14;
+  HSPAP = 15;
+  GSM = 16;
+  TD_SCDMA = 17;
+  IWLAN = 18;
+  LTE_CA = 19;
+  NR = 20;
+  COMBINED = 100;  // getSubtype() returned -1
+}
+
+enum crah_a {  // R8-unboxed enum crah.a() (values only)
+  CRAH_A_0 = 0;
+  CRAH_A_1 = 1;
+  CRAH_A_2 = 2;
+}
+
+message craj {
+  string f1 = 1;
+  string f2 = 2;
+}

@@ -232,6 +232,74 @@ def decode_icing_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
         return "Failed"
 
 
+def chime_event(fe):
+    # "INTERACTION:SHOWN", "FAILURE:DROPPED_BY_CLIENT/SILENT_NOTIFICATION", ... for the +++CHIME grep line
+    def name(msg, field):
+        v = getattr(msg, field)
+        e = msg.DESCRIPTOR.fields_by_name[field].enum_type.values_by_number.get(v)
+        return e.name if e is not None else str(v)
+    kind = fe.WhichOneof("entry")
+    if kind == "interaction":
+        i = fe.interaction
+        detail = [name(i, f) for f in ("remove_reason", "fetch_reason", "built_in_action_type") if i.HasField(f)]
+        if i.action_id:
+            detail.append("action=" + i.action_id)
+        return "/".join(["INTERACTION:" + name(i, "interaction_type")] + detail)
+    if kind == "failure":
+        f = fe.failure
+        detail = [name(f, x) for x in ("drop_reason", "registration_failure_reason") if f.HasField(x)]
+        if f.exception:
+            detail.append("exception=" + f.exception)
+        return "/".join(["FAILURE:" + name(f, "failure_type")] + detail)
+    if kind == "system_event":
+        return "SYSTEM_EVENT:" + name(fe.system_event, "system_event")
+    return kind or "-"
+
+def decode_chime_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
+    # CHIME log source: notification events (delivered, shown, clicked, dropped, ...) from Google's notification
+    # library GnpSdk/Chime in Google apps and GMS
+    if debug:
+        fname='/tmp/chime_bytes'
+        f = open(fname, 'wb')
+        f.write(bb)
+        f.close()
+    try:
+        ev = message_class("Chime_LogEntry", "chime_named.proto")()
+        ev.MergeFromString(bb)
+    except Exception:
+        ev = None
+    if ev is None or not ev.HasField("currentTimeMillis"):
+        # not one LogEvent (e.g. try_decode_pb_array's first try with the whole length-delimited logEntry array)
+        if verbose:
+            print("***ERROR CHIME: not a LogEvent")
+        return "Failed"
+    try:
+        decoded = decode_named("Chime_LogEntry", "chime_named.proto", bb)
+        grep=""
+        if Grep:
+            try:
+                fe = ev.chime_frontend_log.frontend_entry
+                ctx = fe.context
+                target = ctx.target
+                pkg = target.package_name or target.chime_target.delivery_address.android_target.package_name or ev.packageName
+                threads = "|".join(t.thread_id for t in ctx.thread) or "-"
+                channels = [t.channel_id for t in ctx.thread if t.channel_id]
+                if fe.interaction.HasField("channel"):
+                    channels.append(fe.interaction.channel.channel_id)
+                if fe.interaction.HasField("channel_group"):
+                    channels.append("group:" + fe.interaction.channel_group.group_id)
+                app_channels = "|".join(c.channel_id for c in ctx.render_context.device_info.notification_channel) or "-"
+                grep="+++CHIME %s %s %s %s threads=%s channel=%s app_channels=%s\n"%(ev.currentTimeMillis, pkg or "-",
+                    ctx.client_id or "-", chime_event(fe), threads, "|".join(channels) or "-", app_channels)
+            except Exception as e:
+                print("***ERROR CHIME grep: ",e)
+        return grep+decoded
+    except DecodeNamedError as e:
+        if verbose:
+            print("***ERROR CHIME: ",e)
+        return "Failed"
+
+
 def decode_clientlogging_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
     # CLIENT_LOGGING_PROD log source: warning/error log records uploaded by Google apps built on TikTok
     if debug:
@@ -795,6 +863,8 @@ def decode(data):
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_scoobyevents, verbose=True, debug=False))
             elif inner.logSourceName == "SCOOBY_MESSAGE_LOG":
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_scoobymessage, verbose=True, debug=False))
+            elif inner.logSourceName == "CHIME":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_chime_pb, verbose=True, debug=False))
             else:
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_pb, verbose=True, debug=False))
             print("}")
