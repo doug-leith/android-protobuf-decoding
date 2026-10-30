@@ -1,0 +1,4 @@
+// The federatedcompute protos import fcp/protos/population_eligibility_spec.proto; it is population_eligibility_spec.proto here.
+syntax = "proto3";
+
+import public "population_eligibility_spec.proto";

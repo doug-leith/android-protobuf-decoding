@@ -133,6 +133,11 @@ Each message contains a sequence of log events, which may be from different log 
 
 - voilatile_named.proto is decoded protobuf definition of the request (the Wi-Fi BSSIDs and cell towers the phone sees) and response (location tiles giving each known access point's position); s2cell.py converts their S2 cell ids to latitude/longitude
 
+## Google Play Services and apps https://federatedcompute-pa.googleapis.com
+
+- federated_learning_protos/federatedcompute/ are the protobuf definitions of the federated learning and analytics protocol (from the open-source federated compute client): eligibility checks, task assignments and aggregation uploads, with the population and task names
+- federatedcompute_decode.py picks the request and response type for each URL
+
 ## Google Play Services https://android.googleapis.com/auth/devicekey
 
 - devicekeyrequest.proto is (partially) decoded protobuf definition for request and response

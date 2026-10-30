@@ -1,0 +1,4 @@
+// The federatedcompute protos import fcp/secagg/shared/secagg_messages.proto; it is secagg_messages.proto here.
+syntax = "proto3";
+
+import public "secagg_messages.proto";

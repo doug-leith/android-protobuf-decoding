@@ -1,0 +1,4 @@
+// The federatedcompute protos import fcp/protos/federatedcompute/common.proto; it is federatedcompute/common.proto here.
+syntax = "proto3";
+
+import public "federatedcompute/common.proto";

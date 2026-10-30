@@ -1,0 +1,28 @@
+// The parts of googleapis' google/longrunning/operations.proto that the federatedcompute protos use
+// (https://github.com/googleapis/googleapis/blob/master/google/longrunning/operations.proto).
+syntax = "proto3";
+
+package google.longrunning;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/descriptor.proto";
+import "google/rpc/status.proto";
+
+extend google.protobuf.MethodOptions {
+  OperationInfo operation_info = 1049;
+}
+
+message Operation {
+  string name = 1;
+  google.protobuf.Any metadata = 2;
+  bool done = 3;
+  oneof result {
+    google.rpc.Status error = 4;
+    google.protobuf.Any response = 5;
+  }
+}
+
+message OperationInfo {
+  string response_type = 1;
+  string metadata_type = 2;
+}

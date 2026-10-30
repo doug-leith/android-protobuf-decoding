@@ -1,0 +1,4 @@
+// The federatedcompute protos import google/rpc/code.proto; it is ../../code.proto here.
+syntax = "proto3";
+
+import public "code.proto";

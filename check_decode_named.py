@@ -2,7 +2,8 @@
 # addon ran it) byte for byte, on random messages of every type in the protos the addon decodes, on saved
 # payloads, and on mutations of both.
 # Usage: python3 check_decode_named.py [--protoc PATH] [--per-type N] [--mutations N] [--seed S] [--corpus DIR] [--proto FILE ...]
-# --proto checks only the named protos (repeatable), e.g. --proto chime_named.proto; the default is every proto in PROTOS.
+# --proto checks only the named protos (repeatable), e.g. --proto chime_named.proto or --proto federatedcompute/aggregations.proto;
+# the default is every proto in PROTOS.
 # A corpus folder holds NAME.bin payloads, each with a NAME.json {"msg": ..., "proto": ..., "inc": ...}.
 import argparse, glob, json, os, random, struct, subprocess, sys
 from concurrent.futures import ThreadPoolExecutor
@@ -19,8 +20,20 @@ PROTOS = ["app_measurement.proto3", "firebase_logbatch.proto", "finsky_protobuf/
           "consentinfo.proto", "stats_log.proto", "lockbox.proto", "activity_recognition.proto", "netstats.proto",
           "scoobyevents.proto", "scoobymessageevents.proto", "playstore.proto", "client_logging_named.proto",
           "primes_named.proto", "chime_named.proto", "autofill_named.proto", "on_device_abuse_named.proto",
-          "agsa_named.proto", "ondevicesafety_named.proto", "westworld_counters_named.proto", "kollektomat_named.proto", "voilatile_named.proto"]
+          "agsa_named.proto", "ondevicesafety_named.proto", "westworld_counters_named.proto", "kollektomat_named.proto", "voilatile_named.proto",
+          ("federated_learning_protos", "federatedcompute/eligibility_eval_tasks.proto"),
+          ("federated_learning_protos", "federatedcompute/task_assignments.proto"),
+          ("federated_learning_protos", "federatedcompute/aggregations.proto"),
+          ("federated_learning_protos", "federatedcompute/secure_aggregations.proto"),
+          ("federated_learning_protos", "population_eligibility_spec.proto")]
 F = descriptor.FieldDescriptor
+
+def split(path):
+    # (include dir, proto) for a PROTOS entry: a path, or (include dir, proto path within it) for a proto whose
+    # imports are relative to a parent folder
+    if isinstance(path, tuple):
+        return os.path.join(mypath, path[0]), path[1]
+    return os.path.join(mypath, os.path.dirname(path)), os.path.basename(path)
 
 def message_types(pool, proto, map_entries):
     out = []
@@ -184,12 +197,13 @@ def main():
     cases = []
     protos = PROTOS
     if args.proto:
-        unknown = [p for p in args.proto if p not in PROTOS and p not in map(os.path.basename, PROTOS)]
+        names = lambda p: {split(p)[1], os.path.basename(split(p)[1]), p if isinstance(p, str) else split(p)[1]}
+        unknown = [a for a in args.proto if not any(a in names(p) for p in PROTOS)]
         if unknown:
             sys.exit("not in PROTOS: " + ", ".join(unknown))
-        protos = [p for p in PROTOS if p in args.proto or os.path.basename(p) in args.proto]
+        protos = [p for p in PROTOS if names(p) & set(args.proto)]
     for path in protos:
-        inc, proto = os.path.join(mypath, os.path.dirname(path)), os.path.basename(path)
+        inc, proto = split(path)
         pool, map_entries = _pool(inc, proto)
         types = message_types(pool, proto, map_entries)
         for d in types:
@@ -198,7 +212,7 @@ def main():
                 cases.append((d.full_name, proto, inc, b))
     if args.corpus:
         for j in sorted(glob.glob(os.path.join(args.corpus, "*.json"))):
-            if args.proto and json.load(open(j))["proto"] not in map(os.path.basename, protos):
+            if args.proto and json.load(open(j))["proto"] not in [split(p)[1] for p in protos]:
                 continue
             meta = json.load(open(j))
             cases.append((meta["msg"], meta["proto"], meta["inc"], open(j[:-5] + ".bin", "rb").read()))

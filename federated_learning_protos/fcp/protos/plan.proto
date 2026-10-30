@@ -1,0 +1,14 @@
+// The part of upstream fcp/protos/plan.proto (https://github.com/google-parfait/federated-compute) that
+// population_eligibility_spec.proto uses; ../../plan.proto is an older copy of the whole file, which needs the
+// tensorflow protos.
+syntax = "proto3";
+
+package google.internal.federated.plan;
+
+import "google/protobuf/any.proto";
+
+message ExampleSelector {
+  google.protobuf.Any criteria = 1;
+  string collection_uri = 2;
+  google.protobuf.Any resumption_token = 3;
+}

@@ -1,0 +1,13 @@
+// googleapis' google/rpc/status.proto
+// (https://github.com/googleapis/googleapis/blob/master/google/rpc/status.proto).
+syntax = "proto3";
+
+package google.rpc;
+
+import "google/protobuf/any.proto";
+
+message Status {
+  int32 code = 1;
+  string message = 2;
+  repeated google.protobuf.Any details = 3;
+}

@@ -43,6 +43,9 @@ message ForwardingInfo {
   // "https://foo.bar.com" or "https://foo.bar.com/", and if the subsequent
   // protocol request's URI suffix is "/baz", then the subsequent request's full
   // URI would be "https://foo.bar.com/baz".
+  //
+  // If a relative path is passed, the client should resolve it using the
+  // previous protocol phase's resolved protocol and hostname.
   string target_uri_prefix = 1;
   // Request headers that should be included with the next request for the next
   // protocol phase. Note that these headers should only be applied to protocol
@@ -76,8 +79,7 @@ message Resource {
 
   message InlineResource {
     // The inlined data for the resource.
-    bytes data = 1
-        ;
+    bytes data = 1 [ctype = CORD];
 
     // The compression used for the inlined data, or unset if the data is
     // uncompressed.
@@ -87,6 +89,7 @@ message Resource {
   // Stable identifier for this resource, used by the client cache
   // implementation. If this field is not set, the client should not attempt to
   // cache the resource referenced by `uri`. Not set for inline_resources.
+  //
   string client_cache_id = 4;
 
   // The maximum duration for how long the resource should be cached by the
@@ -102,6 +105,15 @@ message ResourceCapabilities {
   // Compression formats supported for resources downloaded via `Resource.uri`.
   // All clients are assumed to support uncompressed payloads.
   repeated ResourceCompressionFormat supported_compression_formats = 1;
+  // Whether or not the client supports "Confidential Aggregation". This can be
+  // used by the server to perform task filtering.
+  bool supports_confidential_aggregation = 2;
+  // Whether or not the client supports the AttestationTransparencyVerifier
+  // for confidential aggregation.
+  bool supports_attestation_transparency_verifier = 3;
+  // Whether or not the client supports "Willow Secure Aggregation". This can be
+  // used by the server to perform task filtering.
+  bool supports_willow_secure_aggregation = 4;
 }
 
 // Different file formats that may be used to compress resources.
