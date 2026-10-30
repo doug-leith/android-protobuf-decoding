@@ -191,7 +191,9 @@ class _Printer(text_format._Printer):
         for field, value in message.ListFields():
             if field.message_type is not None and field.message_type.full_name in self.map_entries:
                 key, val = field.message_type.fields_by_name["key"], field.message_type.fields_by_name["value"]
-                for entry in sorted(value, key=lambda e: e.key):
+                # by key, as protoc sorts them: a string key compared as its UTF-8 bytes, since one that is not valid UTF-8
+                # comes back as bytes
+                for entry in sorted(value, key=lambda e: e.key.encode() if isinstance(e.key, str) else e.key):
                     self.out.write(" " * self.indent + field.name + " {\n")
                     self.indent += 2
                     self.PrintField(key, entry.key)
