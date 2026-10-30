@@ -37,7 +37,7 @@ Clearcut logger sends messages to https://play.googleapis.com/log/batch endpoint
 
 Each message contains a sequence of log events, which may be from different log sources.  Each event is a protobuf with a header and a sequence of event entries.   The event entries are sent as a binary message that encodes a protobuf array (a sequence of size, protobuf pairs), which needs some extra work to decode.  The format of the individual protobufs in the array depends on the log source. 
 
-- logbatch_decode.py is a python script for decoding these messages, including the protobuf array.  For the ANDROID_MESSAGING, ANDROID_DIALER, LATIN_IME, ICING, CLIENT_LOGGING_PROD, CHIME, *_PRIMES, AUTOFILL_WITH_GOOGLE, LB_AS (Lockbox), WESTWORLD (aosp statsd service), TRON (aosp metric logger), ACTIVITY_RECOGNITION log sources the individual events are decoded using the protobuf definitions below, otherwise the events are decoded as raw protobufs (so field names are unknown and format of each field might be guessed incorrectly).
+- logbatch_decode.py is a python script for decoding these messages, including the protobuf array.  For the ANDROID_MESSAGING, ANDROID_DIALER, LATIN_IME, ICING, CLIENT_LOGGING_PROD, CHIME, *_PRIMES, AUTOFILL_WITH_GOOGLE, ON_DEVICE_ABUSE, LB_AS (Lockbox), WESTWORLD (aosp statsd service), TRON (aosp metric logger), ACTIVITY_RECOGNITION log sources the individual events are decoded using the protobuf definitions below, otherwise the events are decoded as raw protobufs (so field names are unknown and format of each field might be guessed incorrectly).
 - decoding_helpers.py are helper functions for decoding
 
 ### ANDROID_MESSAGING log source (Google Messages App)
@@ -71,6 +71,10 @@ Each message contains a sequence of log events, which may be from different log 
 ### AUTOFILL_WITH_GOOGLE log source (Google Play Services Autofill service: the foreground app and activity of every app that shows input fields, with the detected field types and form domain or URL, whether or not Autofill with Google is turned on)
 
 - autofill_named.proto is decoded protobuf definition
+
+### ON_DEVICE_ABUSE log source (Google Messages' on-device spam/scam classifier, Moirai: classification verdicts and actions, rule/model package downloads and their transparency-log check, with download/classification counters and the server's protection token; no message content)
+
+- on_device_abuse_named.proto is decoded protobuf definition
 
 ### LB_AS log source (Google Play Services Lockbox component which logs app usage data)
 
@@ -116,6 +120,10 @@ Each message contains a sequence of log events, which may be from different log 
 ## Google Play Services https://android-context-data.googleapis.com/google.internal.android.location.kollektomat.v1.KollektomatService/Offer
 
 - KollektomatRequest within locm.proto is (partially) decoded protobuf definition (note that request is in gRPC format)
+
+## Google Messages and Play Protect https://ondevicesafety-pa.googleapis.com/google.internal.abuse.ondevicesafety.v1alpha.ProgramBlobService/DownloadBlob
+
+- ondevicesafety_named.proto is decoded protobuf definition of request and response (gRPC): the on-device spam/scam classifier's encrypted rule/model package download, sending client id, device tier, labels, counters, the device's Tink public key and a DroidGuard token (Messages) or Android Keystore key attestation (Play Protect)
 
 ## Google Play Services https://android.googleapis.com/auth/devicekey
 
