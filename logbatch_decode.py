@@ -11,6 +11,7 @@ import dumper
 import tempfile
 import base64
 import functools
+import hashlib
 from datetime import datetime
 import pytz
 
@@ -461,6 +462,22 @@ def _primes_enum(msg, field):
     e = msg.DESCRIPTOR.fields_by_name[field].enum_type.values_by_number.get(v)
     return e.name if e is not None else str(v)
 
+@functools.lru_cache(maxsize=None)
+def _primes_hashed_names():
+    # {hash: name} for the names in primes_hashed_names.txt; Primes' hash (bidz.a()) is the first 8 bytes of the
+    # name's MD5, so a name that can be guessed can be looked up
+    names = {}
+    with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "primes_hashed_names.txt"), encoding="utf-8") as f:
+        for line in f:
+            name = line.rstrip("\n")
+            if name and not name.startswith("# "):
+                names[int.from_bytes(hashlib.md5(name.encode("utf-8")).digest()[:8], "big")] = name
+    return names
+
+def _primes_unhash(h):
+    # the name behind a Primes hash, or None
+    return _primes_hashed_names().get(h & (2**64 - 1))
+
 def _primes_grep(m):
     # "metric types" plus "key=value" summaries of a SystemHealthMetric, for the +++PRIMES grep line
     common = ("application_info", "device_info", "sampling_parameters", "metric_extension", "accountable_component",
@@ -470,7 +487,8 @@ def _primes_grep(m):
     if m.constant_event_name:
         info.append("name=%s" % m.constant_event_name)
     if m.HasField("hashed_custom_event_name"):
-        info.append("hashed_name=%016x" % m.hashed_custom_event_name)
+        name = _primes_unhash(m.hashed_custom_event_name)
+        info.append('hashed_name="%s"' % name if name is not None else "hashed_name=%016x" % m.hashed_custom_event_name)
     if m.accountable_component.custom_name:
         info.append("component=%s" % m.accountable_component.custom_name)
     if m.HasField("memory_usage_metric"):
@@ -481,8 +499,8 @@ def _primes_grep(m):
         info.append("duration_ms=%d" % m.timer_metric.duration_ms)
     if m.HasField("primes_trace"):
         tr = m.primes_trace
-        info.append("trace=%s spans=%d%s" % (_primes_enum(tr, "trace_type"), len(tr.span),
-                                             "(" + tr.span[0].constant_name + ")" if tr.span and tr.span[0].constant_name else ""))
+        root = (tr.span[0].constant_name or _primes_unhash(tr.span[0].hashed_name)) if tr.span else None
+        info.append("trace=%s spans=%d%s" % (_primes_enum(tr, "trace_type"), len(tr.span), "(" + root + ")" if root else ""))
         if tr.HasField("startup_metric"):
             st = tr.startup_metric
             acts = "|".join(a.activity_name for a in (st.first_activity, st.second_activity) if a.activity_name) or "-"
@@ -492,7 +510,10 @@ def _primes_grep(m):
         j = m.jank_metric
         info.append("jank_frames=%d/%d duration_ms=%d" % (j.jank_frame_count, j.rendered_frame_count, j.duration_ms))
     if m.HasField("network_usage_metric"):
-        paths = [n.constant_rpc_path or n.request_path or "-" for n in m.network_usage_metric.network_event_usage]
+        # a hashed path is shown as its recovered parts after the domain, an unrecovered part as <hash>
+        paths = [n.constant_rpc_path or n.request_path or
+                 (n.domain + "".join("/" + (_primes_unhash(h) or "<%016x>" % h) for h in n.hashed_rpc_path) if n.hashed_rpc_path else n.domain) or "-"
+                 for n in m.network_usage_metric.network_event_usage]
         info.append("requests=%s" % "|".join(paths))
     if m.HasField("crash_metric"):
         c = m.crash_metric
