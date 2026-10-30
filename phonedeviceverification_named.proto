@@ -276,7 +276,7 @@ message VerifiedInfo {  // fgfw; estimated name (high): phone number and verific
 message PendingChallenge {  // fgew; estimated name (medium): holds the challenge the server issues (alrt, alsa, alsc read it)
   Challenge challenge = 2;  // estimated name (high)
   int32 f3 = 3;  // not in the APK's class: seen only in the server's responses (neither GMS 24.06.16 nor 26.31.31 declares it): 1 in the captures; meaning unknown
-  int32 f4 = 4;  // not in the APK's class: seen only in the server's responses: 5 in the captures; meaning unknown
+  int32 f4 = 4;  // not in the APK's class: seen only in the server's responses: 5 or 8 in the captures; meaning unknown
 }
 
 message TelephonyInfo {  // fggj; estimated name (medium): TelephonyManager / SubscriptionManager values for one SIM (alrp)
