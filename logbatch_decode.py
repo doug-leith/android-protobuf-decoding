@@ -571,6 +571,113 @@ def decode_primes_pb(bb, verbose=True, terse=False, Grep=True, debug=False, sour
         return "Failed"
 
 
+# the Google app's (com.google.android.googlequicksearchbox) log sources, each with its <Source>_LogEntry in agsa_named.proto
+AGSA_SOURCES = ("AGSA_APA", "AGSA_PROACTIVE_ASSISTANT", "AGSA_ASSISTANT", "AGSA_GOOGLE_APP", "AGSA_ASSISTANT_INTERACTOR",
+                "AGSA_ASSISTANT_AUTO", "AGSA_INFRASTRUCTURE", "AGSA_OMNI", "AGSA_LEGACY", "AGSA_MDD_ANDROID")
+_agsa_flow_names = None
+
+def _agsa_flow_name(table, product, value):
+    # name of a flow type or flow step (agsa_flow_names.json, read from the APK's flow logging enums) or the number
+    global _agsa_flow_names
+    if _agsa_flow_names is None:
+        import json
+        with open(os.path.join(mypath, "agsa_flow_names.json")) as f:
+            _agsa_flow_names = json.load(f)
+    return _agsa_flow_names[table].get(str(product), {}).get(str(value), str(value))
+
+def _agsa_value(fd, v):
+    if fd.enum_type is not None:
+        e = fd.enum_type.values_by_number.get(v)
+        return e.name if e is not None else str(v)
+    if fd.type == fd.TYPE_STRING:
+        return repr(v)
+    if fd.type == fd.TYPE_BYTES:
+        return repr(v[:32])
+    return str(v)
+
+def _agsa_leaves(m, prefix="", skip=()):
+    # name=value for each scalar in m (but fields named in skip), nested messages flattened as a.b=value
+    out = []
+    for fd, v in m.ListFields():
+        if fd.name in skip:
+            continue
+        name = prefix + fd.name
+        for x in (v if fd.label == fd.LABEL_REPEATED else [v]):
+            if fd.message_type is not None:
+                out += _agsa_leaves(x, name + ".")
+            else:
+                out.append("%s=%s" % (name, _agsa_value(fd, x)))
+    return out
+
+def _agsa_grep(ev):
+    # what an AGSA event records, for its +++AGSA_ grep line
+    cl, ce = ev.agsa_client_log, ev.agsa_client_log.client_event
+    pa = ce.product_log_context.product_and_account
+    info = ["event=%s" % _agsa_value(ev.DESCRIPTOR.fields_by_name["eventId"], ev.eventId) if ev.HasField("eventId") else "event=-",
+            "product=%s" % _agsa_value(pa.DESCRIPTOR.fields_by_name["product"], pa.product) if pa.HasField("product") else "product=-",
+            "account=%s" % _agsa_value(pa.DESCRIPTOR.fields_by_name["account_state"], pa.account_state) if pa.HasField("account_state") else "account=-"]
+    if ce.HasField("app_flow"):
+        fl = ce.app_flow
+        steps = [_agsa_flow_name("flow_steps", r.ids.info.product or fl.product, r.ids.info.record_id) for r in fl.record]
+        info.append("flow=%s status=%s duration_ms=%d steps=%s" % (_agsa_flow_name("flow_types", fl.product, fl.flow_type),
+                    _agsa_value(fl.DESCRIPTOR.fields_by_name["status"], fl.status),
+                    fl.duration.seconds * 1000 + fl.duration.nanos // 1000000, "|".join(steps) or "-"))
+        exts = []
+        for r in fl.record:
+            for x in _agsa_leaves(r.extensions):
+                if x not in exts:
+                    exts.append(x)
+        if exts:
+            info.append("flow_data=" + ",".join(exts))
+    if ev.HasField("veProducerByteString"):
+        ve = ev.veProducerByteString
+        info.append("ve=%s" % (",".join(str(e.ve_type) for e in ve.visual_element) or "-"))
+        exts = []
+        for e in ve.visual_element:
+            for x in _agsa_leaves(e, skip=("ve_type", "index", "child_index")):
+                if x not in exts:
+                    exts.append(x)
+        if exts:
+            info.append("ve_data=" + ",".join(exts))
+        if ve.interactions.interaction:
+            info.append("interactions=%s" % ",".join("%s:%d" % (_agsa_value(i.DESCRIPTOR.fields_by_name["type"], i.type), i.target.ved.ve_type)
+                                                     for i in ve.interactions.interaction))
+    # the event's other fields
+    other = _agsa_leaves(ce, skip=("current_time_millis", "elapsed_realtime_millis", "elapsed_realtime_nanos", "app_flow",
+                                   "product_log_context"))
+    other += _agsa_leaves(cl, skip=("nid_cookie", "client_event", "app_version"))
+    if other:
+        info.append("data=" + ",".join(dict.fromkeys(other)))
+    if cl.HasField("nid_cookie"):
+        info.append("nid_cookie")
+    return " ".join(info)
+
+def decode_agsa_pb(bb, verbose=True, terse=False, Grep=True, debug=False, source="AGSA_APA"):
+    # AGSA_* log sources: the Google app's (Search, Assistant, At a Glance, ...) client events: app flows (named steps
+    # of a feature, with per-feature data), visual elements shown and tapped, the product, account state and NID cookie
+    if debug:
+        fname='/tmp/agsa_bytes'
+        f = open(fname, 'wb')
+        f.write(bb)
+        f.close()
+    entry = "".join(w.capitalize() for w in source.split("_")) + "_LogEntry"
+    try:
+        decoded = decode_named(entry, "agsa_named.proto", bb)
+        grep=""
+        if Grep:
+            try:
+                ev = message_class(entry, "agsa_named.proto")()
+                ev.MergeFromString(bb)
+                grep="+++%s %s %s\n"%(source, ev.currentTimeMillis, _agsa_grep(ev))
+            except Exception as e:
+                print("***ERROR %s grep: "%source,e)
+        return grep+decoded
+    except DecodeNamedError as e:
+        if verbose:
+            print("***ERROR %s: "%source,e)
+        return "Failed"
+
+
 def printAtom(tt, a, strhash, westworld):
     if a is not None:
         for t in makeIter(tt):
@@ -987,6 +1094,8 @@ def decode(data):
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_autofill_pb, verbose=True, debug=False))
             elif inner.logSourceName.endswith("_PRIMES"):  # ANDROID_MESSAGING_PRIMES, DIALER_ANDROID_PRIMES, GMM_PRIMES, ...
                 print(try_decode_pb_array("logEntry", inner.logEntry, functools.partial(decode_primes_pb, source=inner.logSourceName), verbose=True, debug=False))
+            elif inner.logSourceName in AGSA_SOURCES:
+                print(try_decode_pb_array("logEntry", inner.logEntry, functools.partial(decode_agsa_pb, source=inner.logSourceName), verbose=True, debug=False))
             elif inner.logSourceName == "WESTWORLD" or inner.logSourceName == "ANONYMOUS_WESTWORLD":
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_westworld, verbose=True, debug=False))
             elif inner.logSourceName == "LB_AS" or inner.logSourceName == "LB_CFG":
