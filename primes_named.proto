@@ -1,0 +1,790 @@
+edition = "2023";
+
+// The *_PRIMES Clearcut log sources (ANDROID_MESSAGING_PRIMES, DIALER_ANDROID_PRIMES, ...): performance
+// telemetry from Google's Primes library (com.google.android.libraries.performance.primes), one
+// SystemHealthMetric per event. The SystemHealthMetric schema is from the Google Messages APK (Pixel 2,
+// 2021; obfuscated class names in comments), the outer LogEvent from GMS 21.48.15 (as in
+// client_logging_named.proto). Names are from the code that sets each field; "estimated name" marks
+// names that the code does not settle. Android API names (HealthStats keys, Debug.MemoryInfo,
+// PackageStats, ApplicationExitInfo, Cronet) are from the Android SDK and Cronet sources.
+
+option features.utf8_validation = NONE;
+
+message Primes_LogEntry {  // crai (GMS)
+  int64 currentTimeMillis = 1;
+  string packageName = 2;
+  repeated craj keyValuePairList = 3;
+  SystemHealthMetric system_health_metric = 6;  // wire type bytes
+  int32 eventId = 11;
+  int64 eventFlowId = 12;
+  sint64 timeZoneOffset = 15;
+  ExperimentIds experiment_ids = 16;
+  int64 elapsedRealtime = 17;
+  bytes veProducerByteString = 18;
+  crah_a f19 = 19;
+  repeated int32 f20 = 20 [features.repeated_field_encoding = EXPANDED];
+  int64 bootCount = 22;
+  NetworkConnectionInfo network_connection_info = 23;
+  bool notDirectBootMode = 25;
+  double applied_sampling_rate = 30;  // only sent when flag ClearcutLogOperation__applied_sampling_rate is on; 1 = not sampled
+}
+
+// One Primes metric. Built by the metric services, completed by MetricRecorder (axef: application_info,
+// device_info, sampling_parameters, event name, metric_extension, accountable_component) and
+// ClearcutMetricSnapshotTransmitter, which hashes the free-text names before upload.
+message SystemHealthMetric {  // bqff
+  MemoryUsageMetric memory_usage_metric = 1;
+  fixed64 hashed_custom_event_name = 2;  // hash (bidz) of custom_event_name, which is then cleared
+  string custom_event_name = 3;  // a caller-supplied name; replaced by hashed_custom_event_name before upload
+  TimerMetric timer_metric = 4;
+  ApplicationInfo application_info = 5;
+  NetworkUsageMetric network_usage_metric = 6;
+  CrashMetric crash_metric = 7;
+  PrimesStats primes_stats = 8;
+  PackageMetric package_metric = 9;
+  BatteryUsageMetric battery_usage_metric = 10;
+  JankMetric jank_metric = 12;
+  MetricExtension metric_extension = 14;  // the app's own extension message
+  PrimesTrace primes_trace = 16;
+  string constant_event_name = 17;  // a compile-time-constant (NoPiiString) name: timer, activity, memory event; sent in clear
+  AccountableComponent accountable_component = 21;
+  DeviceInfo device_info = 23;
+  PrimesLogRecord primes_log_record = 29;  // not set by this build; estimated name (low)
+  SamplingParameters sampling_parameters = 30;
+  RecentLogSites recent_log_sites = 31;
+  ApplicationExitMetric application_exit_metric = 32;
+  UiThreadHang ui_thread_hang = 33;
+}
+
+// --- memory (MemoryMetricServiceImpl / MemoryUsageCapture, axhz/axid) ---
+
+message MemoryUsageMetric {  // bqcf
+  MemoryStats memory_stats = 1;
+  ProcessStatsHolder process_stats = 2;
+  MemoryEventCode memory_event_code = 3;
+  DeviceState device_state = 4;
+  string activity_name = 5;  // simple class name of the activity whose foreground/background change triggered the snapshot
+}
+
+// Stored as code minus one; set from the app foreground/background callbacks (axcs.c(), axhm, axho).
+enum MemoryEventCode {  // inline verifier bqce
+  UNKNOWN_MEMORY_EVENT = 0;
+  APP_CREATED = 1;  // estimated name (medium): the remaining code
+  APP_TO_BACKGROUND = 2;
+  APP_TO_FOREGROUND = 3;
+  APP_IN_BACKGROUND_FOR_SECONDS = 4;  // 10 s after going to background
+  APP_IN_FOREGROUND_FOR_SECONDS = 5;  // 10 s after coming to foreground
+  DELTA_OF_MEMORY = 6;  // recordDiff(): difference between two snapshots
+}
+
+message MemoryStats {  // bqcc
+  AndroidMemoryStats android_memory_stats = 1;
+}
+
+// Debug.MemoryInfo of the process (KB), ActivityManager.MemoryInfo of the device, /proc/self/status (KB).
+message AndroidMemoryStats {  // bqby
+  int32 dalvik_pss_kb = 1;
+  int32 native_pss_kb = 2;
+  int32 other_pss_kb = 3;
+  int32 dalvik_private_dirty_kb = 4;
+  int32 native_private_dirty_kb = 5;
+  int32 other_private_dirty_kb = 6;
+  int32 total_private_clean_kb = 7;
+  int32 total_shared_dirty_kb = 8;
+  int32 total_swappable_pss_kb = 9;
+  int32 other_graphics_pss_kb = 10;  // MemoryInfo.getOtherPss(14)
+  int32 summary_java_heap_kb = 11;  // getMemoryStats() "summary.java-heap"
+  int32 summary_code_kb = 12;
+  int32 summary_stack_kb = 13;
+  int32 summary_graphics_kb = 14;
+  int32 summary_private_other_kb = 15;
+  int32 summary_system_kb = 16;
+  int32 available_memory_kb = 17;  // device: ActivityManager.MemoryInfo.availMem
+  int32 total_memory_mb = 18;  // device: ActivityManager.MemoryInfo.totalMem
+  int32 total_pss_kb = 19;
+  int64 vm_hwm_kb = 20;  // /proc/self/status VmHWM
+  int64 vm_rss_kb = 21;
+  int64 rss_anon_kb = 22;
+  int64 vm_swap_kb = 23;
+  int64 vm_size_kb = 24;
+}
+
+message DeviceState {  // bqca
+  bool is_screen_on = 1;  // PowerManager.isInteractive()
+}
+
+message ProcessStatsHolder {  // bqdt
+  ProcessStats process_stats = 1;
+}
+
+message ProcessStats {  // bqdr, axcv.b()
+  int64 elapsed_cpu_time_ms = 1;  // Process.getElapsedCpuTime()
+  bool is_in_foreground = 2;  // a process of the app has importance FOREGROUND
+  int32 thread_count = 3;  // Thread.activeCount()
+  string process_name = 4;
+}
+
+// --- timer (TimerMetricServiceImpl, axkr) ---
+
+message TimerMetric {  // bqfh
+  int64 duration_ms = 1;  // elapsedRealtime from startTimer to stopTimer
+  TimerStatus end_status = 2;
+}
+
+enum TimerStatus {  // inline verifier bqdb; stored as status minus one
+  TIMER_STATUS_UNKNOWN = 0;
+  TIMER_STATUS_1 = 1;  // estimated name (low): the caller's stop status; SUCCESS / ERROR / CANCEL in the Primes API
+  TIMER_STATUS_2 = 2;
+  TIMER_STATUS_3 = 3;
+}
+
+// --- application and device (MetricRecorder, axef/axej) ---
+
+message ApplicationInfo {  // bqdz
+  string application_package_name = 1;
+  string application_version_name = 2;
+  HardwareVariant hardware_variant = 3;
+  int64 primes_version = 4;  // 399264408 in this build
+  string short_process_name = 5;  // process name after "<package>:", absent for the main process
+}
+
+enum HardwareVariant {  // inline verifier bqdy; stored as variant minus one
+  UNKNOWN_HARDWARE = 0;
+  PHONE_OR_TABLET = 1;
+  WATCH = 2;  // android.hardware.type.watch
+  LEANBACK = 3;  // android.software.leanback (TV)
+  AUTOMOTIVE = 4;  // android.hardware.type.automotive
+}
+
+message DeviceInfo {  // bqei
+  int64 available_disk_size_kb = 1;  // getFreeSpace() of the data directory
+  int64 total_disk_size_kb = 2;  // getTotalSpace()
+}
+
+message AccountableComponent {  // bqdw
+  string custom_name = 1;  // the component the metric is attributed to
+}
+
+// The sampling that let this event through (Sampler, axmc/axmh).
+message SamplingParameters {  // bqfb
+  int64 sample_rate = 2;  // estimated name (medium); -1 means the event is dropped
+  SamplingStrategy sampling_strategy = 3;
+}
+
+enum SamplingStrategy {  // R8-unboxed enum bqfa; stored as strategy minus one
+  SAMPLING_STRATEGY_0 = 0;
+  SAMPLING_STRATEGY_FAILED = 1;  // sampling config could not be read; estimated name (medium)
+  SAMPLING_STRATEGY_DEFAULT = 2;  // no sampling strategy configured; estimated name (medium)
+  SAMPLING_STRATEGY_3 = 3;
+  SAMPLING_STRATEGY_4 = 4;
+  SAMPLING_STRATEGY_PER_EVENT_RATE = 5;  // rate given with the event; estimated name (medium)
+}
+
+// Opaque: an extension message of the app's own (none registered in this build).
+message MetricExtension {  // bqbw (extendable)
+}
+
+// The last (up to 100) Flogger log sites hit before the metric, in time order (axef with axcn ring buffers).
+message RecentLogSites {  // bqeg; estimated name (medium)
+  repeated int64 hashed_log_site = 1;  // hash of "class.method:line"
+  repeated int64 timestamp_delta_ms = 2;  // ms since the previous entry
+  repeated int32 buffer_index = 3;
+}
+
+// A Flogger log record (bgct), as in client_logging_named.proto. Not set by this build.
+message PrimesLogRecord {  // bqeb
+  LogRecord log_record = 5;
+}
+
+// --- network (NetworkMetricCollector, axik; Cronet listener axir) ---
+
+message NetworkUsageMetric {  // bqcr
+  repeated NetworkEventUsage network_event_usage = 1;
+}
+
+message NetworkEventUsage {  // bqcp
+  string content_type = 1;  // from the Content-Type header
+  string request_path = 2;  // sanitised URL path
+  int32 time_to_response_data_finished_ms = 3;  // Cronet total time
+  int32 time_to_response_header_received_ms = 4;  // Cronet TTFB
+  int32 http_status_code = 5;
+  uint32 response_size_bytes = 6;  // Cronet received byte count
+  uint32 request_size_bytes = 7;  // Cronet sent byte count
+  NegotiationProtocol negotiation_protocol = 8;
+  ProcessStats process_stats = 10;
+  NetworkInfo network_info = 11;
+  int64 start_time_ms = 13;  // elapsedRealtime at the request start
+  RequestFinishedReason request_finished_reason = 14;
+  RequestFailedReason request_failed_reason = 15;
+  int32 f16 = 16;  // always 0 in this build
+  string rpc_path = 17;  // replaced by hashed_rpc_path before upload; estimated name (medium)
+  int32 quic_detailed_error_code = 19;  // QuicException.getQuicDetailedErrorCode()
+  string domain_path = 20;  // derived from the request path; estimated name (low)
+  repeated fixed64 hashed_rpc_path = 21;  // hash of each "/"-separated part of rpc_path
+  RequestCountInfo f22 = 22;
+  NetworkLibrary network_library = 24;
+  string constant_rpc_path = 25;  // a NoPiiString request path, sent in clear
+  RetryInfo f26 = 26;
+  ChannelType channel_type = 27;  // gRPC channel (axij.u): 1 and 2 are non-Inet socket addresses; estimated name (low)
+}
+
+enum NegotiationProtocol {  // inline verifier bqcv; stored as protocol minus one
+  PROTOCOL_UNKNOWN = 0;  // none reported
+  HTTP_1_1 = 1;
+  SPDY_2 = 2;
+  SPDY_3 = 3;
+  SPDY_3_1 = 4;
+  HTTP_2 = 5;  // "h2..."
+  QUIC_1_SPDY_3 = 6;
+  HTTP_2_QUIC_43 = 7;
+}
+
+message NetworkInfo {  // bqcl
+  ActiveNetworkType network_type = 1;  // NetworkInfo.getType() at request time
+}
+
+// RequestFinishedInfo.getFinishedReason() plus one.
+enum RequestFinishedReason {  // inline verifier bqcw
+  FINISHED_REASON_UNKNOWN = 0;
+  SUCCEEDED = 1;
+  FAILED = 2;
+  CANCELED = 3;
+}
+
+// The request's CronetException.
+enum RequestFailedReason {  // R8-unboxed enum bqcu
+  FAILED_REASON_UNKNOWN = 0;  // no exception, or one Primes does not classify
+  CALLBACK_EXCEPTION = 1;
+  HOSTNAME_NOT_RESOLVED = 2;  // NetworkException error codes 1..11 from here on
+  INTERNET_DISCONNECTED = 3;
+  NETWORK_CHANGED = 4;
+  TIMED_OUT = 5;
+  CONNECTION_CLOSED = 6;
+  CONNECTION_TIMED_OUT = 7;
+  CONNECTION_REFUSED = 8;
+  CONNECTION_RESET = 9;
+  ADDRESS_UNREACHABLE = 10;
+  QUIC_PROTOCOL_FAILED = 11;
+  NETWORK_EXCEPTION_OTHER = 12;
+}
+
+message RequestCountInfo {  // bqcy
+  int32 f1 = 1;  // axij.s
+}
+
+message RetryInfo {  // bqch; estimated name (low)
+  int32 f1 = 1;  // axij.q
+  int32 f2 = 2;  // 1 when axij.r > 0
+}
+
+enum NetworkLibrary {  // Java enum bqco
+  NETWORK_LIBRARY_UNKNOWN = 0;
+  CRONET = 1;
+}
+
+enum ChannelType {  // inline verifier bqcs
+  CHANNEL_TYPE_0 = 0;
+  CHANNEL_TYPE_1 = 1;
+  CHANNEL_TYPE_2 = 2;
+}
+
+// --- crash (CrashMetricServiceImpl, axfn/axfm) ---
+
+message CrashMetric {  // bqee
+  bool has_crashed = 1;  // always true
+  ProcessStatsHolder process_stats = 2;
+  string active_activity_name = 3;  // simple class name of the activity in the foreground, if any
+  string thread_name = 4;
+  CrashType crash_type = 5;
+  string exception_class_name = 7;  // class of the throwable's cause (or of the throwable)
+  Throwables throwable = 9;  // class names hashed by the transmitter (ThrowableInfo.f3)
+  NativeCrashInfo native_crash_info = 10;
+}
+
+enum CrashType {  // inline verifier bqed; stored as type minus one
+  UNKNOWN_CRASH = 0;  // other Throwable
+  NULL_POINTER_EXCEPTION = 1;
+  OUT_OF_MEMORY_ERROR = 2;
+  OTHER_RUNTIME_EXCEPTION = 3;
+  OTHER_ERROR = 4;
+  NATIVE_CRASH = 5;  // NativeCrashHandlerImpl
+}
+
+// Opaque: written by the native crash handler.
+message NativeCrashInfo {  // blap
+}
+
+// Counts used as the denominators of crash rates, sent with a sampling weight (axfn.h()).
+message PrimesStats {  // bqex; estimated name (medium)
+  PrimesEvent primes_event = 1;
+  int32 estimated_count = 2;  // 100 / sampling percentage: how many events this one stands for
+  CrashMetricHolder f3 = 3;
+}
+
+enum PrimesEvent {  // inline verifier bqew; stored as event minus one
+  PRIMES_EVENT_UNKNOWN = 0;
+  PRIMES_EVENT_1 = 1;
+  PRIMES_CRASH_MONITORING_INITIALIZED = 2;  // crash monitoring started (process start)
+  PRIMES_FIRST_ACTIVITY_LAUNCHED = 3;  // first activity of the process created
+  PRIMES_CUSTOM_LAUNCHED_EVENT = 4;  // estimated name (low)
+}
+
+message CrashMetricHolder {  // bqev
+  CrashMetric crash_metric = 1;
+}
+
+// --- package (PackageMetricService, axkh) ---
+
+// android.content.pm.PackageStats of the app (bytes).
+message PackageMetric {  // bqeq
+  int64 cache_size = 1;
+  int64 code_size = 2;
+  int64 data_size = 3;
+  int64 external_cache_size = 4;
+  int64 external_code_size = 5;
+  int64 external_data_size = 6;
+  int64 external_media_size = 7;
+  int64 external_obb_size = 8;
+  repeated DirStats dir_stats = 10;
+}
+
+message DirStats {  // bqep
+  string dir_path = 1;  // replaced by hashed_path before upload
+  repeated fixed64 hashed_path = 3 [features.repeated_field_encoding = PACKED];  // hash of each "/"-separated part
+}
+
+// --- battery (BatteryMetricService, axdh/axda: SystemHealthManager.takeMyUidSnapshot()) ---
+
+message BatteryUsageMetric {  // bqbe
+  BatteryStatsDiff battery_stats_diff = 1;
+}
+
+message BatteryStatsDiff {  // bqbc
+  SampleInfo start_info = 1;
+  SampleInfo end_info = 2;
+  int64 duration_ms = 3;  // between the two snapshots
+  UidHealthStats uid_health_stats_diff = 6;
+  int64 elapsed_time_ms = 7;  // clock time of the end snapshot; estimated name (medium)
+  fixed64 hashed_custom_event_name = 8;
+  string custom_event_name = 9;  // replaced by hashed_custom_event_name before upload
+  string constant_event_name = 10;
+  MetricExtension metric_extension = 11;
+}
+
+enum SampleInfo {  // Java enum bqbb
+  UNKNOWN_SAMPLE_INFO = 0;
+  FOREGROUND_TO_BACKGROUND = 1;
+  BACKGROUND_TO_FOREGROUND = 2;
+  FOREGROUND_SERVICE_START = 3;
+  FOREGROUND_SERVICE_STOP = 4;
+  CUSTOM_MEASURE_START = 5;
+  CUSTOM_MEASURE_STOP = 6;
+}
+
+// android.os.health.UidHealthStats: field N is key 10000+N.
+message UidHealthStats {  // bqbu
+  int64 realtime_battery_ms = 1;
+  int64 uptime_battery_ms = 2;
+  int64 realtime_screen_off_battery_ms = 3;
+  int64 uptime_screen_off_battery_ms = 4;
+  repeated TimerStat wakelocks_full = 5;
+  repeated TimerStat wakelocks_partial = 6;
+  repeated TimerStat wakelocks_window = 7;
+  repeated TimerStat wakelocks_draw = 8;
+  repeated TimerStat syncs = 9;
+  repeated TimerStat jobs = 10;
+  TimerStat gps_sensor = 11;
+  repeated TimerStat sensors = 12;
+  repeated PidHealthStats stats_pids = 13;
+  repeated ProcessHealthStats stats_processes = 14;
+  repeated PackageHealthStats stats_packages = 15;
+  int64 wifi_idle_ms = 16;
+  int64 wifi_rx_ms = 17;
+  int64 wifi_tx_ms = 18;
+  int64 wifi_power_mams = 19;
+  int64 bluetooth_idle_ms = 20;
+  int64 bluetooth_rx_ms = 21;
+  int64 bluetooth_tx_ms = 22;
+  int64 bluetooth_power_mams = 23;
+  int64 mobile_idle_ms = 24;
+  int64 mobile_rx_ms = 25;
+  int64 mobile_tx_ms = 26;
+  int64 mobile_power_mams = 27;
+  int64 wifi_running_ms = 28;
+  int64 wifi_full_lock_ms = 29;
+  TimerStat wifi_scan = 30;
+  int64 wifi_multicast_ms = 31;
+  TimerStat audio = 32;
+  TimerStat video = 33;
+  TimerStat flashlight = 34;
+  TimerStat camera = 35;
+  TimerStat foreground_activity = 36;
+  TimerStat bluetooth_scan = 37;
+  TimerStat process_state_top_ms = 38;
+  TimerStat process_state_foreground_service_ms = 39;
+  TimerStat process_state_top_sleeping_ms = 40;
+  TimerStat process_state_foreground_ms = 41;
+  TimerStat process_state_background_ms = 42;
+  TimerStat process_state_cached_ms = 43;
+  TimerStat vibrator = 44;
+  int64 other_user_activity_count = 45;
+  int64 button_user_activity_count = 46;
+  int64 touch_user_activity_count = 47;
+  int64 mobile_rx_bytes = 48;
+  int64 mobile_tx_bytes = 49;
+  int64 wifi_rx_bytes = 50;
+  int64 wifi_tx_bytes = 51;
+  int64 bluetooth_rx_bytes = 52;
+  int64 bluetooth_tx_bytes = 53;
+  int64 mobile_rx_packets = 54;
+  int64 mobile_tx_packets = 55;
+  int64 wifi_rx_packets = 56;
+  int64 wifi_tx_packets = 57;
+  int64 bluetooth_rx_packets = 58;
+  int64 bluetooth_tx_packets = 59;
+  TimerStat mobile_radio_active = 61;
+  int64 user_cpu_time_ms = 62;
+  int64 system_cpu_time_ms = 63;
+  int64 cpu_power_mams = 64;
+}
+
+// android.os.health.TimerStat, with its map key (wakelock, job, sensor ... name).
+message TimerStat {  // bqbs
+  int32 count = 1;
+  int64 time_ms = 2;
+  HashedString name = 3;
+}
+
+// A name, hashed: the transmitter sends hash and not the string (axdi).
+message HashedString {  // bqbi
+  fixed64 hash = 1;
+  string unhashed_name = 2;  // cleared before upload
+}
+
+message PidHealthStats {  // bqbm: no fields kept
+}
+
+// android.os.health.ProcessHealthStats (keys 30001..30006).
+message ProcessHealthStats {  // bqbo
+  int64 user_time_ms = 1;
+  int64 system_time_ms = 2;
+  int64 starts_count = 3;
+  int64 crashes_count = 4;
+  int64 anr_count = 5;
+  int64 foreground_ms = 6;
+  HashedString name = 7;
+}
+
+// android.os.health.PackageHealthStats.
+message PackageHealthStats {  // bqbk
+  repeated ServiceHealthStats stats_services = 1;
+  repeated WakeupAlarmCount wakeup_alarms_count = 2;
+  HashedString name = 3;
+}
+
+message ServiceHealthStats {  // bqbq
+  int32 start_service_count = 1;
+  int32 launch_count = 2;
+  HashedString name = 3;
+}
+
+message WakeupAlarmCount {  // bqbg
+  int32 count = 1;
+  HashedString name = 2;
+}
+
+// --- jank (FrameMetricService, axgh/axgk: Window.OnFrameMetricsAvailableListener) ---
+
+message JankMetric {  // bqem
+  int32 jank_frame_count = 1;  // frames longer than their deadline (or the refresh period)
+  int32 rendered_frame_count = 2;
+  int32 max_frame_render_time_ms = 3;
+  int32 total_frame_render_time_ms = 4;
+  repeated FrameTimeHistogramBucket frame_time_histogram = 5;
+  int32 device_refresh_period_ms = 6;  // ceil(1000 / display refresh rate)
+  int32 dropped_frame_count = 7;
+  int32 duration_ms = 8;  // length of the measurement
+  int32 jank_frame_total_ms = 9;
+  CompactHistogram compact_frame_time_histogram = 10;  // frame_time_histogram in compact form (behind a flag, axnk)
+  int32 slow_frame_count = 11;  // frames longer than the refresh period (when deadlines are known)
+  int32 slow_frame_total_ms = 12;
+  CompactHistogram frame_overrun_histogram = 13;  // frame duration minus deadline, ms
+}
+
+message FrameTimeHistogramBucket {  // bqek
+  int32 count = 1;
+  int32 bucket_start_ms = 2;
+  int32 bucket_end_ms = 3;  // inclusive
+}
+
+message CompactHistogram {  // bqes
+  repeated int32 count = 1 [features.repeated_field_encoding = PACKED];
+  repeated int32 bucket_start = 2 [features.repeated_field_encoding = PACKED];
+}
+
+// --- traces (TraceMetricServiceImpl axla, TikTok tracing bctm, StartupMetricRecordingService axju) ---
+
+message PrimesTrace {  // bqde
+  fixed64 trace_id = 1;  // random
+  repeated Span span = 2;
+  TraceType trace_type = 3;
+  float sample_rate = 4;  // estimated name (low)
+  TikTokTraceInfo tiktok_trace_info = 5;  // estimated name (low)
+  StartupMetric startup_metric = 6;
+}
+
+enum TraceType {  // inline verifier bqdd
+  TRACE_TYPE_UNKNOWN = 0;
+  TIKTOK_TRACE = 1;  // from the TikTok framework's tracing (bctm); estimated name (medium)
+  STARTUP_TRACE = 2;  // carries startup_metric (axju); estimated name (medium)
+  TRACE_TYPE_3 = 3;
+}
+
+message Span {  // bqdi
+  string constant_name = 1;  // span name (NoPiiString or trace span name)
+  fixed64 id = 2;
+  fixed64 parent_id = 3;
+  int64 start_time_ms = 4;  // elapsedRealtime
+  int64 duration_ms = 5;
+  int64 thread_id = 6;
+  SpanType span_type = 7;
+  fixed64 hashed_name = 8;
+  string name = 9;  // replaced by hashed_name before upload
+  int32 f10 = 10;  // TikTok span field (bcpa.g)
+  MetricExtension metric_extension = 11;
+}
+
+enum SpanType {  // R8-unboxed enum bqdh
+  SPAN_TYPE_0 = 0;
+  SPAN_TYPE_1 = 1;
+  SPAN_TYPE_2 = 2;
+  SPAN_TYPE_3 = 3;
+  SPAN_TYPE_4 = 4;
+  SPAN_TYPE_5 = 5;
+}
+
+message TikTokTraceInfo {  // bqda
+  int32 f5 = 5;
+  int64 f6 = 6;
+}
+
+// App start timestamps. With app_start_time_ms set, the others are ms after it; otherwise elapsedRealtime.
+message StartupMetric {  // bqdp
+  int64 app_start_time_ms = 1;  // the earliest of the timestamps below (elapsedRealtime)
+  int64 app_class_loaded_ms = 3;
+  int64 app_on_create_ms = 4;  // Primes startup listener run
+  int64 first_on_activity_init_ms = 5;  // estimated name (low)
+  int64 startup_ms = 9;  // the configured startup end: first draw, first draw done or pre-draw
+  int64 app_fully_drawn_ms = 10;  // reportFullyDrawn()
+  bool has_activity_on_start = 11;  // an activity was created before Primes' first idle: cold start with UI
+  ActivityInfo first_activity = 12;
+  ActivityInfo second_activity = 13;
+  int64 process_start_time_ms = 14;  // /proc/self/stat starttime
+  int64 process_start_elapsed_realtime_ms = 15;  // Process.getStartElapsedRealtime()
+  map<int32, int64> custom_timestamps_ms = 16;
+  int64 f17 = 17;  // not set by this build's startup code
+  int64 app_on_create_end_ms = 18;  // estimated name (low)
+  int64 f19 = 19;  // not set by this build's startup code
+  int64 first_pre_draw_ms = 20;  // estimated name (medium)
+  int64 first_pre_draw_front_of_queue_ms = 21;  // estimated name (medium)
+  StartupType startup_type = 22;
+  int64 first_draw_done_ms = 23;  // "ttfdd"
+  int64 first_draw_ms = 24;
+}
+
+message ActivityInfo {  // bqdk
+  string activity_name = 1;  // simple class name
+  int64 on_create_ms = 2;
+  int64 on_start_ms = 3;
+  int64 on_resume_ms = 4;
+}
+
+enum StartupType {  // R8-unboxed enum bqdo
+  STARTUP_TYPE_UNKNOWN = 0;
+  COLD = 1;  // has_activity_on_start
+  WARM = 2;  // estimated name (medium)
+  STARTUP_TYPE_3 = 3;
+  STARTUP_TYPE_4 = 4;
+}
+
+// --- application exits (ApplicationExitMetricServiceImpl, axfx/axft) ---
+
+message ApplicationExitMetric {  // bqaw
+  repeated ApplicationExitInfo application_exit_info = 1;  // those whose reason is in reported_reasons
+  ApplicationExitReasons reported_reasons = 2;
+  int32 total_exit_info_count = 3;  // exits read from ActivityManager.getHistoricalProcessExitReasons()
+}
+
+// android.app.ApplicationExitInfo.
+message ApplicationExitInfo {  // bqau
+  string process_name = 1;
+  ExitReason reason = 2;
+  int32 status = 3;
+  Importance importance = 4;
+  int64 timestamp_ms = 5;  // currentTimeMillis
+  int64 pss_kb = 6;
+  int64 rss_kb = 7;
+  bool is_low_memory_kill_report_supported = 8;
+}
+
+message ApplicationExitReasons {  // bqay
+  repeated ExitReason reason = 1 [features.repeated_field_encoding = EXPANDED];
+}
+
+enum ExitReason {  // R8-unboxed enum bqat; ApplicationExitInfo.REASON_*
+  EXIT_REASON_0 = 0;
+  REASON_EXIT_SELF = 1;
+  REASON_SIGNALED = 2;
+  REASON_LOW_MEMORY = 3;
+  REASON_CRASH = 4;
+  REASON_CRASH_NATIVE = 5;
+  REASON_ANR = 6;
+  REASON_INITIALIZATION_FAILURE = 7;
+  REASON_PERMISSION_CHANGE = 8;
+  REASON_EXCESSIVE_RESOURCE_USAGE = 9;
+  REASON_USER_REQUESTED = 10;
+  REASON_USER_STOPPED = 11;
+  REASON_DEPENDENCY_DIED = 12;
+  REASON_OTHER = 13;
+  REASON_UNKNOWN = 14;
+}
+
+enum Importance {  // inline verifier bqar; RunningAppProcessInfo.IMPORTANCE_*
+  IMPORTANCE_UNKNOWN = 0;
+  IMPORTANCE_FOREGROUND = 1;
+  IMPORTANCE_FOREGROUND_SERVICE = 2;
+  IMPORTANCE_3 = 3;
+  IMPORTANCE_VISIBLE = 4;
+  IMPORTANCE_PERCEPTIBLE = 5;
+  IMPORTANCE_CANT_SAVE_STATE = 6;  // also TOP_SLEEPING (325)
+  IMPORTANCE_SERVICE = 7;
+  IMPORTANCE_CACHED = 8;
+  IMPORTANCE_GONE = 9;
+}
+
+// --- UI thread hangs (axiy: a main-thread task posted when the app comes to the foreground) ---
+
+message UiThreadHang {  // bqfd; estimated name (medium)
+  oneof hang {
+    int64 blocked_for_ms = 1;  // still blocked, reported at 1000, 2500 and 5000 ms
+    int64 total_blocked_ms = 2;  // the main thread ran again after this long
+  }
+}
+
+// --- shared with client_logging_named.proto ---
+
+// A Flogger/java.util.logging record.
+message LogRecord {  // bgct
+  EventId event_id = 1;
+  string thread_name = 2;
+  int32 level = 3;
+  string class_name = 4;
+  string method_name = 5;
+  string message = 6;
+  Throwables throwable = 8;
+  int32 line_number = 13;
+}
+
+message EventId {  // bgcr
+  int64 time_usec = 1;
+  fixed32 server_ip = 2;
+  fixed32 process_id = 3;
+}
+
+// A Throwable and its getCause() chain (bgfm.a()).
+message Throwables {  // bgcz
+  ThrowableInfo throwable = 1;
+  repeated ThrowableInfo cause = 2;
+}
+
+message ThrowableInfo {  // bgcx
+  string class_name = 1;  // Primes replaces it with hashed_class_name before upload
+  string message = 2;
+  int64 hashed_class_name = 3;  // Primes: hash (bidz) of class_name
+  repeated StackFrame stackframe = 4 [features.message_encoding = DELIMITED];  // group
+}
+
+message StackFrame {  // bgcw, from a StackTraceElement
+  string class_name = 5;
+  string method_name = 6;
+  string file_name = 7;
+  int32 line_number = 8;
+}
+
+// GMS LogEvent sub-messages, as in client_logging_named.proto.
+
+// The experiment IDs in force for the event (twn.b(), tzb.a()). Field names as in the open-source
+// Firebase Clearcut transport's ExperimentIds (clearBlob, encryptedBlob).
+message ExperimentIds {  // cfke
+  ExperimentIdList clear_blob = 1;  // wire type bytes: the IDs from the app's ExperimentTokens plus the event's own
+  repeated bytes encrypted_blob = 2;  // the ExperimentTokens' opaque experiment tokens
+  bool has_experiment_tokens = 3;  // set whenever ExperimentTokens were supplied; estimated name (medium)
+}
+
+message ExperimentIdList {  // cfka
+  repeated int32 experiment_id = 3 [features.repeated_field_encoding = EXPANDED];
+}
+
+// The active network when the event was uploaded (twf: ConnectivityManager.getActiveNetworkInfo()).
+message NetworkConnectionInfo {  // crav
+  ActiveNetworkType network_type = 1;  // NetworkInfo.getType()
+  MobileSubtype mobile_subtype = 2;  // NetworkInfo.getSubtype(): TelephonyManager.NETWORK_TYPE_*
+}
+
+enum ActiveNetworkType {  // R8-unboxed enum crau; values are ConnectivityManager.TYPE_*
+  MOBILE = 0;
+  TYPE_NONE = -1;
+  WIFI = 1;
+  MOBILE_MMS = 2;
+  MOBILE_SUPL = 3;
+  MOBILE_DUN = 4;
+  MOBILE_HIPRI = 5;
+  WIMAX = 6;
+  BLUETOOTH = 7;
+  DUMMY = 8;
+  ETHERNET = 9;
+  MOBILE_FOTA = 10;
+  MOBILE_IMS = 11;
+  MOBILE_CBS = 12;
+  WIFI_P2P = 13;
+  MOBILE_IA = 14;
+  MOBILE_EMERGENCY = 15;
+  PROXY = 16;
+  VPN = 17;
+}
+
+enum MobileSubtype {  // R8-unboxed enum cras; values are TelephonyManager.NETWORK_TYPE_*
+  UNKNOWN_MOBILE_SUBTYPE = 0;
+  GPRS = 1;
+  EDGE = 2;
+  UMTS = 3;
+  CDMA = 4;
+  EVDO_0 = 5;
+  EVDO_A = 6;
+  RTT = 7;
+  HSDPA = 8;
+  HSUPA = 9;
+  HSPA = 10;
+  IDEN = 11;
+  EVDO_B = 12;
+  LTE = 13;
+  EHRPD = 14;
+  HSPAP = 15;
+  GSM = 16;
+  TD_SCDMA = 17;
+  IWLAN = 18;
+  LTE_CA = 19;
+  NR = 20;
+  COMBINED = 100;  // getSubtype() returned -1
+}
+
+enum crah_a {  // R8-unboxed enum crah.a() (values only)
+  CRAH_A_0 = 0;
+  CRAH_A_1 = 1;
+  CRAH_A_2 = 2;
+}
+
+message craj {
+  string f1 = 1;
+  string f2 = 2;
+}

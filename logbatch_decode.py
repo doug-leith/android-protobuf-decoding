@@ -10,6 +10,7 @@ import re
 import dumper
 import tempfile
 import base64
+import functools
 from datetime import datetime
 import pytz
 
@@ -262,6 +263,100 @@ def decode_clientlogging_pb(bb, verbose=True, terse=False, Grep=True, debug=Fals
     except DecodeNamedError as e:
         if verbose:
             print("***ERROR CLIENT_LOGGING: ",e)
+        return "Failed"
+
+
+def _primes_enum(msg, field):
+    v = getattr(msg, field)
+    e = msg.DESCRIPTOR.fields_by_name[field].enum_type.values_by_number.get(v)
+    return e.name if e is not None else str(v)
+
+def _primes_grep(m):
+    # "metric types" plus "key=value" summaries of a SystemHealthMetric, for the +++PRIMES grep line
+    common = ("application_info", "device_info", "sampling_parameters", "metric_extension", "accountable_component",
+              "constant_event_name", "custom_event_name", "hashed_custom_event_name")
+    kinds = [fd.name for fd, _v in m.ListFields() if fd.name not in common]
+    info = []
+    if m.constant_event_name:
+        info.append("name=%s" % m.constant_event_name)
+    if m.HasField("hashed_custom_event_name"):
+        info.append("hashed_name=%016x" % m.hashed_custom_event_name)
+    if m.accountable_component.custom_name:
+        info.append("component=%s" % m.accountable_component.custom_name)
+    if m.HasField("memory_usage_metric"):
+        mu = m.memory_usage_metric
+        info.append("memory_event=%s activity=%s rss_kb=%d" % (_primes_enum(mu, "memory_event_code"), mu.activity_name or "-",
+                                                             mu.memory_stats.android_memory_stats.vm_rss_kb))
+    if m.HasField("timer_metric"):
+        info.append("duration_ms=%d" % m.timer_metric.duration_ms)
+    if m.HasField("primes_trace"):
+        tr = m.primes_trace
+        info.append("trace=%s spans=%d%s" % (_primes_enum(tr, "trace_type"), len(tr.span),
+                                             "(" + tr.span[0].constant_name + ")" if tr.span and tr.span[0].constant_name else ""))
+        if tr.HasField("startup_metric"):
+            st = tr.startup_metric
+            acts = "|".join(a.activity_name for a in (st.first_activity, st.second_activity) if a.activity_name) or "-"
+            info.append("startup=%s startup_ms=%d fully_drawn_ms=%d activities=%s" % (_primes_enum(st, "startup_type"),
+                        st.startup_ms, st.app_fully_drawn_ms, acts))
+    if m.HasField("jank_metric"):
+        j = m.jank_metric
+        info.append("jank_frames=%d/%d duration_ms=%d" % (j.jank_frame_count, j.rendered_frame_count, j.duration_ms))
+    if m.HasField("network_usage_metric"):
+        paths = [n.constant_rpc_path or n.request_path or "-" for n in m.network_usage_metric.network_event_usage]
+        info.append("requests=%s" % "|".join(paths))
+    if m.HasField("crash_metric"):
+        c = m.crash_metric
+        info.append("crash=%s exception=%s activity=%s thread=%s" % (_primes_enum(c, "crash_type"), c.exception_class_name or "-",
+                                                                   c.active_activity_name or "-", c.thread_name or "-"))
+    if m.HasField("primes_stats"):
+        info.append("primes_event=%s" % _primes_enum(m.primes_stats, "primes_event"))
+    if m.HasField("battery_usage_metric"):
+        b = m.battery_usage_metric.battery_stats_diff
+        info.append("battery=%s->%s duration_ms=%d" % (_primes_enum(b, "start_info"), _primes_enum(b, "end_info"), b.duration_ms))
+    if m.HasField("application_exit_metric"):
+        info.append("exits=%s" % ("|".join("%s:%s" % (x.process_name, _primes_enum(x, "reason"))
+                                          for x in m.application_exit_metric.application_exit_info) or "-"))
+    if m.HasField("ui_thread_hang"):
+        h = m.ui_thread_hang
+        info.append("ui_thread_blocked_ms=%d" % (h.blocked_for_ms or h.total_blocked_ms))
+    if m.HasField("package_metric"):
+        info.append("data_size=%d" % m.package_metric.data_size)
+    return ",".join(kinds) or "-", " ".join(info)
+
+def decode_primes_pb(bb, verbose=True, terse=False, Grep=True, debug=False, source="PRIMES"):
+    # *_PRIMES log sources: performance metrics from Google's Primes library (memory, timers, app startup, jank,
+    # network requests, crashes, battery), one SystemHealthMetric per event
+    if debug:
+        fname='/tmp/primes_bytes'
+        f = open(fname, 'wb')
+        f.write(bb)
+        f.close()
+    try:
+        ev = message_class("Primes_LogEntry", "primes_named.proto")()
+        ev.MergeFromString(bb)
+    except Exception:
+        ev = None
+    if ev is None or not ev.HasField("currentTimeMillis"):
+        # every LogEvent has its event time; without it these bytes are not one event (e.g. try_decode_pb_array's
+        # first try with the whole length-delimited logEntry array, which this broad schema would otherwise accept)
+        if verbose:
+            print("***ERROR PRIMES: not a LogEvent")
+        return "Failed"
+    try:
+        decoded = decode_named("Primes_LogEntry", "primes_named.proto", bb)
+        grep=""
+        if Grep:
+            try:
+                m = ev.system_health_metric
+                kinds, info = _primes_grep(m)
+                grep="+++PRIMES %s %s %s %s %s %s\n"%(ev.currentTimeMillis, source, m.application_info.application_package_name or "-",
+                    m.application_info.application_version_name or "-", kinds, info)
+            except Exception as e:
+                print("***ERROR PRIMES grep: ",e)
+        return grep+decoded
+    except DecodeNamedError as e:
+        if verbose:
+            print("***ERROR PRIMES: ",e)
         return "Failed"
 
 
@@ -681,6 +776,8 @@ def decode(data):
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_icing_pb, verbose=True, debug=False))
             elif inner.logSourceName == "CLIENT_LOGGING_PROD":
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_clientlogging_pb, verbose=True, debug=False))
+            elif inner.logSourceName.endswith("_PRIMES"):  # ANDROID_MESSAGING_PRIMES, DIALER_ANDROID_PRIMES, GMM_PRIMES, ...
+                print(try_decode_pb_array("logEntry", inner.logEntry, functools.partial(decode_primes_pb, source=inner.logSourceName), verbose=True, debug=False))
             elif inner.logSourceName == "WESTWORLD" or inner.logSourceName == "ANONYMOUS_WESTWORLD":
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_westworld, verbose=True, debug=False))
             elif inner.logSourceName == "LB_AS" or inner.logSourceName == "LB_CFG":
