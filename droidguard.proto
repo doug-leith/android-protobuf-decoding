@@ -1,0 +1,43 @@
+// DroidGuard result: the base64 protobuf a Google app sends with requests that DroidGuard protects (Checkin,
+// getAdEventToken, adAttest, Play store fdfe/sync and others). The DroidGuard VM builds it, and no Google Play
+// Services code parses it, so field names come from comparing 149 results in the Dec 2024 Pixel 7 captures (20
+// endpoints, 5 apps) and the June 2024 Pixel 7a capture. Fields with no evident meaning are named by number.
+// Only some fields are encrypted: the main payload (field 2 of VmOutput) and field 123. The rest are sent in
+// clear, including client_uuid.
+syntax = "proto2";
+
+message DroidGuardResult {
+  optional bytes nonce = 1;               // 6 bytes, different in every result
+  optional VmOutput vm_output = 2;
+  optional Metrics metrics = 3;
+  optional bytes f4 = 4;                  // empty in all
+  // a random UUID each app's DroidGuard client keeps in its shared_prefs/dg_shared_preferences.xml; the same in
+  // every result from that app, changed only by factory reset. So it identifies the app on that handset.
+  optional bytes client_uuid = 5;
+}
+
+message VmOutput {
+  optional bytes session_id = 1;          // 6 bytes, different in every result
+  // 91 bytes, the same for every result of one DroidGuard flow, whatever the app or handset: one value for the
+  // getAdEventToken flow (Pixel 7 Dec 2024 and Pixel 7a June 2024), one for getPoIntegrityToken, one for Play
+  // store fdfe/sync, one shared by the 12 other endpoints. It identifies the flow, not the handset.
+  optional bytes flow_constant = 266;
+  optional bytes f123 = 123;              // 0.7-3.4 KB, random-looking: encrypted
+  repeated int64 f7 = 7;                  // 97, 107, 75 in 145 of 149 results; 97 alone in the rest
+  optional uint64 f250 = 250;             // 64-bit, 56 different values in 149 results
+  repeated uint64 f291 = 291;             // two 64-bit values, different in most results
+  optional bytes f219 = 219;              // about 128 bytes, Play store fdfe/sync results only
+  optional VmOutput f220 = 220;           // a second VmOutput, 6-11 KB, Play store fdfe/sync results only
+  optional bytes encrypted_payload = 2;   // 2.5-29 KB, random-looking: the encrypted DroidGuard data
+  optional bytes f261 = 261;              // 32 bytes; not the SHA-256 of the payload or of the other fields
+}
+
+message Metrics {
+  repeated Metric metric = 1;             // keys 1 (no value), 12, 13, 14 in every result
+}
+
+message Metric {
+  optional int32 key = 1;
+  // key 12: 63-7596, rises with the result size; key 13: 0-30233; key 14: 1-2453
+  optional int64 value = 2;
+}

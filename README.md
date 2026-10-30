@@ -122,6 +122,7 @@ Each message contains a sequence of log events, which may be from different log 
 ## Google Play Services https://deviceintegritytokens-pa.googleapis.com/v1/getAdEventToken
 
 - GetAdEventTokenRequest and GetAdEventTokenResponse in attok.proto are the decoded protobuf definitions. About once a day Google Play Services sends its event attestation public key, the Google Advertising Id and a DroidGuard result, and gets back a Google-signed token holding the key, a timestamp and the Advertising Id. Every attok token (below) carries this signed token.
+- droidguard.proto is the decoded protobuf definition of the DroidGuard result in the request. Its main payload is encrypted, but its outer fields are not, among them a per-app client_uuid that stays the same until factory reset.
 
 ## AOSP https://remoteprovisioning.googleapis.com/v1/:signCertificates
 

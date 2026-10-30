@@ -269,9 +269,9 @@ def decode_attok(value):
 # POST body and reply of deviceintegritytokens-pa.googleapis.com/v1/getAdEventToken, where Google Play Services
 # has the event attestation key certified; the reply is the integrity token every attok carries.
 
-def _parse(message, buf):
+def _parse(message, buf, proto="attok.proto"):
     try:
-        m = message_class(message, "attok.proto")()
+        m = message_class(message, proto)()
         m.MergeFromString(buf)
         return m
     except Exception:
@@ -282,13 +282,14 @@ def decode_get_ad_event_token_request(buf):
     # a P-256 public key (33 bytes compressed, 65 uncompressed) and a DroidGuard result, as GMS builds it
     if req is None or len(req.public_key) not in (33, 65) or not req.droidguard_result:
         return "not a getAdEventToken request:\n" + _raw(buf)
-    # the DroidGuard result is tens of KB of base64; print its size in its place
-    n = len(req.droidguard_result)
-    req.droidguard_result = "<%d characters of base64: DroidGuard result, encrypted>" % n
+    # the DroidGuard result is tens of KB of base64; print it decoded after the request
+    dg = req.droidguard_result
+    req.droidguard_result = "<%d characters of base64: DroidGuard result, decoded below>" % len(dg)
     out = _named("GetAdEventTokenRequest", req.SerializeToString())
     out += "public_key: %s\n" % req.public_key.hex()
     if req.HasField("ad_id"):
         out += "Google Advertising Id: %s\n" % _uuid(req.ad_id)
+    out += "droidguard_result:\n" + "".join("  " + l + "\n" for l in decode_droidguard_result(dg).splitlines())
     return out
 
 def decode_get_ad_event_token_response(buf):
@@ -306,6 +307,35 @@ def decode_get_ad_event_token_response(buf):
             out += "issued: %d (not a valid time)\n" % c.issued_time_s
     if c.HasField("ad_id"):
         out += "Google Advertising Id: %s\n" % _uuid(c.ad_id)
+    return out
+
+# ---------------------------------------------------------------- DroidGuard result
+
+def _summarise_vm_output(vm):
+    # the encrypted and opaque byte fields are kilobytes long; print their size in their place
+    for f in ("encrypted_payload", "f123", "f219"):
+        if vm.HasField(f):
+            setattr(vm, f, b"<%d bytes%s>" % (len(getattr(vm, f)), b", encrypted" if f != "f219" else b""))
+    if vm.HasField("flow_constant"):
+        vm.flow_constant = b"<%d bytes, %s...>" % (len(vm.flow_constant), vm.flow_constant[:6].hex().encode())
+    if vm.HasField("f220"):
+        _summarise_vm_output(vm.f220)
+
+def decode_droidguard_result(value):
+    # value: the base64 DroidGuard result. The outer fields are in clear; the payload is encrypted.
+    buf = _b64(value)
+    if buf is None:
+        return "not base64: %d characters\n" % len(value)
+    r = _parse("DroidGuardResult", buf, "droidguard.proto")
+    if r is None or len(r.nonce) != 6 or not r.vm_output.HasField("encrypted_payload"):
+        return "not a DroidGuard result we can read: %d bytes, encrypted or unknown format\n" % len(buf)
+    _summarise_vm_output(r.vm_output)
+    try:
+        out = decode_named("DroidGuardResult", "droidguard.proto", r.SerializeToString())
+    except DecodeNamedError as e:
+        return "(could not decode as DroidGuardResult: %s)\n" % e
+    if r.HasField("client_uuid"):
+        out += "client_uuid: %s\n" % _uuid(r.client_uuid)
     return out
 
 # ---------------------------------------------------------------- gref
