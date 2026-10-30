@@ -110,6 +110,14 @@ class _Printer(text_format._Printer):
         else:
             super().PrintFieldValue(field, value)
 
+def message_class(message, proto, include=os.path.dirname(os.path.realpath(__file__))):
+    # python class for message in proto (maps parse as repeated entries, see above)
+    pool, _map_entries = _pool(include, proto)
+    try:
+        return message_factory.GetMessageClass(pool.FindMessageTypeByName(message))
+    except KeyError:
+        raise DecodeNamedError("type not defined in %s: %s" % (proto, message))
+
 def decode_named(message, proto, data, include=os.path.dirname(os.path.realpath(__file__))):
     # text that `protoc --decode=message -I=include proto` prints for data; raises DecodeNamedError where protoc fails
     pool, map_entries = _pool(include, proto)

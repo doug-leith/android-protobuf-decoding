@@ -1,0 +1,188 @@
+edition = "2023";
+
+// The CLIENT_LOGGING_PROD Clearcut log source: warning and error log records
+// (Flogger/java.util.logging) that Google apps built on the TikTok framework
+// upload through com.google.apps.tiktok.logging.backends.clientlogging.
+// The log record schema is from the Google Messages APK (Pixel 2, 2021;
+// obfuscated class names in comments), the outer LogEvent from GMS 21.48.15
+// (as in icing_named.proto). Names are from the code that sets each field;
+// "estimated name" marks names that the code does not settle.
+
+option features.utf8_validation = NONE;
+
+message ClientLogging_LogEntry {  // crai (GMS)
+  int64 currentTimeMillis = 1;
+  string packageName = 2;
+  repeated craj keyValuePairList = 3;
+  ClientLog client_log = 6;  // wire type bytes
+  int32 eventId = 11;
+  int64 eventFlowId = 12;
+  sint64 timeZoneOffset = 15;
+  cfke f16 = 16;
+  int64 elapsedRealtime = 17;
+  bytes veProducerByteString = 18;
+  crah_a f19 = 19;
+  repeated int32 f20 = 20 [features.repeated_field_encoding = EXPANDED];
+  int64 bootCount = 22;
+  crav f23 = 23;
+  bool notDirectBootMode = 25;
+  double f30 = 30;
+}
+
+// One upload: a log record, or a count of how often a log site fired.
+message ClientLog {  // bivv, built by bivc.d()
+  ClientInfo client_info = 2;
+  LogRecord log_record = 3;
+  TraceSpans trace = 7;  // names of the TikTok trace spans active when logged
+  repeated LoggedArgument logged_argument = 9;  // arguments marked safe to log
+  LogType log_type = 12;
+  int64 repeat_count = 13;  // with log_type REPEAT_COUNT: times the log site fired in the 1 h window
+}
+
+// Stored as the type number minus one (bivu.a() maps back).
+enum LogType {  // R8-unboxed enum bivu
+  LOG_TYPE_1 = 0;  // not sent by this build
+  FIRST_OCCURRENCE = 1;  // the first record from a log site in the 1 h window (estimated name (high))
+  REPEAT_COUNT = 2;  // sent when the window closes, with repeat_count (estimated name (high))
+}
+
+message ClientInfo {  // bivn
+  AppInfo app_info = 2;
+  bivy f6 = 6;
+}
+
+message AppInfo {  // bivr, set from bivc's constructor arguments
+  int32 version_code = 2;  // estimated name (medium)
+  string package_name = 4;
+  string version_name = 5;
+}
+
+message bivy {
+  bivx f6 = 6;  // always 0 in this build
+}
+
+enum bivx {  // inline verifier bivx (values only)
+  BIVX_0 = 0;
+  BIVX_1 = 1;
+  BIVX_2 = 2;
+  BIVX_3 = 3;
+}
+
+// A Flogger/java.util.logging record.
+message LogRecord {  // bgct, built by bivc.c()
+  EventId event_id = 1;  // always zeros here
+  string thread_name = 2;
+  int32 level = 3;  // java.util.logging.Level.intValue(): 800 INFO, 900 WARNING, 1000 SEVERE
+  string class_name = 4;  // log site
+  string method_name = 5;  // log site
+  string message = 6;  // the log message or its format string; arguments are in logged_argument
+  Throwables throwable = 8;
+  int32 line_number = 13;  // log site
+}
+
+// Google's "EI" event ID (augw.a() decodes it from its base64 form).
+message EventId {  // bgcr
+  int64 time_usec = 1;
+  fixed32 server_ip = 2;
+  fixed32 process_id = 3;
+}
+
+// A Throwable and its getCause() chain (bgfm.a()).
+message Throwables {  // bgcz
+  ThrowableInfo throwable = 1;
+  repeated ThrowableInfo cause = 2;
+}
+
+message ThrowableInfo {  // bgcx
+  string class_name = 1;
+  string message = 2;  // only when the caller asks for it; not by client logging
+  int64 f3 = 3;
+  repeated StackFrame stackframe = 4 [features.message_encoding = DELIMITED];  // group
+}
+
+message StackFrame {  // bgcw, from a StackTraceElement
+  string class_name = 5;
+  string method_name = 6;
+  string file_name = 7;  // "PG" for obfuscated classes
+  int32 line_number = 8;
+}
+
+message TraceSpans {  // bivp, from bcrx.q(): the current span and its parents
+  repeated string span_name = 1;
+}
+
+message LoggedArgument {  // biwa
+  uint32 argument_index = 1;
+  string value = 2;  // toString() of the argument
+}
+
+// GMS LogEvent sub-messages, as in icing_named.proto.
+
+message crav {
+  crau_a f1 = 1;
+  cras_a f2 = 2;
+}
+
+enum cras_a {  // R8-unboxed enum cras.a() (values only)
+  CRAS_A_0 = 0;
+  CRAS_A_1 = 1;
+  CRAS_A_2 = 2;
+  CRAS_A_3 = 3;
+  CRAS_A_4 = 4;
+  CRAS_A_5 = 5;
+  CRAS_A_6 = 6;
+  CRAS_A_7 = 7;
+  CRAS_A_8 = 8;
+  CRAS_A_9 = 9;
+  CRAS_A_10 = 10;
+  CRAS_A_11 = 11;
+  CRAS_A_12 = 12;
+  CRAS_A_13 = 13;
+  CRAS_A_14 = 14;
+  CRAS_A_15 = 15;
+  CRAS_A_16 = 16;
+  CRAS_A_17 = 17;
+  CRAS_A_18 = 18;
+  CRAS_A_19 = 19;
+  CRAS_A_20 = 20;
+  CRAS_A_100 = 100;
+}
+
+enum crau_a {  // R8-unboxed enum crau.a() (values only)
+  CRAU_A_0 = 0;
+  CRAU_A_M1 = -1;
+  CRAU_A_1 = 1;
+  CRAU_A_2 = 2;
+  CRAU_A_3 = 3;
+  CRAU_A_4 = 4;
+  CRAU_A_5 = 5;
+  CRAU_A_6 = 6;
+  CRAU_A_7 = 7;
+  CRAU_A_8 = 8;
+  CRAU_A_9 = 9;
+  CRAU_A_10 = 10;
+  CRAU_A_11 = 11;
+  CRAU_A_12 = 12;
+  CRAU_A_13 = 13;
+  CRAU_A_14 = 14;
+  CRAU_A_15 = 15;
+  CRAU_A_16 = 16;
+  CRAU_A_17 = 17;
+}
+
+enum crah_a {  // R8-unboxed enum crah.a() (values only)
+  CRAH_A_0 = 0;
+  CRAH_A_1 = 1;
+  CRAH_A_2 = 2;
+}
+
+message cfke {
+  bytes f1 = 1;
+  repeated bytes f2 = 2;
+  bool f3 = 3;
+}
+
+message craj {
+  string f1 = 1;
+  string f2 = 2;
+}

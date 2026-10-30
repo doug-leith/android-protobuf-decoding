@@ -16,7 +16,7 @@ import pytz
 # add folder where this script is to python search path (so can find helpers)
 mypath = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(mypath)
-from decode_named import decode_named, DecodeNamedError  # in-process `protoc --decode`
+from decode_named import decode_named, message_class, DecodeNamedError  # in-process `protoc --decode`
 from decoding_helpers import run_decoder_script, ScriptDecodeError, decode_pb, decode_wbxml, decode_log_batch, decode_firebase_analytics, try_decode_pb_array, protoUnknownFieldsToString, protoToString, fieldIsSet, makeIter
 import gboard_named_pb  # LATIN_IME, from gboard_named.proto (old manual gboard.proto3 kept as gboard.proto3.backup)
 import icing_named_pb  # ICING, from icing_named.proto (generated from the GMS 21.48.15 APK)
@@ -228,6 +228,40 @@ def decode_icing_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
     except DecodeNamedError as e:
         if verbose:
             print("***ERROR ICING: ",e)
+        return "Failed"
+
+
+def decode_clientlogging_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
+    # CLIENT_LOGGING_PROD log source: warning/error log records uploaded by Google apps built on TikTok
+    if debug:
+        fname='/tmp/clientlogging_bytes'
+        f = open(fname, 'wb')
+        f.write(bb)
+        f.close()
+    try:
+        decoded = decode_named("ClientLogging_LogEntry", "client_logging_named.proto", bb)
+        grep=""
+        if Grep:
+            try:
+                ev = message_class("ClientLogging_LogEntry", "client_logging_named.proto")()
+                ev.MergeFromString(bb)
+                cl = ev.client_log
+                rec = cl.log_record
+                site = "%s.%s:%d"%(rec.class_name, rec.method_name, rec.line_number) if rec.class_name else "-"
+                trace = "|".join(cl.trace.span_name) or "-"
+                args = "|".join(a.value for a in cl.logged_argument) or "-"
+                exc = rec.throwable.throwable.class_name or "-"
+                count = " count=%d"%cl.repeat_count if cl.HasField("repeat_count") else ""
+                grep="+++CLIENT_LOGGING %s %s %s level=%s %s%s thread=%s site=%s trace=%s args=%s exception=%s message=%r\n"%(
+                    ev.currentTimeMillis, cl.client_info.app_info.package_name or "-", cl.client_info.app_info.version_name or "-",
+                    rec.level, ev.client_log.DESCRIPTOR.fields_by_name["log_type"].enum_type.values_by_number[cl.log_type].name, count,
+                    rec.thread_name or "-", site, trace, args, exc, rec.message)
+            except Exception as e:
+                print("***ERROR CLIENT_LOGGING grep: ",e)
+        return grep+decoded
+    except DecodeNamedError as e:
+        if verbose:
+            print("***ERROR CLIENT_LOGGING: ",e)
         return "Failed"
 
 
@@ -645,6 +679,8 @@ def decode(data):
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_gboard_pb, verbose=True, debug=False))
             elif inner.logSourceName == "ICING":
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_icing_pb, verbose=True, debug=False))
+            elif inner.logSourceName == "CLIENT_LOGGING_PROD":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_clientlogging_pb, verbose=True, debug=False))
             elif inner.logSourceName == "WESTWORLD" or inner.logSourceName == "ANONYMOUS_WESTWORLD":
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_westworld, verbose=True, debug=False))
             elif inner.logSourceName == "LB_AS" or inner.logSourceName == "LB_CFG":
