@@ -19,6 +19,8 @@ import pytz
 mypath = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(mypath)
 from decode_named import decode_named, message_class, DecodeNamedError  # in-process `protoc --decode`
+from google.protobuf.internal.decoder import _DecodeVarint
+from google.protobuf.message import DecodeError
 from decoding_helpers import run_decoder_script, ScriptDecodeError, decode_pb, decode_wbxml, decode_log_batch, decode_firebase_analytics, try_decode_pb_array, protoUnknownFieldsToString, protoToString, fieldIsSet, makeIter
 import gboard_named_pb  # LATIN_IME, from gboard_named.proto (old manual gboard.proto3 kept as gboard.proto3.backup)
 import icing_named_pb  # ICING, from icing_named.proto (generated from the GMS 21.48.15 APK)
@@ -834,16 +836,59 @@ def printAtomInfo(t, a, strhash, westworld):
     # network_dns_event_reported
 
 
-def grep_westworld(bytes):    
+def _fields(buf):
+    # (field number, wire type, value) of each field of one message, raw; raises ValueError on bytes that are not one
+    pos, out = 0, []
+    while pos < len(buf):
+        tag, pos = _DecodeVarint(buf, pos)
+        num, wt = tag >> 3, tag & 7
+        if wt == 0:
+            v, pos = _DecodeVarint(buf, pos)
+        elif wt == 2:
+            n, pos = _DecodeVarint(buf, pos)
+            v, pos = buf[pos:pos+n], pos+n
+        elif wt in (1, 5):
+            v, pos = buf[pos:pos+(8 if wt == 1 else 4)], pos+(8 if wt == 1 else 4)
+        else:
+            raise ValueError("wire type %d"%wt)
+        if num == 0 or pos > len(buf):
+            raise ValueError("not a message")
+        out.append((num, wt, v))
+    return out
+
+def print_consent_info(logEntry):
+    # the CONSENT_INFO key/value pair (LogEvent field 3) that GMS's usage reporting client adds to the events of the
+    # log sources uploaded only with consent (WESTWORLD, LB_AS, DROP_BOX, ...): the consent state checked for the upload.
+    # logEntry holds one LogEvent (opening with field 1, the event time) or several as <varint length><LogEvent>...
+    try:
+        events, pos = [], 0
+        if logEntry[:1] == b"\x08":
+            events = [logEntry]
+        while not events and pos < len(logEntry):
+            n, pos = _DecodeVarint(logEntry, pos)
+            events.append(logEntry[pos:pos+n])
+            pos += n
+        values = []
+        for e in events:
+            for num, wt, kv in _fields(e):
+                if num == 3 and wt == 2:
+                    pair = {n: v for n, w, v in _fields(kv) if w == 2}
+                    if pair.get(1) == b"CONSENT_INFO":
+                        values.append(pair.get(2, b""))
+    except (ValueError, IndexError, DecodeError):
+        return
+    for v in values:
+        try:
+            print("CONSENT_INFO (decoded):")
+            print(decode_named("ConsentInformationWrapper", "consentinfo.proto", base64.b64decode(v)))
+        except (DecodeNamedError, ValueError) as e:
+            print("***ERROR CONSENT_INFO: ", e)
+
+def grep_westworld(bytes):
     try:        
         westworld = stats_log_pb2.WestworldRequest()
         westworld.ParseFromString(bytes)
         # print interesting content in a way that's easy to grep out of log file
-        for kv in westworld.keyValuePair:
-            if kv.key == "CONSENT_INFO":
-                print("CONSENT_INFO (decoded):")
-                print(decode_named("ConsentInformationWrapper", "consentinfo.proto", base64.b64decode(kv.value)))
-
         for w in makeIter(westworld.statsLogMetricsReport):
             if not w.configMetricsReportList:
                 return
@@ -946,10 +991,6 @@ def decode_lockbox(bytes, verbose=True, terse=False, Grep=True, debug=False):
             # print interesting content in a way that's easy to grep out of log file
             for l in lockbox.lockboxUsageReport:
                 print("+++LOCKBOX", l.timestamp, lockbox.EventType.Name(l.eventType), l.packageName, l.className)
-            for kv in lockbox.keyValuePair:
-                if kv.key == "CONSENT_INFO":
-                    print("CONSENT_INFO (decoded):")
-                    print(decode_named("ConsentInformationWrapper", "consentinfo.proto", base64.b64decode(kv.value)))
         return(decoded)
     except (DecodeNamedError, ValueError) as e:        
         if verbose:
@@ -1136,6 +1177,7 @@ def decode(data):
                     print("logSourceName: "+inner.logSourceName)
             else:
                 print("logSourceName: "+inner.logSourceName)
+            print_consent_info(inner.logEntry)
             #try_decode_pb_array("logEntry", inner.logEntry, decode_pb)   
             if inner.logSourceName == "ANDROID_MESSAGING":
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_messaging_pb, verbose=True, debug=False) )  
