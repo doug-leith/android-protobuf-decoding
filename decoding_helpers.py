@@ -255,6 +255,7 @@ def printRequest(url, request):
     'ProgramBlobService/DownloadBlob': decode_downloadblob_request,
     'VoilaTileService/FindTiles': decode_voilatile_request,
     'google.internal.communications.phonedeviceverification.v1.': lambda b: decode_pdv_request(url, b),
+    'google.internal.communications.instantmessaging.v1.': lambda b: decode_tachyon_request(url, b),
     'federatedcompute-pa.googleapis.com/v1/': lambda b: federatedcompute_decode.decode_request(url, b) or decode_pb(b),
     'www.google.com/m/voice-search/up': lambda b: voice_search_decode.decode_up(b) or decode_pb(b),
     'app-measurement.com/a': decode_firebase_analytics,
@@ -329,6 +330,7 @@ def printResponse(url, response, verboseResponse=False):
     'ProgramBlobService/DownloadBlob': decode_downloadblob_response,
     'VoilaTileService/FindTiles': decode_voilatile_response,
     'google.internal.communications.phonedeviceverification.v1.': lambda b: decode_pdv_response(url, b),
+    'google.internal.communications.instantmessaging.v1.': lambda b: decode_tachyon_response(url, b),
     'federatedcompute-pa.googleapis.com/v1/': lambda b: federatedcompute_decode.decode_response(url, b, response.status_code) or decode_pb(b),
     'www.google.com/m/voice-search/down': lambda b: voice_search_decode.decode_down(b) or b.decode('utf-8', 'replace'),
     }
@@ -1280,6 +1282,101 @@ def decode_pdv_response(url, data, verbose=True, debug=False):
         return data.decode("utf-8", "replace")
     rpc = url.split("?")[0].rsplit("/", 1)[-1]
     return(decode_gRPC(data, lambda b, **kw: decode_pdv_responseproto(rpc, b, **kw), "Response data (gRPC decoded)"))
+
+# Tachyon (google.internal.communications.instantmessaging.v1, instantmessaging-pa): Google Messages' registration
+# and the Lighter SDK's RPCs, decoded with tachyon_named.proto. The request and response message of each RPC, by
+# Service/Method; Duo/SignInDuo (the Meet/Duo app) is decoded as SignInGaia.
+TACHYON_MESSAGES = {
+    'Registration/RegisterAnonymous': ('RegisterAnonymousRequest', 'RegisterAnonymousResponse'),
+    'Registration/RegisterRefresh': ('RegisterRefreshRequest', 'RegisterRefreshResponse'),
+    'Registration/SignInGaia': ('SignInGaiaRequest', 'SignInGaiaResponse'),
+    'Duo/SignInDuo': ('SignInGaiaRequest', 'SignInGaiaResponse'),
+    'LighterCapabilities/RegisterCapabilities': ('RegisterCapabilitiesRequest', 'RegisterCapabilitiesResponse'),
+    'LighterCloudMessageService/CheckBootstrapRequired': ('CheckBootstrapRequiredRequest', 'CheckBootstrapRequiredResponse'),
+    'SmartMessaging/GetContentDecoration': ('GetContentDecorationRequest', 'GetContentDecorationResponse'),
+    'Abuse/GetSpamState': ('GetSpamStateRequest', 'GetSpamStateResponse'),
+}
+
+def tachyon_rpc(url):
+    return url.split("?")[0].rsplit("instantmessaging.v1.", 1)[-1]
+
+def tachyon_id(i):
+    return "%s:%s" % (pb_enum_name(i, "type"), i.id)
+
+def tachyon_summary(m):
+    # the identifiers anywhere in a Tachyon message, in field order: Ids, the FCM token, public keys, the
+    # Constellation IID token, registration ids, and what else says whose request it is
+    out = []
+    def walk(m):
+        for f, v in m.ListFields():
+            for x in (v if f.label == f.LABEL_REPEATED else [v]):
+                name = f.message_type.name if f.message_type else None
+                if name == "Id":
+                    out.append(("caller" if f.name == "caller_id" else f.name, tachyon_id(x)))
+                elif name == "PushToken":
+                    out.append(("fcm_token", x.token))
+                elif name == "PublicKey":
+                    out.append(("public_key", "%d:%s" % (x.type, x.key.hex())))
+                elif name == "RequestHeader":
+                    ci = x.client_info
+                    out.append(("app", x.app or "-"))
+                    out.append(("client", ci.version_name or "%d.%d.%d" % (ci.major, ci.minor, ci.point)))
+                    out.append(("auth_token", "yes" if x.auth_token else "no"))
+                    if x.HasField("caller_id"):
+                        out.append(("caller", tachyon_id(x.caller_id)))
+                    continue
+                elif name == "AuthToken":
+                    out.append(("auth_token_expires_in", "%ds" % (x.expires_in_usec // 1000000)))
+                    continue
+                elif name == "Region":
+                    out.append(("region", x.country_code))
+                elif name == "RegisterData":
+                    if x.constellation_iid_token:
+                        out.append(("constellation_iid_token", x.constellation_iid_token))
+                    if x.droidguard_result:
+                        out.append(("droidguard", "%dB" % len(x.droidguard_result)))
+                elif name == "RegistrationInfo":
+                    out.extend(("ids", tachyon_id(i)) for i in x.ids)
+                    out.append(("devices", len(x.devices)))
+                    out.append(("registrations", len(x.registrations)))
+                    continue
+                elif name == "ContentToDecorate":
+                    out.append(("url", x.url))
+                elif name == "LinkPreview":
+                    out.append(("preview", x.title.replace(" ", "_")))
+                elif name is None and f.name in ("registration_id", "app", "spam_state") and x:
+                    out.append((f.name, x.decode("utf-8", "replace") if isinstance(x, bytes) else x))
+                elif name is None and f.name == "droidguard_result" and x:
+                    out.append(("droidguard", "%dB" % len(x)))
+                if name:
+                    walk(x)
+    walk(m)
+    return " ".join("%s=%s" % kv for kv in dict.fromkeys(out)) or "-"
+
+def decode_tachyon_proto(rpc, side, bytes, verbose=True, debug=False, Grep=True):
+    name = TACHYON_MESSAGES[rpc][side == "response"]
+    try:
+        msg = message_class(name, "tachyon_named.proto")()
+        msg.ParseFromString(bytes)
+        decoded = decode_named(name, "tachyon_named.proto", bytes)
+    except (protobuf_message.DecodeError, DecodeNamedError) as e:
+        if verbose:
+            print("***ERROR %s: " % name, e)
+        return "Failed"
+    grep = "+++TACHYON %s %s %s\n" % (rpc, side, tachyon_summary(msg)) if Grep else ""
+    return grep + decoded
+
+def decode_tachyon_request(url, postData, verbose=True, debug=False):
+    rpc = tachyon_rpc(url)
+    if rpc not in TACHYON_MESSAGES:
+        return(decode_gRPC(postData, decode_pb))
+    return(decode_gRPC(postData, lambda b, **kw: decode_tachyon_proto(rpc, "request", b, **kw)))
+
+def decode_tachyon_response(url, data, verbose=True, debug=False):
+    rpc = tachyon_rpc(url)
+    if rpc not in TACHYON_MESSAGES:
+        return(decode_gRPC(data, decode_pb, "Response data (gRPC decoded)"))
+    return(decode_gRPC(data, lambda b, **kw: decode_tachyon_proto(rpc, "response", b, **kw), "Response data (gRPC decoded)"))
 
 def base64padding(header):
     if len(header) % 4 == 2:
