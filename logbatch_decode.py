@@ -1138,6 +1138,77 @@ def decode_scoobymessage(bytes, verbose=True, terse=False, Grep=True, debug=Fals
             print("***ERROR: ",e)
         return "Failed"
 
+def _carrierservices_leaves(m, prefix=""):
+    # name=value for each scalar in m, nested messages flattened as a.b=value; a name/value pair message (an RcsFlags
+    # entry) as a.<name>=<value>
+    out = []
+    for fd, v in m.ListFields():
+        name = prefix + fd.name
+        for x in (v if fd.label == fd.LABEL_REPEATED else [v]):
+            if fd.message_type is not None and set(x.DESCRIPTOR.fields_by_name) == {"name", "value"}:
+                out.append("%s.%s=%r" % (name, x.name, x.value))
+            elif fd.message_type is not None:
+                out += _carrierservices_leaves(x, name + ".")
+            else:
+                out.append("%s=%s" % (name, _agsa_value(fd, x)))
+    return out
+
+def _carrierservices_grep(ev):
+    # what a CARRIER_SERVICES event records, for its +++CARRIER_SERVICES grep line: event type, the app that logged it
+    # (Messages or the Carrier Services app) and its version, SIM operator, the event (the set case of the event oneof)
+    # as name=value leaves, and the Tachyon device id
+    log = ev.carrier_services_log
+    info = ["event=%s" % _agsa_value(ev.DESCRIPTOR.fields_by_name["eventId"], ev.eventId) if ev.HasField("eventId") else "event=-"]
+    info.append("app=%s" % (_agsa_value(log.DESCRIPTOR.fields_by_name["host_app"], log.host_app) if log.HasField("host_app") else "-"))
+    app = log.carrier_services_app if log.carrier_services_app.version_name else log.messages_app
+    info.append("version=%s" % (app.version_name or "-"))
+    sim = log.sim_operator
+    info.append("sim=%s%s/%s" % (sim.mcc, sim.mnc, sim.sim_operator_name or "-") if log.HasField("sim_operator") else "sim=-")
+    case = [log.WhichOneof(o.name) for o in log.DESCRIPTOR.oneofs if o.name != log.DESCRIPTOR.fields_by_name["sim_operator"].containing_oneof.name]
+    case = [c for c in case if c]
+    for c in case:
+        leaves = _carrierservices_leaves(getattr(log, c))
+        info.append("%s%s" % (c, (" " + ",".join(dict.fromkeys(leaves))) if leaves else ""))
+    if not case:
+        # no event: e.g. the Clearcut log store's own marker (LogEvent field 19)
+        info.append("f19=%s" % _agsa_value(ev.DESCRIPTOR.fields_by_name["f19"], ev.f19) if ev.HasField("f19") else "-")
+    if log.HasField("tachyon_anonymous_device_id"):
+        info.append("tachyon_id=%s" % log.tachyon_anonymous_device_id)
+    return " ".join(info)
+
+def decode_carrierservices_pb(bb, verbose=True, terse=False, Grep=True, debug=False):
+    # CARRIER_SERVICES log source: the RCS (chat) and carrier messaging stack of Google Messages (taken over from the
+    # Carrier Services app): RCS provisioning and registration, availability, message delivery, DroidGuard tokens, ...
+    if debug:
+        fname='/tmp/carrierservices_bytes'
+        f = open(fname, 'wb')
+        f.write(bb)
+        f.close()
+    try:
+        ev = message_class("CarrierServices_LogEntry", "carrier_services_named.proto")()
+        ev.MergeFromString(bb)
+    except Exception:
+        ev = None
+    if ev is None or not ev.HasField("currentTimeMillis"):
+        # not one LogEvent (e.g. try_decode_pb_array's first try with the whole length-delimited logEntry array)
+        if verbose:
+            print("***ERROR CARRIER_SERVICES: not a LogEvent")
+        return "Failed"
+    try:
+        decoded = decode_named("CarrierServices_LogEntry", "carrier_services_named.proto", bb)
+        grep=""
+        if Grep:
+            try:
+                grep="+++CARRIER_SERVICES %s %s\n"%(ev.currentTimeMillis, _carrierservices_grep(ev))
+            except Exception as e:
+                print("***ERROR CARRIER_SERVICES grep: ",e)
+        return grep+decoded
+    except DecodeNamedError as e:
+        if verbose:
+            print("***ERROR CARRIER_SERVICES: ",e)
+        return "Failed"
+
+
 def decode(data):
     # prints what running this script on a file holding data prints
     #print(decode_pb(data))
@@ -1219,6 +1290,8 @@ def decode(data):
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_chime_pb, verbose=True, debug=False))
             elif inner.logSourceName == "ON_DEVICE_ABUSE":
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_ondeviceabuse_pb, verbose=True, debug=False))
+            elif inner.logSourceName == "CARRIER_SERVICES":
+                print(try_decode_pb_array("logEntry", inner.logEntry, decode_carrierservices_pb, verbose=True, debug=False))
             else:
                 print(try_decode_pb_array("logEntry", inner.logEntry, decode_pb, verbose=True, debug=False))
             print("}")
