@@ -39,7 +39,7 @@ message RegisterRefreshRequest {  // ebnz; the request of Registration/RegisterR
   int64 issued_at_usec = 3 [features.field_presence = IMPLICIT];  // bjfi.a(): now in microseconds, the ISSUED_AT also given to DroidGuard; part of the signed bytes. Estimated name (high)
   bytes signature = 4 [features.field_presence = IMPLICIT];  // bjed.java:150-165: Curve25519 signature, with the stored private key, over the Id's app, type and id, the GCM token, register data fields 4 and 5, the public key type and key, and issued_at (CryptoHelper.signBytes). Estimated name (high)
   RegisterData register_data = 13;
-  int32 f16 = 16 [features.field_presence = IMPLICIT];  // open enum: class not recorded; 2 in every captured request with the field (bjca.java:102, cznn.java:87)
+  int32 f16 = 16 [features.field_presence = IMPLICIT];  // open enum: class not recorded; 2 in every captured request with the field (bjca.java:102, cznn.java:87); mautrix-gmessages' browser sends 2 too and calls it messageType (a guess)
 }
 
 message RegisterRefreshResponse {  // ebob; the RegisterRefresh response; bijj.java:240-271 ("Received Tachyon registration refresh token", "Tachyon register refresh response has no auth token", "Retrying RegisterRefresh with server timestamp"). Name from the RPC
@@ -121,7 +121,7 @@ message GetSpamStateResponse {  // ebus; the GetSpamState response (bujy.java:15
 
 message RequestHeader {  // ebrp; field 1 of every request: request id, app, auth token, client info, caller Id. Estimated name (high): log "RefreshRequestId" from its field 1 (bijj.java:224), "Null clientInfo" for field 7 (bpqy.java)
   string request_id = 1 [features.utf8_validation = VERIFY, features.field_presence = IMPLICIT];  // a random UUID per request; logged as RefreshRequestId (bijj.java:224). Estimated name (high)
-  string app = 3 [features.utf8_validation = VERIFY, features.field_presence = IMPLICIT];  // the app name: Bugle (anonymous), GDitto (Google-account Messages), GMM, TY. Estimated name (high)
+  string app = 3 [features.utf8_validation = VERIFY, features.field_presence = IMPLICIT];  // the app name: Bugle (anonymous), GDitto (Google-account Messages), GMM, TY. Estimated name (high); mautrix-gmessages calls it network (Bugle for QR pairing, GDitto for account pairing)
   bytes auth_token = 6 [features.field_presence = IMPLICIT];  // the AuthToken.token a registration response returned. Estimated name (high)
   ClientInfo client_info = 7;
   bytes instance_id = 9 [features.field_presence = IMPLICIT];  // czka.java:46-55: a UUID as 16 bytes, Lighter SDK only. Estimated name (low)
@@ -145,7 +145,7 @@ message RegisterData {  // ebnx; TachyonRegisterDataBuilder (bjfi.java; log clas
   ebqa f31 = 31;  // from the decorators (bjhi, bjfi.java:268)
   string package_name = 33 [features.utf8_validation = VERIFY, features.field_presence = IMPLICIT];  // the Lighter SDK's caller package (czjz.java:90), e.g. com.google.android.apps.maps. Estimated name (medium)
   string constellation_iid_token = 34 [features.utf8_validation = VERIFY, features.field_presence = IMPLICIT];  // "Constellation IID token is not available." (bjfi.java:173): the Instance ID token of Constellation (phone number verification). Estimated name (high)
-  bytes f36 = 36;  // bjfi.p, set when one of two flags is on (bjfi.java:261)
+  GaiaPairingData gaia_pairing_data = 36;  // wire type bytes; Google-account (GDitto) registrations only: bjdr.java:75-83 sets it from bjbv, a serialized druf {1: true, 2: a time, 4: true}, the message the server returns as Registration.pairing_data. Estimated name (medium). mautrix-gmessages has the browser's SignInGaia send bytes here too ("someData")
   bytes public_keyset = 37;  // not in the APK's class: Meet/Duo requests: a Tink public keyset (EciesAeadHkdfPublicKey). Estimated name (medium), from the captured content
   oneof oneof0 {
     string droidguard_result = 7 [features.utf8_validation = VERIFY];
@@ -172,7 +172,7 @@ message RegistrationWarning {  // ebrj; bijj.x(): "Received warning during tachy
   RegistrationWarningType type = 1 [features.field_presence = IMPLICIT];  // wire type int32; open enum: class not recorded
 }
 
-message Id {  // ebqj; an Id: type (IdType), id string, app. bicm.java:86 builds Messages' own (app "Bugle", Id from the RegisterAnonymous response); bukn.a() builds a message sender's (EMAIL, SHORT_CODE, PHONE_NUMBER or NOT_KNOWN). Estimated name (high): the log "Tachyon Anonymous registration Id is not available"
+message Id {  // ebqj; an Id: type (IdType), id string, app. bicm.java:86 builds Messages' own (app "Bugle", Id from the RegisterAnonymous response); bukn.a() builds a message sender's (EMAIL, SHORT_CODE, PHONE_NUMBER or NOT_KNOWN). Estimated name (high): the log "Tachyon Anonymous registration Id is not available". mautrix-gmessages calls it Device {userID, sourceID, network}; field 1 is the Java enum IdType here
   IdType type = 1 [features.field_presence = IMPLICIT];  // wire type int32; open enum: class not recorded
   string id = 2 [features.utf8_validation = VERIFY, features.field_presence = IMPLICIT];
   string app = 3 [features.utf8_validation = VERIFY, features.field_presence = IMPLICIT];
@@ -181,7 +181,7 @@ message Id {  // ebqj; an Id: type (IdType), id string, app. bicm.java:86 builds
 
 message RegistrationInfo {  // ebkq; the Id's registrations: in the SignInGaia response, the Google account and every device registered under it (GaiaDevicePairingManagerDelegateImpl, bbbz.java:473-510, picks the primary device from field 3). Estimated name (medium). Messages' class has only field 3; fields 1, 2 and 4 are from Play services 26.31.31's copy (jfbs) and the captures
   repeated Id ids = 1;  // not in the APK's class: Play services 26.31.31's class (jfbs) has it as repeated Id; in the captures the Google account (EMAIL) or the anonymous Id
-  repeated RegisteredDevice devices = 2;  // not in the APK's class: Play services 26.31.31's class (jfbs, element jfdi) and the captures
+  repeated RegisteredDevice devices = 2;  // not in the APK's class: Play services 26.31.31's class (jfbs, element jfdi) and the captures; mautrix-gmessages' SignInGaiaResponse has the same fields 1, 4, 5, 7 (UUID, 1 for the other device or 6 for itself, language, a uint64)
   repeated Registration registrations = 3;
   RegistrationStatus status = 4;  // not in the APK's class: Play services 26.31.31's class (jfbs, element jfdl) and the captures
 }
@@ -208,12 +208,12 @@ message ContentDecoration {  // eapb; the decoration (oneof: field 1 a link prev
 }
 
 message ClientInfo {  // ebqf; the app's build: "Null clientInfo" (bpqy.java), filled from the Messages version name (brjt.java, "messages\\.android_(\\d+)_(\\d+)_rc(\\d+)") or the Lighter SDK's lighter-properties.txt (czka.java, cyot.java)
-  int32 major = 3 [features.field_presence = IMPLICIT];  // Messages: the date in its version name (20240903); Lighter SDK: 2 (cyot). Estimated name (medium)
+  int32 major = 3 [features.field_presence = IMPLICIT];  // Messages: the date in its version name (20240903); Lighter SDK: 2 (cyot). Estimated name (medium). mautrix-gmessages' browser sends year, month, day in fields 3, 4, 5 ("ConfigVersion")
   int32 minor = 4 [features.field_presence = IMPLICIT];  // Messages: the second number of the version name; -1 when not parsed (brjt.java). Estimated name (medium)
   int32 point = 5 [features.field_presence = IMPLICIT];  // Messages: the rc number; Lighter SDK: lighter-properties.txt BUILD_BASELINE_CHANGELIST (cyot.java:21). Estimated name (medium)
   int32 platform = 7 [features.field_presence = IMPLICIT];  // open enum: class not recorded; 4 everywhere (Android). Estimated name (medium)
   int32 f8 = 8 [features.field_presence = IMPLICIT];  // open enum: class not recorded; 65 (egji.a(67), Lighter SDK only)
-  int32 device_type = 9 [features.field_presence = IMPLICIT];  // open enum: class not recorded; egjj, an unboxed enum from bics.a() (Messages) or 3 (Lighter, czka.java:34). Estimated name (low)
+  int32 device_type = 9 [features.field_presence = IMPLICIT];  // open enum: class not recorded; egjj, an unboxed enum from bics.a() (Messages: 1) or 3 (Lighter, czka.java:34); 6 from a browser (mautrix-gmessages ConfigVersion.V2). Estimated name (medium)
   string version_name = 10 [features.utf8_validation = VERIFY, features.field_presence = IMPLICIT];  // Messages' version name (brjt.d()). Estimated name (high)
   int32 f14 = 14;  // not in the APK's class: Meet/Duo requests: 5
 }
@@ -224,7 +224,7 @@ message TraceInfo {  // eiku; dscs.java:555-565: set on Lighter RPCs with a UUID
 }
 
 message PushToken {  // ebqh; bjfi.java:140-160: the FCM ("GCM token") registration token with type 1
-  int32 type = 1 [features.field_presence = IMPLICIT];  // open enum: class not recorded; 1 (bjfi.java:146, czjz.java:118)
+  int32 type = 1 [features.field_presence = IMPLICIT];  // open enum: class not recorded; 1 with the FCM token (bjfi.java:146, czjz.java:118); mautrix-gmessages' browser sends 3 with "messages-web-<uuid>"
   string token = 2 [features.utf8_validation = VERIFY, features.field_presence = IMPLICIT];
 }
 
@@ -251,10 +251,10 @@ message ebqa {
 
 message Registration {  // ebrt; one registration of the Id: bbbz.java:474-490 compares field 1 with "Tachyon registration id of the current device", reads field 3 (egjj, the device type) and parses field 8 as druf (its field c a timestamp). Estimated name (medium)
   bytes registration_id = 1 [features.field_presence = IMPLICIT];
-  int32 device_type = 3 [features.field_presence = IMPLICIT];  // open enum: class not recorded; egjj, the device type of ClientInfo.device_type (bbbz.java:477). Estimated name (medium)
+  int32 device_type = 3 [features.field_presence = IMPLICIT];  // open enum: class not recorded; egjj, the device type of ClientInfo.device_type (bbbz.java:477): 1 the phone; mautrix-gmessages sees 6 for a browser. Estimated name (medium)
   int32 f4 = 4;  // not in the APK's class: Play services 26.31.31's class (jfdm) has an enum here; 6 or 19 in the captures
   int64 f7 = 7;  // not in the APK's class: Play services 26.31.31's class (jfdm) has an int64 here; microseconds since the epoch in the captures
-  bytes pairing_data = 8 [features.field_presence = IMPLICIT];  // a serialized druf (bbbz.java:507): field 1 a bool, field 2 a timestamp (ms), field 4 a bool. Estimated name (low)
+  GaiaPairingData pairing_data = 8;  // wire type bytes; a serialized druf, as sent in RegisterData.gaia_pairing_data: GaiaDevicePairingManagerDelegateImpl (bbbz.java:507-510) parses it and takes the registration with the latest time as the primary device. Estimated name (medium)
 }
 
 message eapv {
@@ -320,6 +320,12 @@ message dxrn {
 message DeviceDescription {  // not in the APK: the shape of the captured field (Play services 26.31.31's copy where noted)
   string f1 = 1;
   string f2 = 2;
+}
+
+message GaiaPairingData {  // druf (in the APK, outside the RPC tree: carried as bytes), built by bjbv.java with fields 1, 2, 4 set; read by bbbz.java:507-510 (its field 2 compared as a time). Estimated name (medium)
+  bool f1 = 1;
+  int64 time_ms = 2;
+  bool f4 = 4;
 }
 
 message PreKey {  // not in the APK: the shape of the captured field (Play services 26.31.31's copy where noted)
