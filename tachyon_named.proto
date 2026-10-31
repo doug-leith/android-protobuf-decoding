@@ -69,7 +69,7 @@ message SignInGaiaResponse {  // ebpd; the SignInGaia response ("Tachyon SignInG
   AuthToken auth_token = 4;
 }
 
-message RegisterCapabilitiesRequest {  // easa; the request of LighterCapabilities/RegisterCapabilities (cznl.java), from the Lighter SDK (business messaging; assets lighter-properties.txt, cyot.java), run by Messages and by Play services for Maps (app GMM). Name from the RPC
+message RegisterCapabilitiesRequest {  // easa; the request of LighterCapabilities/RegisterCapabilities (cznl.java), from the Lighter SDK (business messaging; assets lighter-properties.txt, cyot.java), in Messages, Google Maps and Play services; the captured calls are Maps' and Play services' (app GMM). Name from the RPC
   RequestHeader header = 1;
   bytes registration_id = 2 [features.field_presence = IMPLICIT];  // the Lighter registration id (UUID text) the RegisterRefresh/SignInGaia response returned. Estimated name (medium)
   repeated int32 capabilities = 3;  // open enum: class not recorded; the Lighter SDK's capability list (cznl.java:46, same list as RegisterData.capabilities)
